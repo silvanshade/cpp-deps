@@ -1,0 +1,133 @@
+{
+  "$schema": "",
+  "$id": "http://example.com/root.json",
+  "type": "object",
+  "title": "SG15 TR depformat",
+  "definitions": {
+    "datablock": {
+      "$id": "#datablock",
+      "type": "object",
+      "description": "A filepath",
+      "minLength": 1
+    },
+    "depinfo": {
+      "$id": "#depinfo",
+      "type": "object",
+      "description": "Dependency information for a compilation rule",
+      "properties": {
+        "work-directory": {
+          "$ref": "#/definitions/datablock"
+        },
+        "primary-output": {
+          "$id": "#primary-output",
+          "$ref": "#/definitions/datablock",
+          "description": "The primary output for the compilation"
+        },
+        "outputs": {
+          "$id": "#outputs",
+          "type": "array",
+          "description": "Other files output by a compiling this source using the same flags",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/definitions/datablock"
+          }
+        },
+        "provides": {
+          "$id": "#provides",
+          "type": "array",
+          "description": "Modules provided by a future compile rule for this source using the same flags",
+          "uniqueItems": true,
+          "default": [],
+          "items": {
+            "$ref": "#/definitions/provided-module-desc"
+          }
+        },
+        "requires": {
+          "$id": "#requires",
+          "type": "array",
+          "description": "Modules required by a future compile rule for this source using the same flags",
+          "uniqueItems": true,
+          "default": [],
+          "items": {
+            "$ref": "#/definitions/requires-module-desc"
+          }
+        }
+      }
+    },
+    "provided-module-desc": {
+      "$id": "#module-desc",
+      "type": "object",
+      "required": ["logical-name"],
+      "properties": {
+        "source-path": {
+          "$ref": "#/definitions/datablock"
+        },
+        "compiled-module-path": {
+          "$ref": "#/definitions/datablock"
+        },
+        "unique-on-source-path": {
+          "type": "boolean",
+          "description": "Whether the module name is unique on `logical-name` or `source-path`",
+          "default": false
+        },
+        "logical-name": {
+          "$ref": "#/definitions/datablock"
+        },
+        "is-interface": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "required-module-desc": {
+        "$id": "#module-desc",
+        "type": "object",
+        "required": ["logical-name"],
+        "properties": {
+          "source-path": {
+            "$ref": "#/definitions/datablock"
+          },
+          "compiled-module-path": {
+            "$ref": "#/definitions/datablock"
+          },
+          "unique-on-source-path": {
+            "type": "boolean",
+            "description": "Whether the module name is unique on `logical-name` or `source-path`",
+            "default": false
+          },
+          "logical-name": {
+            "$ref": "#/definitions/datablock"
+          },
+          "lookup-method": {
+            "type": "string",
+            "description": "The method by which the module was requested",
+            "default": "by-name",
+            "enum": ["by-name", "include-angle", "include-quote"]
+          }
+        }
+      }
+    },
+    "required": ["version", "rules"],
+    "properties": {
+      "version": {
+        "$id": "#version",
+        "type": "integer",
+        "description": "The version of the output specification"
+      },
+      "revision": {
+        "$id": "#revision",
+        "type": "integer",
+        "description": "The revision of the output specification",
+        "default": 0
+      },
+      "rules": {
+        "$id": "#rules",
+        "type": "array",
+        "title": "rules",
+        "minItems": 1,
+        "items": {
+          "$ref": "#/definitions/depinfo"
+        }
+      }
+    }
+  }
+}

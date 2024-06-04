@@ -1,0 +1,24 @@
+[package]
+name = "cpp-deps"
+version = "0.0.0"
+authors = ["silvanshade <silvanshade@users.noreply.github.com>"]
+license = "Apache-2.0 WITH LLVM-exception"
+edition = "2021"
+repository = "https://github.com/silvanshade/cpp-deps"
+description = "A library for processing p1689 C++ modules dependency files"
+readme = "README.md"
+categories = ["compilers", "configuration", "development-tools"]
+keywords = ["C++", "p1689", "modules", "build", "dependencies"]
+
+# NOTE: Uncomment for running `cargo depsize`
+# [lib]
+# crate-type = ["cdylib"]
+
+[dependencies]
+cc = { version = "1.0", features = ["parallel"] }
+dashmap = { version = "5.5", default-features = false }
+memmap2 = "0.9.4"
+winnow = { version = "0.6" }
+
+[dev-dependencies]
+proptest = "1.4.0"

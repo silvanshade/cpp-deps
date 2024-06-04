@@ -1,0 +1,58 @@
+[workspace]
+resolver = "2"
+members = [
+  "crates/cpp-deps",
+  "crates/cpp-deps-cli",
+  "crates/p1689",
+]
+
+[workspace.package]
+license = "Apache-2.0 WITH LLVM-exception"
+edition = "2021"
+
+[workspace.dependencies]
+
+[workspace.lints.rust]
+warnings = "warn"
+future_incompatible = "deny"
+let_underscore = "deny"
+nonstandard_style = "deny"
+rust_2018_compatibility = "deny"
+rust_2018_idioms = "deny"
+rust_2021_compatibility = "deny"
+rust_2024_compatibility = "deny"
+unused = "warn"
+
+[workspace.lints.clippy]
+all = "deny"
+cargo = "deny"
+nursery = "deny"
+pedantic = "deny"
+# clippy::restricted allow overrides
+match_ref_pats = "allow"
+needless_borrowed_reference = "allow"
+redundant_pub_crate = "allow"
+# clippy::restricted
+alloc_instead_of_core = "deny"
+allow_attributes_without_reason = "deny"
+arithmetic_side_effects = "deny"
+as_conversions = "deny"
+clone_on_ref_ptr = "deny"
+create_dir = "deny"
+decimal_literal_representation = "deny"
+default_numeric_fallback = "deny"
+default_union_representation = "deny"
+error_impl_error = "deny"
+exhaustive_enums = "deny"
+exhaustive_structs = "deny"
+filetype_is_file = "deny"
+if_then_some_else_none = "deny"
+infinite_loop = "deny"
+iter_over_hash_type = "deny"
+mod_module_files = "deny"
+mutex_atomic = "deny"
+pattern_type_mismatch = "deny"
+shadow_unrelated = "deny"
+std_instead_of_alloc = "deny"
+std_instead_of_core = "deny"
+wildcard_enum_match_arm = "deny"
