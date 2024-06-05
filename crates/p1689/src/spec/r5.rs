@@ -2,7 +2,7 @@
 pub mod arbitrary;
 #[cfg(feature = "builders")]
 pub mod builders;
-#[cfg(all(test, feature = "arbitrary", feature = "extra_traits"))]
+#[cfg(feature = "datagen")]
 pub mod datagen;
 #[cfg(test)]
 pub mod proptest;

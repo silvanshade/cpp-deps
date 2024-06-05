@@ -13,38 +13,85 @@
 
 use alloc::{
     borrow::{Cow, ToOwned},
-    boxed::Box,
     collections::{BTreeMap, BTreeSet},
     string::String,
+    vec::Vec,
 };
 
 use camino::Utf8PathBuf;
+use fake::{faker::name::raw::*, locales::*, Dummy};
 use indexmap::IndexSet;
 use petgraph::graphmap::GraphMap;
-use rand::RngCore;
+use rand::prelude::*;
 
 use super::BoxResult;
 use crate::r5;
 
-pub struct GraphGenerator {
+fn fake_name<R>(rng: &mut R) -> String
+where
+    R: RngCore,
+{
+    let name = match rng.gen_range(0 .. 7) {
+        0 => String::dummy_with_rng(&Name(AR_SA), rng),
+        1 => String::dummy_with_rng(&Name(EN), rng),
+        2 => String::dummy_with_rng(&Name(FR_FR), rng),
+        3 => String::dummy_with_rng(&Name(JA_JP), rng),
+        4 => String::dummy_with_rng(&Name(PT_BR), rng),
+        5 => String::dummy_with_rng(&Name(ZH_CN), rng),
+        6 => String::dummy_with_rng(&Name(ZH_TW), rng),
+        _ => unreachable!(),
+    };
+    name.split_whitespace()
+        .map(|frag| frag.to_lowercase())
+        .collect::<Vec<_>>()
+        .join("-")
+}
+
+pub struct DepFileIterator<'r, R> {
+    rng: &'r mut R,
     node_count: u8,
-    names_edges: Box<dyn Iterator<Item = String>>,
+}
+impl<'r, R> DepFileIterator<'r, R> {
+    pub fn new(rng: &'r mut R, node_count: u8) -> Self {
+        Self { rng, node_count }
+    }
+}
+
+impl<'r, R> Iterator for DepFileIterator<'r, R>
+where
+    R: RngCore,
+{
+    type Item = BoxResult<r5::DepFile<'static>>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        Some(GraphGenerator::gen_dep_file(self.rng, self.node_count))
+    }
+}
+
+pub struct GraphGenerator<'r, R> {
+    rng: &'r mut R,
+    node_count: u8,
     info_mem: BTreeMap<u8, r5::DepInfo<'static>>,
     graph: GraphMap<u8, String, petgraph::Directed>,
     known_producers: BTreeSet<u8>,
     known_consumers: BTreeSet<u8>,
 }
-impl GraphGenerator {
-    pub fn gen_dep_files(node_count: u8) -> impl Iterator<Item = BoxResult<r5::DepFile<'static>>> {
-        core::iter::from_fn(move || Some(Self::gen_dep_file(node_count)))
+impl<'r, R> GraphGenerator<'r, R> {
+    pub fn gen_dep_files(rng: &'r mut R, node_count: u8) -> DepFileIterator<'r, R>
+    where
+        R: RngCore,
+    {
+        DepFileIterator::new(rng, node_count)
     }
 
-    pub fn gen_dep_file(node_count: u8) -> BoxResult<r5::DepFile<'static>> {
-        let mut rng = rand::thread_rng();
+    pub fn gen_dep_file(rng: &'r mut R, node_count: u8) -> BoxResult<r5::DepFile<'static>>
+    where
+        R: RngCore,
+    {
         let mut bytes = alloc::vec![0u8; 8192];
         rng.fill_bytes(&mut bytes);
         let mut u = arbitrary::Unstructured::new(&bytes);
-        let gen = Self::new(node_count)?;
+        let gen = Self::new(rng, node_count)?;
         let (info_mem, _graph) = gen.run(&mut u)?;
         let select = u.ratio(1u8, 4u8)?;
         let rules = info_mem
@@ -58,16 +105,21 @@ impl GraphGenerator {
         })
     }
 
-    pub fn new(node_count: u8) -> BoxResult<Self> {
-        let mut names_nodes = names::Generator::default().filter_map(|name| name.split('-').nth(1).map(String::from));
-        let names_edges = names::Generator::default().filter_map(|name| name.split('-').nth(0).map(String::from));
+    pub fn new(rng: &'r mut R, node_count: u8) -> BoxResult<Self>
+    where
+        R: RngCore,
+    {
+        // let mut names_nodes = names::Generator::default().filter_map(|name|
+        // name.split('-').nth(1).map(String::from)); let names_edges =
+        // names::Generator::default().filter_map(|name| name.split('-').nth(0).map(String::from));
         let mut info_mem = BTreeMap::default();
         for id in 0 ..= node_count {
-            let primary_output = names_nodes.next().map(|name| {
+            let primary_output = {
+                let name = fake_name(rng);
                 let path = std::format!("{name}.o");
                 let path = Utf8PathBuf::from(path);
-                Cow::Owned(path)
-            });
+                Some(Cow::Owned(path))
+            };
             let info = r5::DepInfo {
                 work_directory: Option::default(),
                 primary_output,
@@ -78,8 +130,8 @@ impl GraphGenerator {
             info_mem.insert(id, info);
         }
         Ok(Self {
+            rng,
             node_count,
-            names_edges: Box::new(names_edges),
             info_mem,
             graph: GraphMap::default(),
             known_producers: BTreeSet::default(),
@@ -92,8 +144,8 @@ impl GraphGenerator {
             *self
                 .known_consumers
                 .iter()
-                .nth(u.int_in_range(0 ..= self.known_producers.len() - 1)?)
-                .ok_or("indexing failed")?
+                .nth(u.int_in_range(0 ..= self.known_consumers.len() - 1)?)
+                .ok_or("indexing failed0")?
         } else {
             u.int_in_range(1u8 ..= self.node_count)?
         };
@@ -106,7 +158,7 @@ impl GraphGenerator {
                 .known_producers
                 .iter()
                 .nth(u.int_in_range(0 ..= self.known_producers.len() - 1)?)
-                .ok_or("indexing failed")?
+                .ok_or("indexing failed1")?
         } else {
             u.int_in_range(0u8 ..= dst - 1)?
         };
@@ -117,8 +169,12 @@ impl GraphGenerator {
         &mut self,
         u: &mut arbitrary::Unstructured,
         src: u8,
-    ) -> BoxResult<r5::ProvidedModuleDesc<'static>> {
-        let module_name = self.names_edges.next().ok_or("name generation failed")?;
+    ) -> BoxResult<r5::ProvidedModuleDesc<'static>>
+    where
+        R: RngCore,
+    {
+        // let module_name = self.names_edges.next().ok_or("name generation failed")?;
+        let module_name = fake_name(self.rng);
         let source_path = if u.arbitrary()? {
             None
         } else {
@@ -164,14 +220,17 @@ impl GraphGenerator {
         &mut self,
         u: &mut arbitrary::Unstructured,
         src: u8,
-    ) -> BoxResult<r5::ProvidedModuleDesc<'static>> {
+    ) -> BoxResult<r5::ProvidedModuleDesc<'static>>
+    where
+        R: RngCore,
+    {
         if let Some(desc) = self.info_mem.get(&src) {
             if !desc.provides.is_empty() && u.ratio(3u8, 4u8)? {
                 let provided = desc
                     .provides
                     .iter()
                     .nth(u.int_in_range(0 ..= desc.provides.len() - 1)?)
-                    .ok_or("indexing failed")?
+                    .ok_or("indexing failed2")?
                     .clone();
                 return Ok(provided);
             }
@@ -212,7 +271,10 @@ impl GraphGenerator {
     ) -> BoxResult<(
         BTreeMap<u8, r5::DepInfo<'static>>,
         GraphMap<u8, String, petgraph::Directed>,
-    )> {
+    )>
+    where
+        R: RngCore,
+    {
         let mut i = 0;
         while i < self.node_count {
             let dst = self.gen_dst(u)?;
@@ -228,27 +290,25 @@ impl GraphGenerator {
 
 #[cfg(test)]
 mod test {
-    use super::*;
-
     #[cfg(feature = "serialize")]
     mod serialize {
 
         use rand::Rng;
 
-        use super::*;
+        use super::super::*;
 
         #[test]
         fn test() -> BoxResult<()> {
             use rand::RngCore;
 
-            let mut rng = rand::thread_rng();
+            let rng = &mut rand_chacha::ChaCha8Rng::seed_from_u64(2);
             let mut bytes = alloc::vec![0u8; 8192];
             rng.fill_bytes(&mut bytes);
             let mut u = arbitrary::Unstructured::new(&bytes);
 
             let node_count = u.int_in_range(0u8 ..= 16u8)?;
 
-            let generator = GraphGenerator::new(node_count)?;
+            let generator = GraphGenerator::new(rng, node_count)?;
             let (info_mem, graph) = generator.run(&mut u)?;
 
             for key in info_mem.keys().copied() {
@@ -279,10 +339,12 @@ mod test {
         #[cfg(feature = "serialize")]
         #[test]
         fn test_many() {
-            let node_count = rand::thread_rng().gen_range(0u8 ..= 16u8);
-            let dep_files = GraphGenerator::gen_dep_files(node_count)
+            let rng = &mut rand_chacha::ChaCha8Rng::seed_from_u64(2);
+            let node_count = rng.gen_range(0u8 ..= 16u8);
+            std::println!("node_count: {node_count}");
+            let dep_files = GraphGenerator::gen_dep_files(rng, node_count)
                 .flat_map(|result| result.and_then(r5::datagen::json::pretty_print_unindented));
-            for file in dep_files.take(5) {
+            for file in dep_files.take(1) {
                 std::println!("{file}\n");
             }
         }

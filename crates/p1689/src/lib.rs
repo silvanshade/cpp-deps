@@ -12,7 +12,7 @@ mod util;
 pub mod r5 {
     #[cfg(feature = "builders")]
     pub use crate::spec::r5::builders;
-    #[cfg(all(test, feature = "arbitrary", feature = "extra_traits"))]
+    #[cfg(feature = "datagen")]
     pub use crate::spec::r5::datagen;
     #[cfg(test)]
     pub use crate::spec::r5::proptest;
