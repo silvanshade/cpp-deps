@@ -1,4 +1,5 @@
 examples/**/main
+tarpaulin-report.html
 *.d
 *.ddi
 *.gcm
