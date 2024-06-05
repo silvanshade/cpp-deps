@@ -85,7 +85,7 @@ impl State {
         let mut index = 0;
         let mut number = 0u32;
         while index != input.len() {
-            if let Some(digit) = crate::vendor::atoi::u32::ascii_to_hexdigit(input[index]) {
+            if let Some(digit) = crate::util::winnow::util::atoi::u32::ascii_to_hexdigit(input[index]) {
                 number *= 16;
                 number += digit;
                 index += 1;
