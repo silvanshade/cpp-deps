@@ -1,36 +1,3 @@
-#![deny(clippy::all)]
-#![deny(clippy::cargo)]
-#![deny(clippy::nursery)]
-#![deny(clippy::pedantic)]
-// clippy::restricted allow overrides
-#![allow(clippy::match_ref_pats)]
-#![allow(clippy::needless_borrowed_reference)]
-#![allow(clippy::redundant_pub_crate)]
-// clippy::restricted
-#![deny(clippy::alloc_instead_of_core)]
-#![deny(clippy::allow_attributes_without_reason)]
-#![deny(clippy::arithmetic_side_effects)]
-#![deny(clippy::as_conversions)]
-#![deny(clippy::clone_on_ref_ptr)]
-#![deny(clippy::create_dir)]
-#![deny(clippy::decimal_literal_representation)]
-#![deny(clippy::default_numeric_fallback)]
-#![deny(clippy::default_union_representation)]
-#![deny(clippy::error_impl_error)]
-#![deny(clippy::exhaustive_enums)]
-#![deny(clippy::exhaustive_structs)]
-#![deny(clippy::filetype_is_file)]
-#![deny(clippy::if_then_some_else_none)]
-#![deny(clippy::infinite_loop)]
-#![deny(clippy::iter_over_hash_type)]
-#![deny(clippy::mod_module_files)]
-#![deny(clippy::mutex_atomic)]
-#![deny(clippy::pattern_type_mismatch)]
-#![deny(clippy::shadow_unrelated)]
-#![deny(clippy::std_instead_of_alloc)]
-#![deny(clippy::std_instead_of_core)]
-#![deny(clippy::wildcard_enum_match_arm)]
-
 #[cfg(feature = "arbitrary")]
 pub mod arbitrary;
 #[cfg(feature = "builders")]
@@ -264,8 +231,8 @@ pub enum ModuleDesc<'a> {
 impl<'a> ModuleDesc<'a> {
     #[must_use]
     pub fn view(&self) -> ModuleDescView {
-        match self {
-            &ModuleDesc::ByLogicalName {
+        match *self {
+            ModuleDesc::ByLogicalName {
                 ref logical_name,
                 ref source_path,
                 ref compiled_module_path,
@@ -277,7 +244,7 @@ impl<'a> ModuleDesc<'a> {
                 compiled_module_path: compiled_module_path.as_deref(),
                 logical_name: logical_name.borrow(),
             },
-            &ModuleDesc::BySourcePath {
+            ModuleDesc::BySourcePath {
                 ref logical_name,
                 ref source_path,
                 ref compiled_module_path,
