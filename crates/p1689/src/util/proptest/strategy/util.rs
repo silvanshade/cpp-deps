@@ -22,14 +22,3 @@ pub fn ws_around(strat: impl Strategy<Value = impl core::fmt::Display>) -> impl 
         }
     })
 }
-
-// pub fn terminated(
-//     strat: impl Strategy<Value = impl core::fmt::Display>,
-//     term: impl Strategy<Value = impl core::fmt::Display>,
-// ) -> impl Strategy<Value = String> {
-//     let strat = (strat, term);
-//     Strategy::prop_map(strat, move |(s, t)| {
-//         let res = format!("{s}{t}");
-//         res
-//     })
-// }
