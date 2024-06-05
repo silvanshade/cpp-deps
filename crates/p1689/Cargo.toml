@@ -16,6 +16,7 @@ full = ["default", "arbitrary", "builders", "deserialize", "extra_traits", "memc
 alloc = []
 arbitrary = ["dep:arbitrary", "arbitrary/derive", "indexmap/arbitrary"]
 builders = []
+datagen = ["dep:fake", "dep:petgraph", "dep:rand", "dep:serde_json", "arbitrary", "serde", "serialize"]
 debug = ["winnow?/debug"]
 deserialize = ["serde?/derive"]
 extra_traits = []

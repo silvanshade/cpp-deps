@@ -29,6 +29,9 @@ pub mod r5 {
 
     #[cfg(feature = "winnow")]
     pub mod parsers {
-        pub use crate::spec::r5::winnow::dep_file;
+        pub use crate::{
+            spec::r5::winnow::dep_file,
+            util::winnow::{State, StateStream},
+        };
     }
 }

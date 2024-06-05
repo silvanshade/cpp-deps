@@ -107,4 +107,4 @@ impl Default for State {
     }
 }
 
-pub(crate) type StateStream<'i> = winnow::Stateful<&'i BStr, State>;
+pub type StateStream<'i> = winnow::Stateful<&'i BStr, State>;
