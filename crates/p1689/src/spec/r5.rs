@@ -184,6 +184,10 @@ impl Ord for DepInfo<'_> {
 #[derive(Eq, Hash, PartialEq)]
 #[non_exhaustive]
 pub enum ModuleDesc<'a> {
+    #[cfg_attr(
+        all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
+        serde(rename_all = "kebab-case")
+    )]
     ByLogicalName {
         #[cfg_attr(
             all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
@@ -206,6 +210,10 @@ pub enum ModuleDesc<'a> {
         #[cfg(any(test, feature = "monostate"))]
         unique_on_source_path: Option<monostate::MustBeBool<false>>,
     },
+    #[cfg_attr(
+        all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
+        serde(rename_all = "kebab-case")
+    )]
     BySourcePath {
         #[cfg_attr(
             all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
