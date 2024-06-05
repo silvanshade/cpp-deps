@@ -29,6 +29,7 @@ mod defaults {
 }
 
 #[cfg_attr(feature = "serde", cfg_eval::cfg_eval)]
+#[cfg_attr(all(feature = "serde", feature = "serialize"), skip_serializing_none)]
 #[cfg_attr(
     all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
     serde_as,
