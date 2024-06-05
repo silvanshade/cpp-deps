@@ -10,11 +10,17 @@ readme = "README.md"
 categories = ["compilers", "configuration", "development-tools"]
 keywords = ["C++", "p1689", "modules", "build", "dependencies"]
 
+[[bench]]
+name = "bench"
+harness = false
+required-features = ["benchmark"]
+
 [features]
 default = ["alloc", "std"]
 full = ["default", "arbitrary", "builders", "deserialize", "extra_traits", "memchr", "monostate", "serde", "serialize", "winnow"]
 alloc = []
 arbitrary = ["dep:arbitrary", "arbitrary/derive", "indexmap/arbitrary"]
+benchmark = ["alloc", "datagen", "deserialize", "std", "winnow"]
 builders = []
 datagen = ["dep:fake", "dep:petgraph", "dep:rand", "dep:serde_json", "arbitrary", "serde", "serialize"]
 debug = ["winnow?/debug"]
@@ -56,3 +62,4 @@ criterion = { version = "0.5", features = ["html_reports"] }
 monostate = { version = "0.1", default-features = false }
 proptest = { version = "1.4", default-features = false, features = ["std"] }
 rand_chacha = { version = "0.3", features = ["simd"] }
+simd-json = { version = "0.13" }
