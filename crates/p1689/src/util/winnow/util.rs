@@ -88,10 +88,10 @@ where
     E: ParserError<StateStream<'i>>,
 {
     trace("cow_module_str", |input0: &mut StateStream<'i>| {
-        let str = unescaped_string.parse_next(input0)?;
+        let str = json_string.parse_next(input0)?;
         Ok(str)
     })
-    .parse_next(input)
+    .parse_next(input) // tarpaulin::hint
 }
 
 pub fn cow_utf8_path<'i, E>(input: &mut StateStream<'i>) -> PResult<Cow<'i, Utf8Path>, E>
@@ -99,14 +99,14 @@ where
     E: ParserError<StateStream<'i>>,
 {
     trace("cow_utf8_path", |input0: &mut StateStream<'i>| {
-        let str = unescaped_string.parse_next(input0)?;
+        let str = json_string.parse_next(input0)?;
         let path = match str {
             Cow::Borrowed(ptr) => Cow::Borrowed(Utf8Path::new(ptr)),
             Cow::Owned(val) => Cow::Owned(Utf8PathBuf::from(val)),
         };
         Ok(path)
     })
-    .parse_next(input)
+    .parse_next(input) // tarpaulin::hint
 }
 
 // NOTE: Specialized version of `dec_uint` that does not pessimize the `0` parse.
@@ -117,17 +117,17 @@ where
 {
     trace("dec_uint_from_0", move |input0: &mut StateStream<'i>| {
         (one_of('0' ..= '9'), digit0)
-            .void()
-            .recognize()
+            .void()      // tarpaulin::hint
+            .recognize() // tarpaulin::hint
             .verify_map(|s: <StateStream<'i> as Stream>::Slice| {
                 let s = s.as_bstr();
                 // SAFETY: Only 7-bit ASCII characters are parsed
                 let s = unsafe { core::str::from_utf8_unchecked(s) };
                 Output::try_from_dec_uint(s)
             })
-            .parse_next(input0)
+            .parse_next(input0) // tarpaulin::hint
     })
-    .parse_next(input)
+    .parse_next(input) // tarpaulin::hint
 }
 
 pub fn ws_around<'i, O, E, F>(mut inner: F) -> impl Parser<StateStream<'i>, O, E>
@@ -163,7 +163,8 @@ where
     })
 }
 
-pub fn unescaped_string<'i, E>(input: &mut StateStream<'i>) -> PResult<Cow<'i, str>, E>
+#[rustfmt::skip]
+pub fn json_string<'i, E>(input: &mut StateStream<'i>) -> PResult<Cow<'i, str>, E>
 where
     E: ParserError<StateStream<'i>>,
 {
@@ -174,27 +175,27 @@ where
         loop {
             let Some(needle) = input.state.finders.quotes_or_backslash.find(&input[off ..]) else {
                 let message = "failed to find end of string";
-                return Err(winnow::error::ErrMode::assert(input, message));
+                return Err(winnow::error::ErrMode::assert(input, message)); // tarpaulin::hint
             };
             let data = input.next_slice(needle + off + 1);
             match data[data.len() - 1] {
-                b'"' => {
+                b'"' => { // tarpaulin::hint
                     if text.is_empty() {
                         text = Cow::Borrowed(data.into())
                     } else {
                         text.to_mut().extend_from_slice(data);
                     };
-                    break;
+                    break; // tarpaulin::hint
                 },
                 b'\\' => self::string::unescape(&mut text, data).parse_next(input)?,
-                _ => unreachable!(),
+                _ => unreachable!(), // tarpaulin::hint
             }
             off = 0;
         }
         let utf8 = cow_bstr_to_utf8(input, text)?;
         Ok(utf8)
     })
-    .parse_next(input)
+    .parse_next(input) // tarpaulin::hint
 }
 
 mod string {
@@ -231,7 +232,7 @@ mod string {
                 b'"' => cow_extend_bytes(dst, src, b'"'),
                 b'\\' => cow_extend_bytes(dst, src, b'\\'),
                 b'/' => cow_extend_bytes(dst, src, b'/'),
-                b'b' => cow_extend_bytes(dst, src, b'\\'),
+                b'b' => cow_extend_bytes(dst, src, 0x08),
                 b'f' => cow_extend_bytes(dst, src, 0x0c),
                 b'n' => cow_extend_bytes(dst, src, b'\n'),
                 b'r' => cow_extend_bytes(dst, src, b'\r'),
@@ -241,5 +242,34 @@ mod string {
             }
             Ok(())
         })
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::r5::parsers::State;
+
+    #[test]
+    fn json_string_correctly_unescapes_while_parsing() {
+        for (esc, raw) in [
+            ('"', b'"'),
+            ('\\', b'\\'),
+            ('/', b'/'),
+            ('b', 0x08),
+            ('f', 0x0c),
+            ('n', b'\n'),
+            ('r', b'\r'),
+            ('t', b'\t'),
+        ] {
+            let text = std::format!("\"foo\\{esc}bar\"");
+            let input = winnow::BStr::new(&text);
+            let state = State::default();
+            let mut stream = winnow::Stateful { input, state };
+            let unescaped = json_string::<()>.parse_next(&mut stream).unwrap();
+            let lhs = unescaped;
+            let rhs = std::format!("\"foo{}bar\"", char::from(raw));
+            assert_eq!(lhs, rhs);
+        }
     }
 }

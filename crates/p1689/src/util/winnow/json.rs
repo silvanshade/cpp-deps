@@ -40,12 +40,12 @@ where
         multispace0.parse_next(input)?;
         let val = val.parse_next(input)?;
         multispace0.parse_next(input)?;
-        dispatch! { peek(any);
+        let mut dispatch = dispatch! { peek(any);
             b',' => b','.void(),
-            b'}' => empty.value(()),
-            _ => fail,
-        }
-        .parse_next(input)?;
+            b'}' => empty.value(()), // tarpaulin::hint
+            _ => fail, // tarpaulin::hint
+        };
+        dispatch.parse_next(input)?;
         Ok(val)
     };
     trace("field", move |input: &mut StateStream<'i>| {
@@ -64,6 +64,7 @@ where
     })
 }
 
+#[rustfmt::skip]
 pub fn vec<'i, E, V, P>(mut val: P) -> impl Parser<StateStream<'i>, Vec<V>, E>
 where
     E: ParserError<StateStream<'i>>,
@@ -74,12 +75,12 @@ where
         let mut vec = Vec::default();
         multispace0.parse_next(input)?;
         if b']' != peek(any).parse_next(input)? {
-            loop {
+            loop { // tarpaulin::hint
                 vec.push(val.parse_next(input)?);
                 multispace0.parse_next(input)?;
                 match any.parse_next(input)? {
                     b',' => multispace0.void().parse_next(input)?,
-                    b']' => break,
+                    b']' => break, // tarpaulin::hint
                     _ => fail.parse_next(input)?,
                 }
             }
