@@ -78,7 +78,16 @@ impl State {
     }
 
     #[cfg(not(target_feature = "bmi2"))]
+    #[no_coverage]
     pub fn hex_to_u32<'i, E>(&self, input: &StateStream<'i>) -> PResult<(u32, usize), E>
+    where
+        E: ParserError<StateStream<'i>>,
+    {
+        hex_to_u32_sans_bmi2(input)
+    }
+
+    #[inline(always)]
+    pub fn hex_to_u32_sans_bmi2<'i, E>(&self, input: &StateStream<'i>) -> PResult<(u32, usize), E>
     where
         E: ParserError<StateStream<'i>>,
     {

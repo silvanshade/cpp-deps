@@ -42,7 +42,7 @@ pub mod atoi {
             (fst, snd, lsl)
         }
 
-        #[cfg(all(not(target_feature = "bmi2"), feature = "winnow"))]
+        #[cfg(feature = "winnow")]
         pub fn ascii_to_hexdigit(character: u8) -> Option<u32> {
             match character {
                 b'0' => Some(0),
