@@ -16,32 +16,6 @@ use crate::util::winnow::StateStream;
 pub mod atoi {
 
     pub mod u32 {
-        #[cfg(target_feature = "bmi2")]
-        const fn packed32(b: u32) -> u32 {
-            b * 0x01010101u32
-        }
-
-        #[cfg(target_feature = "bmi2")]
-        pub fn u32_from_u8x4(text: [u8; 4]) -> u32 {
-            let input = u32::from_be_bytes(text); // compiles to `bswap`
-            let letter = input & packed32(0x40);
-            let shift = letter >> 3 | letter >> 6;
-            let adjusted = input + shift;
-            let mask = 0x0f0f0f0f;
-            unsafe { core::arch::x86_64::_pext_u32(adjusted, mask) }
-        }
-
-        #[rustfmt::skip]
-        #[cfg(target_feature = "bmi2")]
-        pub fn split_into_words(text: &[u8]) -> ([u8; 4], [u8; 4], usize) {
-            let mut fst = [0u8; 4];
-            fst[4 - text.len().           min(4) .. 4].copy_from_slice(&text[               0  .. text.len().min(4)]);
-            let mut snd = [0u8; 4];
-            snd[4 - text.len().saturating_sub(4) .. 4].copy_from_slice(&text[text.len().min(4) .. text.len().min(8)]);
-            let lsl = text.len().min(8) - text.len().min(4);
-            (fst, snd, lsl)
-        }
-
         #[cfg(feature = "winnow")]
         pub fn ascii_to_hexdigit(character: u8) -> Option<u32> {
             match character {

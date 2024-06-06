@@ -22,19 +22,6 @@ fn atoi_parsing(c: &mut Criterion) {
             total_time
         })
     });
-    c.bench_function("hex_to_u32_sans_bmi", |b| {
-        b.iter_custom(|iters| {
-            let mut total_time = std::time::Duration::default();
-            for _ in 0 .. iters {
-                let state = crate::r5::parsers::State::default();
-                let stream = &mut winnow::Stateful { input, state };
-                let start = std::time::Instant::now();
-                stream.state.hex_to_u32_sans_bmi2::<()>(stream).unwrap();
-                total_time += start.elapsed();
-            }
-            total_time
-        })
-    });
 }
 
 fn json_parsing(c: &mut Criterion) {
