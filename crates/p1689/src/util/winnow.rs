@@ -53,12 +53,13 @@ impl State {
                 number += digit;
                 index += 1;
             } else {
-                break;
+                break; // tarpaulin::hint
             }
         }
-        #[cfg(test)]
+        #[cfg(test)] // tarpaulin::hint
         if input[index] != b'}' {
             let message = "failed to locate UCS sequence closing delimiter";
+            #[cfg(not(tarpaulin_include))] // NOTE: the `return Err` is always missed by tarpaulin
             return Err(winnow::error::ErrMode::assert(input, message));
         };
         Ok((number, index))

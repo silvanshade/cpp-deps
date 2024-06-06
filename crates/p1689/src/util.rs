@@ -24,12 +24,9 @@ pub fn count_escapes(str: impl AsRef<str>) -> u64 {
     if bytes.len() > 1 {
         while off < bytes.len() - 1 {
             match bytes[off] {
-                b'\\' if bytes[off + 1] == b'\\' => {
-                    off += 1;
-                },
-                b'\\' => {
-                    count += 1;
-                },
+                b'\\' if bytes[off + 1] == b'\\' => off += 1,
+                b'\\' => count += 1,
+                #[cfg(not(tarpaulin_include))]
                 _ => {},
             }
             off += 1;
@@ -52,18 +49,21 @@ pub fn count_escaped_strings(str: impl AsRef<str>) -> (u64, u64) {
                 let mut escaped = false;
                 'inner: loop {
                     match bytes[off] {
-                        b'\\' => {
+                        #[rustfmt::skip]
+                        b'\\' => { // tarpaulin::hint
                             off += 1;
                             if bytes[off] != b'\\' {
                                 escaped = true;
                             }
                         },
-                        b'"' => {
+                        #[rustfmt::skip]
+                        b'"' => { // tarpaulin::hint
                             num_strings += 1;
                             num_escaped += u64::from(escaped);
                             off += 1;
-                            break 'inner;
+                            break 'inner; // tarpaulin::hint
                         },
+                        #[cfg(not(tarpaulin_include))]
                         _ => {},
                     }
                     off += 1;
