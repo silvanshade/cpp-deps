@@ -68,7 +68,7 @@ impl State {
             let message = "failed to locate UCS sequence closing delimiter";
             winnow::error::ErrMode::assert(input, message)
         })?;
-        debug_assert!(needle < 8);
+        debug_assert!(needle < 9);
         let input = &input[0 .. needle];
         let (lo, hi) = self::util::atoi::u32::split_into_words(input);
         let lo = self::util::atoi::u32::u32_from_u8x4(lo);
