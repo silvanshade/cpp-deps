@@ -18,7 +18,23 @@ pub fn field<'k>(
         self::util::ws(),
     );
     Strategy::prop_map(strat, move |(ws0, ws1, v, ws2, t, ws3)| {
-        let res = format!("{key}{ws0}:{ws1}{v}{ws2}{t}{ws3}");
-        res
+        format!("{key}{ws0}:{ws1}{v}{ws2}{t}{ws3}")
     })
+}
+
+#[cfg(test)]
+mod test {
+    use alloc::vec::Vec;
+
+    use proptest::prelude::*;
+
+    use super::*;
+
+    proptest! {
+        #[test]
+        fn field_works(input in field("key", Just("val"), Just("term"))) {
+            let res = input.split_whitespace().collect::<Vec<&str>>();
+            assert_eq!(res, ["key", ":", "val", "term"])
+        }
+    }
 }

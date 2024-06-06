@@ -22,3 +22,20 @@ pub fn ws_around(strat: impl Strategy<Value = impl core::fmt::Display>) -> impl 
         }
     })
 }
+
+#[cfg(test)]
+mod test {
+    use alloc::vec::Vec;
+
+    use proptest::prelude::*;
+
+    use super::*;
+
+    proptest! {
+        #[test]
+        fn ws_around_works(input in ws_around(Just("val"))) {
+            let res = input.split_whitespace().collect::<Vec<&str>>();
+            assert_eq!(res, ["val"])
+        }
+    }
+}
