@@ -1,6 +1,6 @@
 extern crate alloc;
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 use p1689::r5;
 use rand::{RngCore, SeedableRng};
 
@@ -40,11 +40,17 @@ fn json_parsing(c: &mut Criterion) {
     group.throughput(criterion::Throughput::Bytes(dep_file.len() as u64));
 
     group.bench_function("winnow", |b| {
-        b.iter(|| {
-            let input = winnow::BStr::new(dep_file.as_bytes());
-            let state = r5::parsers::State::default();
-            let mut state_stream = winnow::Stateful { input, state };
-            r5::parsers::dep_file(black_box(&mut state_stream)).unwrap();
+        b.iter_custom(|iters| {
+            let mut total_time = std::time::Duration::default();
+            for _ in 0 .. iters {
+                let input = winnow::BStr::new(dep_file.as_bytes());
+                let state = r5::parsers::State::default();
+                let mut state_stream = winnow::Stateful { input, state };
+                let start = std::time::Instant::now();
+                r5::parsers::dep_file(&mut state_stream).unwrap();
+                total_time += start.elapsed();
+            }
+            total_time
         })
     });
 
