@@ -67,19 +67,17 @@ where
 {
     match cow {
         Cow::Borrowed(ptr) => {
-            let str = simdutf8::basic::from_utf8(ptr).map_err(|_| {
+            let str = core::str::from_utf8(ptr).map_err(|_| {
                 let message = "UTF-8 validation failed";
                 winnow::error::ErrMode::assert(input, message)
             })?;
             Ok(Cow::Borrowed(str))
         },
         Cow::Owned(val) => {
-            simdutf8::basic::from_utf8(&val).map_err(|_| {
+            let str = alloc::string::String::from_utf8(val).map_err(|_| {
                 let message = "UTF-8 validation failed";
                 winnow::error::ErrMode::assert(input, message)
             })?;
-            // SAFETY: We just validated the UTF-8 with `simdutf8`.
-            let str = unsafe { alloc::string::String::from_utf8_unchecked(val) };
             Ok(Cow::Owned(str))
         },
     }
