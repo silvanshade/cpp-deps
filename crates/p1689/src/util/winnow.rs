@@ -70,10 +70,10 @@ impl State {
         })?;
         debug_assert!(needle < 9);
         let input = &input[0 .. needle];
-        let (lo, hi) = self::util::atoi::u32::split_into_words(input);
-        let lo = self::util::atoi::u32::u32_from_u8x4(lo);
-        let hi = self::util::atoi::u32::u32_from_u8x4(hi);
-        let word = lo + (hi << 16);
+        let (hi_bytes, lo_bytes, lsl) = self::util::atoi::u32::split_into_words(input);
+        let lo = self::util::atoi::u32::u32_from_u8x4(lo_bytes);
+        let hi = self::util::atoi::u32::u32_from_u8x4(hi_bytes);
+        let word = (hi << (lsl * 4)) + lo;
         Ok((word, needle))
     }
 

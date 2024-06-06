@@ -32,14 +32,15 @@ pub mod atoi {
         }
 
         #[rustfmt::skip]
-    #[cfg(target_feature = "bmi2")]
-    pub fn split_into_words(text: &[u8]) -> ([u8; 4], [u8; 4]) {
-        let mut fst = [0u8; 4];
-        fst[4 - text.len().           min(4) .. 4].copy_from_slice(&text[               0  .. text.len().min(4)]);
-        let mut snd = [0u8; 4];
-        snd[4 - text.len().saturating_sub(4) .. 4].copy_from_slice(&text[text.len().min(4) .. text.len().min(8)]);
-        (fst, snd)
-    }
+        #[cfg(target_feature = "bmi2")]
+        pub fn split_into_words(text: &[u8]) -> ([u8; 4], [u8; 4], usize) {
+            let mut fst = [0u8; 4];
+            fst[4 - text.len().           min(4) .. 4].copy_from_slice(&text[               0  .. text.len().min(4)]);
+            let mut snd = [0u8; 4];
+            snd[4 - text.len().saturating_sub(4) .. 4].copy_from_slice(&text[text.len().min(4) .. text.len().min(8)]);
+            let lsl = text.len().min(8) - text.len().min(4);
+            (fst, snd, lsl)
+        }
 
         #[cfg(all(not(target_feature = "bmi2"), feature = "winnow"))]
         pub fn ascii_to_hexdigit(character: u8) -> Option<u32> {
