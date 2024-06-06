@@ -1,5 +1,3 @@
-#[cfg(feature = "arbitrary")]
-pub mod arbitrary;
 #[cfg(feature = "builders")]
 pub mod builders;
 #[cfg(feature = "datagen")]
@@ -384,5 +382,18 @@ impl core::fmt::Display for RequiredModuleDescLookupMethod {
             Self::IncludeQuote => "\"include-quote\"",
         };
         f.write_str(repr)
+    }
+}
+#[cfg(feature = "arbitrary")]
+impl<'a> ::arbitrary::Arbitrary<'a> for RequiredModuleDescLookupMethod {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+        #[allow(clippy::same_functions_in_if_condition)]
+        Ok(if u.arbitrary::<bool>()? {
+            Self::ByName
+        } else if u.arbitrary::<bool>()? {
+            Self::IncludeAngle
+        } else {
+            Self::IncludeQuote
+        })
     }
 }
