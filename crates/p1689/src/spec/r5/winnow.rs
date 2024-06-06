@@ -468,7 +468,10 @@ mod test {
     use crate::util::winnow::State;
 
     mod r5 {
-        pub use crate::spec::r5::{proptest::strategy, *};
+        pub use crate::{
+            r5::parsers,
+            spec::r5::{proptest::strategy, *},
+        };
     }
 
     mod parse {
@@ -518,7 +521,10 @@ mod test {
                 while num_files_with_escaped_strings < 16 {
                     if let Some(dep_file_text) = dep_file_texts.next() {
                         let num_escaped_strings_within_file = crate::util::count_escaped_strings(&dep_file_text).1;
-                        let dep_file = serde_json::from_str::<r5::DepFile>(&dep_file_text).unwrap();
+                        let input = winnow::BStr::new(dep_file_text.as_bytes());
+                        let state = r5::parsers::State::default();
+                        let mut state_stream = winnow::Stateful { input, state };
+                        let dep_file = r5::parsers::dep_file(&mut state_stream).unwrap();
                         assert_eq!(num_escaped_strings_within_file, dep_file.count_copies());
                         num_files_with_escaped_strings += u64::from(0 < num_escaped_strings_within_file);
                     }

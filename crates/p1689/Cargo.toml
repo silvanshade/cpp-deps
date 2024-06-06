@@ -17,7 +17,7 @@ required-features = ["benchmark"]
 
 [features]
 default = ["alloc", "std"]
-full = ["default", "arbitrary", "builders", "deserialize", "extra_traits", "memchr", "monostate", "serde", "serialize", "winnow"]
+full = ["datagen", "default", "arbitrary", "builders", "deserialize", "extra_traits", "memchr", "monostate", "serde", "serialize", "winnow"]
 alloc = []
 arbitrary = ["dep:arbitrary", "arbitrary/derive"]
 benchmark = ["alloc", "datagen", "deserialize", "std", "winnow"]
@@ -56,6 +56,7 @@ arbitrary = { version = "1.3" }
 criterion = { version = "0.5", features = ["html_reports"] }
 monostate = { version = "0.1", default-features = false }
 proptest = { version = "1.4", default-features = false, features = ["std"] }
+rand = { version = "0.8", default-features = false}
 rand_chacha = { version = "0.3", features = ["simd"] }
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
 simd-json = { version = "0.13" }
