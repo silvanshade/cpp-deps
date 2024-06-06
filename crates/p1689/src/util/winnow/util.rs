@@ -221,7 +221,6 @@ mod string {
         })
     }
 
-    // #[cold]
     pub fn unescape<'i, 'r, E>(dst: &'r mut Cow<'i, BStr>, src: &'i [u8]) -> impl Parser<StateStream<'i>, (), E> + 'r
     where
         E: ParserError<StateStream<'i>> + 'r,
