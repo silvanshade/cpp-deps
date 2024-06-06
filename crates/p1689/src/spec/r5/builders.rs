@@ -1,14 +1,13 @@
-use alloc::borrow::Cow;
+use alloc::{borrow::Cow, vec::Vec};
 
 use camino::Utf8Path;
-use indexmap::IndexSet;
 
 use crate::spec::r5;
 
 pub struct DepFile<'a> {
     version: Option<u32>,
     revision: Option<u32>,
-    rules: Option<IndexSet<r5::DepInfo<'a>>>,
+    rules: Option<Vec<r5::DepInfo<'a>>>,
 }
 #[allow(clippy::derivable_impls)]
 impl Default for DepFile<'_> {
@@ -52,7 +51,7 @@ impl<'a> DepFile<'a> {
     }
 
     #[must_use]
-    pub fn rules(mut self, rules: IndexSet<r5::DepInfo<'a>>) -> Self {
+    pub fn rules(mut self, rules: Vec<r5::DepInfo<'a>>) -> Self {
         self.rules = Some(rules);
         self
     }
@@ -61,9 +60,9 @@ impl<'a> DepFile<'a> {
 pub struct DepInfo<'a> {
     work_directory: Option<Cow<'a, Utf8Path>>,
     primary_output: Option<Cow<'a, Utf8Path>>,
-    outputs: Option<IndexSet<Cow<'a, Utf8Path>>>,
-    provides: Option<IndexSet<r5::ProvidedModuleDesc<'a>>>,
-    requires: Option<IndexSet<r5::RequiredModuleDesc<'a>>>,
+    outputs: Option<Vec<Cow<'a, Utf8Path>>>,
+    provides: Option<Vec<r5::ProvidedModuleDesc<'a>>>,
+    requires: Option<Vec<r5::RequiredModuleDesc<'a>>>,
 }
 #[allow(clippy::derivable_impls)]
 impl<'a> Default for DepInfo<'a> {
@@ -107,19 +106,19 @@ impl<'a> DepInfo<'a> {
     }
 
     #[must_use]
-    pub fn outputs(mut self, outputs: IndexSet<Cow<'a, Utf8Path>>) -> Self {
+    pub fn outputs(mut self, outputs: Vec<Cow<'a, Utf8Path>>) -> Self {
         self.outputs = Some(outputs);
         self
     }
 
     #[must_use]
-    pub fn provides(mut self, provides: IndexSet<r5::ProvidedModuleDesc<'a>>) -> Self {
+    pub fn provides(mut self, provides: Vec<r5::ProvidedModuleDesc<'a>>) -> Self {
         self.provides = Some(provides);
         self
     }
 
     #[must_use]
-    pub fn requires(mut self, requires: IndexSet<r5::RequiredModuleDesc<'a>>) -> Self {
+    pub fn requires(mut self, requires: Vec<r5::RequiredModuleDesc<'a>>) -> Self {
         self.requires = Some(requires);
         self
     }

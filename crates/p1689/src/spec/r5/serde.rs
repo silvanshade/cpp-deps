@@ -7,9 +7,6 @@ use ::{alloc::borrow::Cow, camino::Utf8Path};
 #[cfg(feature = "deserialize")]
 use ::{camino::Utf8PathBuf, serde_with::BorrowCow};
 
-#[cfg(any(feature = "deserialize", feature = "serialize"))]
-use crate::spec::r5::DepInfo;
-
 // TODO: adjust skip serializations for default values (including bools, etc)
 
 /// Helper to deserialize [`Cow<T>`] as borrowed.
@@ -39,36 +36,6 @@ impl<'a> SerializeAs<Cow<'a, Utf8Path>> for CowUtf8Path {
         S: ::serde::Serializer,
     {
         serializer.serialize_str(source.as_ref().as_ref())
-    }
-}
-
-/// Helper to deserialize [`DepInfo`] with `primary-output` removed from `outputs`. This provides an additional
-/// invariant which in various processing algorithms.
-#[cfg(any(feature = "deserialize", feature = "serialize"))]
-#[derive(Default)]
-#[non_exhaustive]
-pub struct DepInfoUniqueOutputs;
-
-#[cfg(feature = "deserialize")]
-impl<'de> DeserializeAs<'de, DepInfo<'de>> for DepInfoUniqueOutputs {
-    fn deserialize_as<D>(deserializer: D) -> Result<DepInfo<'de>, D::Error>
-    where
-        D: ::serde::Deserializer<'de>,
-    {
-        let mut dep_info: DepInfo = ::serde::Deserialize::deserialize(deserializer)?;
-        if let Some(ref primary_output) = dep_info.primary_output {
-            dep_info.outputs.swap_remove(primary_output);
-        }
-        Ok(dep_info)
-    }
-}
-#[cfg(feature = "serialize")]
-impl<'a> SerializeAs<DepInfo<'a>> for DepInfoUniqueOutputs {
-    fn serialize_as<S>(source: &DepInfo<'a>, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: ::serde::Serializer,
-    {
-        <DepInfo as ::serde::Serialize>::serialize(source, serializer)
     }
 }
 

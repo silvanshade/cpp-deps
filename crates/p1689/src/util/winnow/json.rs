@@ -1,4 +1,5 @@
-use indexmap::IndexSet;
+use alloc::vec::Vec;
+
 use winnow::{
     ascii::multispace0,
     combinator::{delimited, dispatch, empty, fail, peek, trace},
@@ -63,7 +64,7 @@ where
     })
 }
 
-pub fn set<'i, E, V, P>(mut val: P) -> impl Parser<StateStream<'i>, IndexSet<V>, E>
+pub fn set<'i, E, V, P>(mut val: P) -> impl Parser<StateStream<'i>, Vec<V>, E>
 where
     E: ParserError<StateStream<'i>>,
     P: Parser<StateStream<'i>, V, E>,
@@ -71,11 +72,11 @@ where
 {
     trace("set", move |input: &mut StateStream<'i>| {
         b'['.parse_next(input)?;
-        let mut set = IndexSet::default();
+        let mut vec = Vec::default();
         multispace0.parse_next(input)?;
         if b']' != peek(any).parse_next(input)? {
             loop {
-                set.insert(val.parse_next(input)?);
+                vec.push(val.parse_next(input)?);
                 multispace0.parse_next(input)?;
                 match any.parse_next(input)? {
                     b',' => multispace0.void().parse_next(input)?,
@@ -86,6 +87,6 @@ where
         } else {
             b']'.parse_next(input)?;
         }
-        Ok(set)
+        Ok(vec)
     })
 }

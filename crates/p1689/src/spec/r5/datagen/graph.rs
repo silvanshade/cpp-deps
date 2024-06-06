@@ -20,7 +20,6 @@ use alloc::{
 
 use camino::Utf8PathBuf;
 use fake::{faker::name::raw::*, locales::*, Dummy};
-use indexmap::IndexSet;
 use petgraph::graphmap::GraphMap;
 use rand::prelude::*;
 
@@ -123,9 +122,9 @@ impl<'r, R> GraphGenerator<'r, R> {
             let info = r5::DepInfo {
                 work_directory: Option::default(),
                 primary_output,
-                outputs: IndexSet::default(),
-                provides: IndexSet::default(),
-                requires: IndexSet::default(),
+                outputs: Vec::default(),
+                provides: Vec::default(),
+                requires: Vec::default(),
             };
             info_mem.insert(id, info);
         }
@@ -228,8 +227,7 @@ impl<'r, R> GraphGenerator<'r, R> {
             if !desc.provides.is_empty() && u.ratio(3u8, 4u8)? {
                 let provided = desc
                     .provides
-                    .iter()
-                    .nth(u.int_in_range(0 ..= desc.provides.len() - 1)?)
+                    .get(u.int_in_range(0 ..= desc.provides.len() - 1)?)
                     .ok_or("indexing failed2")?
                     .clone();
                 return Ok(provided);
@@ -253,7 +251,7 @@ impl<'r, R> GraphGenerator<'r, R> {
             .get_mut(&dst)
             .ok_or("lookup failed")?
             .requires
-            .insert(r5::RequiredModuleDesc {
+            .push(r5::RequiredModuleDesc {
                 desc: provided_desc.desc.clone(),
                 lookup_method: u.arbitrary()?,
             });
@@ -261,7 +259,7 @@ impl<'r, R> GraphGenerator<'r, R> {
             .get_mut(&src)
             .ok_or("lookup failed")?
             .provides
-            .insert(provided_desc);
+            .push(provided_desc);
         Ok(())
     }
 

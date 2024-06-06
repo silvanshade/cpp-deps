@@ -9,11 +9,10 @@ pub mod serde;
 #[cfg(feature = "winnow")]
 pub mod winnow;
 
-use alloc::borrow::Cow;
+use alloc::{borrow::Cow, vec::Vec};
 use core::borrow::Borrow;
 
 use camino::Utf8Path;
-use indexmap::IndexSet;
 #[cfg(all(feature = "serde", any(feature = "deserialize", feature = "serialize")))]
 use serde_with::serde_as;
 #[cfg(all(feature = "serde", feature = "serialize"))]
@@ -50,19 +49,26 @@ pub struct DepFile<'a> {
     pub revision: Option<u32>,
     #[cfg_attr(
         all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
-        serde(borrow),
-        serde_as(as = "IndexSet<self::serde::DepInfoUniqueOutputs>")
+        serde(borrow)
     )]
-    pub rules: IndexSet<DepInfo<'a>>,
+    pub rules: Vec<DepInfo<'a>>,
 }
 #[cfg(test)]
 impl DepFile<'_> {
     pub fn count_copies(&self) -> u64 {
-        self.rules.iter().map(|dep_info| dep_info.count_copies()).sum()
+        self.rules
+            .as_slice()
+            .iter()
+            .map(|dep_info| dep_info.count_copies())
+            .sum()
     }
 
     pub fn count_escapes_total(&self) -> u64 {
-        self.rules.iter().map(|dep_info| dep_info.count_escapes()).sum()
+        self.rules
+            .as_slice()
+            .iter()
+            .map(|dep_info| dep_info.count_escapes())
+            .sum()
     }
 }
 
@@ -128,22 +134,22 @@ pub struct DepInfo<'a> {
     #[cfg_attr(
         all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
         serde(default, borrow),
-        serde(skip_serializing_if = "IndexSet::is_empty"),
-        serde_as(as = "IndexSet<self::serde::CowUtf8Path>")
+        serde(skip_serializing_if = "Vec::is_empty"),
+        serde_as(as = "Vec<self::serde::CowUtf8Path>")
     )]
-    pub outputs: IndexSet<Cow<'a, Utf8Path>>,
+    pub outputs: Vec<Cow<'a, Utf8Path>>,
     #[cfg_attr(
         all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
         serde(default, borrow),
-        serde(skip_serializing_if = "IndexSet::is_empty")
+        serde(skip_serializing_if = "Vec::is_empty")
     )]
-    pub provides: IndexSet<ProvidedModuleDesc<'a>>,
+    pub provides: Vec<ProvidedModuleDesc<'a>>,
     #[cfg_attr(
         all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
         serde(default, borrow),
-        serde(skip_serializing_if = "IndexSet::is_empty")
+        serde(skip_serializing_if = "Vec::is_empty")
     )]
-    pub requires: IndexSet<RequiredModuleDesc<'a>>,
+    pub requires: Vec<RequiredModuleDesc<'a>>,
 }
 #[cfg(test)]
 impl DepInfo<'_> {

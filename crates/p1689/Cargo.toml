@@ -19,7 +19,7 @@ required-features = ["benchmark"]
 default = ["alloc", "std"]
 full = ["default", "arbitrary", "builders", "deserialize", "extra_traits", "memchr", "monostate", "serde", "serialize", "winnow"]
 alloc = []
-arbitrary = ["dep:arbitrary", "arbitrary/derive", "indexmap/arbitrary"]
+arbitrary = ["dep:arbitrary", "arbitrary/derive"]
 benchmark = ["alloc", "datagen", "deserialize", "std", "winnow"]
 builders = []
 datagen = ["dep:fake", "dep:petgraph", "dep:rand", "dep:serde_json", "arbitrary", "serde", "serialize"]
@@ -28,7 +28,7 @@ deserialize = ["serde?/derive"]
 extra_traits = []
 memchr = ["dep:memchr"]
 monostate = ["dep:monostate"]
-serde = ["dep:cfg_eval", "dep:serde", "dep:serde_with", "camino/serde1", "extra_traits", "indexmap/serde", "monostate", "serde_with/indexmap_2"]
+serde = ["dep:cfg_eval", "dep:serde", "dep:serde_with", "camino/serde1", "extra_traits", "monostate"]
 serialize = ["serde?/derive"]
 std = []
 winnow = ["dep:winnow", "memchr"]
@@ -42,7 +42,6 @@ arbitrary = { version = "1.3", optional = true, default-features = false }
 camino = { version = "1.1", default-features = false }
 cfg_eval = { version = "0.1", optional = true, default-features = false }
 fake = { version = "2.9", optional = true, default-features = false }
-indexmap = { version = "2.2", default-features = false, features = ["std"] }
 memchr = { version = "2.7", optional = true, default-features = false }
 monostate = { version = "0.1", optional = true, default-features = false }
 petgraph = { version = "0.6", optional = true, default-features = false, features = ["graphmap"] }
