@@ -506,7 +506,7 @@ mod test {
 
         #[test]
         fn static_dep_file() {
-            let input = r#"
+            let text = r#"
             {
                 "version": 1,
                 "revision": 0,
@@ -523,10 +523,39 @@ mod test {
                 ]
             }
             "#;
-            let input = BStr::new(&input);
+            let input = BStr::new(&text);
             let state = State::default();
             let mut stream = StateStream { input, state };
             r5::winnow::dep_file.parse_next(&mut stream).unwrap();
+        }
+
+        #[test]
+        fn check_has_escapes() {
+            let text = r#"
+            {
+                "version": 1,
+                "revision": 0,
+                "rules": [
+                    {
+                        "work-directory": "build",
+                        "primary-output": "fo\u{2764}o.\u{1f4af}o",
+                        "outputs": [
+                            "foo.d"
+                        ],
+                        "provides": [],
+                        "requires": []
+                    }
+                ]
+            }
+            "#;
+            let input = BStr::new(&text);
+            let state = State::default();
+            let mut stream = StateStream { input, state };
+            let dep_file = r5::winnow::dep_file.parse_next(&mut stream).unwrap();
+            assert_eq!(2, crate::util::count_escapes(text));
+            assert_eq!(1, crate::util::count_escaped_strings(text).1);
+            assert_eq!(0, dep_file.count_escapes_total());
+            assert_eq!(1, dep_file.count_copies());
         }
 
         proptest! {

@@ -56,6 +56,17 @@ pub struct DepFile<'a> {
     )]
     pub rules: IndexSet<DepInfo<'a>>,
 }
+#[cfg(test)]
+impl DepFile<'_> {
+    pub fn count_copies(&self) -> u64 {
+        self.rules.iter().map(|dep_info| dep_info.count_copies()).sum()
+    }
+
+    pub fn count_escapes_total(&self) -> u64 {
+        self.rules.iter().map(|dep_info| dep_info.count_escapes()).sum()
+    }
+}
+
 #[cfg(feature = "extra_traits")]
 impl core::hash::Hash for DepFile<'_> {
     fn hash<H>(&self, state: &mut H)
@@ -134,6 +145,63 @@ pub struct DepInfo<'a> {
         serde(skip_serializing_if = "IndexSet::is_empty")
     )]
     pub requires: IndexSet<RequiredModuleDesc<'a>>,
+}
+#[cfg(test)]
+impl DepInfo<'_> {
+    pub fn count_copies(&self) -> u64 {
+        u64::from(
+            self.work_directory
+                .as_ref()
+                .map(crate::util::cow_is_owned)
+                .unwrap_or_default(),
+        ) + u64::from(
+            self.primary_output
+                .as_ref()
+                .map(crate::util::cow_is_owned)
+                .unwrap_or_default(),
+        ) + self
+            .outputs
+            .iter()
+            .map(|output| u64::from(crate::util::cow_is_owned(output)))
+            .sum::<u64>()
+            + self
+                .provides
+                .iter()
+                .map(|unique| unique.desc.count_copies())
+                .sum::<u64>()
+            + self
+                .requires
+                .iter()
+                .map(|unique| unique.desc.count_copies())
+                .sum::<u64>()
+    }
+
+    pub fn count_escapes(&self) -> u64 {
+        self.work_directory
+            .as_deref()
+            .map(crate::util::count_escapes)
+            .unwrap_or_default()
+            + self
+                .primary_output
+                .as_deref()
+                .map(crate::util::count_escapes)
+                .unwrap_or_default()
+            + self
+                .outputs
+                .iter()
+                .map(|output| crate::util::count_escapes(output.as_str()))
+                .sum::<u64>()
+            + self
+                .provides
+                .iter()
+                .map(|unique| unique.desc.count_escapes())
+                .sum::<u64>()
+            + self
+                .requires
+                .iter()
+                .map(|unique| unique.desc.count_escapes())
+                .sum::<u64>()
+    }
 }
 impl core::hash::Hash for DepInfo<'_> {
     fn hash<H>(&self, state: &mut H)
@@ -236,6 +304,77 @@ pub enum ModuleDesc<'a> {
 }
 
 impl<'a> ModuleDesc<'a> {
+    #[cfg(test)]
+    pub fn count_copies(&self) -> u64 {
+        match *self {
+            Self::ByLogicalName {
+                ref logical_name,
+                ref source_path,
+                ref compiled_module_path,
+                ..
+            } => {
+                u64::from(crate::util::cow_is_owned(logical_name))
+                    + u64::from(source_path.as_ref().map(crate::util::cow_is_owned).unwrap_or_default())
+                    + u64::from(
+                        compiled_module_path
+                            .as_ref()
+                            .map(crate::util::cow_is_owned)
+                            .unwrap_or_default(),
+                    )
+            },
+            Self::BySourcePath {
+                ref logical_name,
+                ref source_path,
+                ref compiled_module_path,
+                ..
+            } => {
+                u64::from(crate::util::cow_is_owned(logical_name))
+                    + u64::from(crate::util::cow_is_owned(source_path))
+                    + u64::from(
+                        compiled_module_path
+                            .as_ref()
+                            .map(crate::util::cow_is_owned)
+                            .unwrap_or_default(),
+                    )
+            },
+        }
+    }
+
+    #[cfg(test)]
+    pub fn count_escapes(&self) -> u64 {
+        match *self {
+            Self::ByLogicalName {
+                ref logical_name,
+                ref source_path,
+                ref compiled_module_path,
+                ..
+            } => {
+                crate::util::count_escapes(logical_name)
+                    + source_path
+                        .as_deref()
+                        .map(crate::util::count_escapes)
+                        .unwrap_or_default()
+                    + compiled_module_path
+                        .as_deref()
+                        .map(crate::util::count_escapes)
+                        .unwrap_or_default()
+            },
+            Self::BySourcePath {
+                ref logical_name,
+                ref source_path,
+                ref compiled_module_path,
+                ..
+            } => {
+                crate::util::count_escapes(logical_name)
+                    + crate::util::count_escapes(source_path.as_str())
+                    + compiled_module_path
+                        .as_deref()
+                        .map(crate::util::count_escapes)
+                        .unwrap_or_default()
+            },
+        }
+    }
+
     #[must_use]
     pub fn view(&self) -> ModuleDescView {
         match *self {
