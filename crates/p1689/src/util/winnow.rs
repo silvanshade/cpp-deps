@@ -93,6 +93,11 @@ impl State {
                 break;
             }
         }
+        #[cfg(test)]
+        if input[index] != b'}' {
+            let message = "failed to locate UCS sequence closing delimiter";
+            return Err(winnow::error::ErrMode::assert(input, message));
+        };
         Ok((number, index))
     }
 }
