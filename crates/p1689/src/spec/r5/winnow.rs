@@ -43,7 +43,7 @@ pub fn dep_file<'i>(input: &mut StateStream<'i>) -> PResult<r5::DepFile<'i>> {
                                         return Err(winnow::error::ErrMode::assert(input0, message));
                                     }
                                     let key = b"les\"".as_slice();
-                                    let val = self::json::set(dep_info);
+                                    let val = self::json::vec(dep_info);
                                     let val = trace("\"rules\"", self::json::field(key, val)).parse_next(input0)?;
                                     rules = Some(val);
                                 },
@@ -134,7 +134,7 @@ pub fn dep_info<'i>(input: &mut StateStream<'i>) -> PResult<r5::DepInfo<'i>> {
                                 return Err(winnow::error::ErrMode::assert(input0, message));
                             }
                             let key = b"utputs\"".as_slice();
-                            let val = self::json::set(self::util::cow_utf8_path);
+                            let val = self::json::vec(self::util::cow_utf8_path);
                             let val = trace("\"outputs\"", self::json::field(key, val)).parse_next(input0)?;
                             outputs = Some(val);
                         },
@@ -161,7 +161,7 @@ pub fn dep_info<'i>(input: &mut StateStream<'i>) -> PResult<r5::DepInfo<'i>> {
                                                 return Err(winnow::error::ErrMode::assert(input0, message));
                                             }
                                             let key = b"vides\"".as_slice();
-                                            let val = self::json::set(provided_module_desc);
+                                            let val = self::json::vec(provided_module_desc);
                                             let val = trace("\"provides\"", self::json::field(key, val))
                                                 .parse_next(input0)?;
                                             provides = Some(val);
@@ -178,7 +178,7 @@ pub fn dep_info<'i>(input: &mut StateStream<'i>) -> PResult<r5::DepInfo<'i>> {
                                 return Err(winnow::error::ErrMode::assert(input0, message));
                             }
                             let key = b"equires\"".as_slice();
-                            let val = self::json::set(required_module_desc);
+                            let val = self::json::vec(required_module_desc);
                             let val = trace("\"requires\"", self::json::field(key, val)).parse_next(input0)?;
                             requires = Some(val);
                         },

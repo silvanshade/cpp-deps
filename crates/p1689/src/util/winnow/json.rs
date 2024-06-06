@@ -64,11 +64,10 @@ where
     })
 }
 
-pub fn set<'i, E, V, P>(mut val: P) -> impl Parser<StateStream<'i>, Vec<V>, E>
+pub fn vec<'i, E, V, P>(mut val: P) -> impl Parser<StateStream<'i>, Vec<V>, E>
 where
     E: ParserError<StateStream<'i>>,
     P: Parser<StateStream<'i>, V, E>,
-    V: Eq + core::hash::Hash,
 {
     trace("set", move |input: &mut StateStream<'i>| {
         b'['.parse_next(input)?;
