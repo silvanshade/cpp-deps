@@ -122,3 +122,86 @@ impl Default for State {
 }
 
 pub type StateStream<'i> = winnow::Stateful<&'i BStr, State>;
+
+#[cfg(test)]
+mod test {
+    use alloc::string::ToString;
+
+    use proptest::prelude::*;
+
+    #[test]
+    fn hex_to_u32_works_static() {
+        let char = '💯';
+        let text = char.escape_unicode().to_string();
+        let text = text.strip_prefix("\\u{").unwrap();
+        let input = winnow::BStr::new(text);
+        let state = crate::r5::parsers::State::default();
+        let stream = &mut winnow::Stateful { input, state };
+        let (number, index) = stream.state.hex_to_u32::<()>(stream).unwrap();
+        assert_eq!(number, u32::from(char));
+        assert_eq!(index, text.strip_suffix("}").unwrap().len());
+    }
+
+    #[test]
+    #[should_panic(expected = "failed to locate UCS sequence closing delimiter")]
+    fn hex_to_u32_fails_expectedly() {
+        let char = '💯';
+        let text = char.escape_unicode().to_string().replace("}", "#");
+        let text = text.strip_prefix("\\u{").unwrap();
+        let input = winnow::BStr::new(text);
+        let state = crate::r5::parsers::State::default();
+        let stream = &mut winnow::Stateful { input, state };
+        stream.state.hex_to_u32::<()>(stream).unwrap();
+    }
+
+    #[test]
+    fn hex_to_u32_sans_bmi2_works_static() {
+        let char = '💯';
+        let text = char.escape_unicode().to_string();
+        let text = text.strip_prefix("\\u{").unwrap();
+        let input = winnow::BStr::new(text);
+        let state = crate::r5::parsers::State::default();
+        let stream = &mut winnow::Stateful { input, state };
+        let (number, index) = stream.state.hex_to_u32_sans_bmi2::<()>(stream).unwrap();
+        assert_eq!(number, u32::from(char));
+        assert_eq!(index, text.strip_suffix("}").unwrap().len());
+    }
+
+    #[test]
+    #[should_panic(expected = "failed to locate UCS sequence closing delimiter")]
+    fn hex_to_u32_sans_bmi2_fails_expectedly() {
+        let char = '💯';
+        let input = char.escape_unicode().to_string().replace("}", "#");
+        let input = input.strip_prefix("\\u{").unwrap();
+        let input = winnow::BStr::new(input);
+        let state = crate::r5::parsers::State::default();
+        let stream = &mut winnow::Stateful { input, state };
+        stream.state.hex_to_u32_sans_bmi2::<()>(stream).unwrap();
+    }
+
+    proptest! {
+        #[test]
+        fn hex_to_u32_works(char in any::<char>()) {
+            let text = char.escape_unicode().to_string();
+            let text = text.strip_prefix("\\u{").unwrap();
+            let state = crate::r5::parsers::State::default();
+            let input = winnow::BStr::new(&text);
+            let stream = &mut winnow::Stateful { input, state };
+            let (number, index) = stream.state.hex_to_u32::<()>(stream).unwrap();
+            assert_eq!(number, u32::from(char));
+            assert_eq!(index, text.strip_suffix("}").unwrap().len());
+        }
+
+        #[test]
+        fn hex_to_u32_sans_bmi2_works(char in any::<char>()) {
+            let text = char.escape_unicode().to_string();
+            let text = text.strip_prefix("\\u{").unwrap();
+            let state = crate::r5::parsers::State::default();
+            let input = winnow::BStr::new(&text);
+            let stream = &mut winnow::Stateful { input, state };
+            let (number, index) = stream.state.hex_to_u32_sans_bmi2::<()>(stream).unwrap();
+            assert_eq!(number, u32::from(char));
+            assert_eq!(index, text.strip_suffix("}").unwrap().len());
+        }
+    }
+}
