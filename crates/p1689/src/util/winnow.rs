@@ -65,7 +65,7 @@ impl State {
         E: ParserError<StateStream<'i>>,
     {
         let needle = self.finders.curly_close.find(input).ok_or_else(|| {
-            let message = "failed to UCS sequence closing delimiter";
+            let message = "failed to locate UCS sequence closing delimiter";
             winnow::error::ErrMode::assert(input, message)
         })?;
         debug_assert!(needle < 8);
