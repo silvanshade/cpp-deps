@@ -51,7 +51,6 @@ pub struct DepFile<'a> {
     #[cfg_attr(
         all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
         serde(borrow),
-        serde(skip_serializing_if = "IndexSet::is_empty"),
         serde_as(as = "IndexSet<self::serde::DepInfoUniqueOutputs>")
     )]
     pub rules: IndexSet<DepInfo<'a>>,
