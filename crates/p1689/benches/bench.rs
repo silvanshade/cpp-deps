@@ -4,7 +4,40 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use p1689::r5;
 use rand::{RngCore, SeedableRng};
 
-fn criterion_benchmark(c: &mut Criterion) {
+fn atoi_parsing(c: &mut Criterion) {
+    let char = '💯';
+    let text = char.escape_unicode().to_string();
+    let text = text.strip_prefix("\\u{").unwrap();
+    let input = winnow::BStr::new(text);
+    c.bench_function("hex_to_u32", |b| {
+        b.iter_custom(|iters| {
+            let mut total_time = std::time::Duration::default();
+            for _ in 0 .. iters {
+                let state = crate::r5::parsers::State::default();
+                let stream = &mut winnow::Stateful { input, state };
+                let start = std::time::Instant::now();
+                stream.state.hex_to_u32::<()>(stream).unwrap();
+                total_time += start.elapsed();
+            }
+            total_time
+        })
+    });
+    c.bench_function("hex_to_u32_sans_bmi", |b| {
+        b.iter_custom(|iters| {
+            let mut total_time = std::time::Duration::default();
+            for _ in 0 .. iters {
+                let state = crate::r5::parsers::State::default();
+                let stream = &mut winnow::Stateful { input, state };
+                let start = std::time::Instant::now();
+                stream.state.hex_to_u32_sans_bmi2::<()>(stream).unwrap();
+                total_time += start.elapsed();
+            }
+            total_time
+        })
+    });
+}
+
+fn json_parsing(c: &mut Criterion) {
     let rng = &mut rand_chacha::ChaCha8Rng::seed_from_u64(2);
     let mut bytes = alloc::vec![0u8; 8192];
     rng.fill_bytes(&mut bytes);
@@ -15,7 +48,8 @@ fn criterion_benchmark(c: &mut Criterion) {
         .flat_map(|result| result.and_then(r5::datagen::json::pretty_print_unindented));
     let dep_file = dep_files.next().unwrap();
 
-    let mut group = c.benchmark_group("group");
+    let mut group = c.benchmark_group("parsing");
+
     group.throughput(criterion::Throughput::Bytes(dep_file.len() as u64));
 
     group.bench_function("winnow", |b| {
@@ -47,5 +81,5 @@ fn criterion_benchmark(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, criterion_benchmark);
+criterion_group!(benches, atoi_parsing, json_parsing);
 criterion_main!(benches);
