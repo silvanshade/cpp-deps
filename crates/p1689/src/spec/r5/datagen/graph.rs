@@ -18,13 +18,12 @@ use alloc::{
     vec::Vec,
 };
 
-use camino::Utf8PathBuf;
 use fake::{faker::name::raw::*, locales::*, Dummy};
 use petgraph::graphmap::GraphMap;
 use rand::prelude::*;
 
 use super::BoxResult;
-use crate::r5;
+use crate::{r5, vendor::camino::Utf8PathBuf};
 
 fn fake_name<R>(rng: &mut R) -> String
 where
@@ -197,7 +196,7 @@ where
                 .ok_or("lookup failed")?
                 .primary_output
                 .as_deref()
-                .and_then(|path| path.as_str().strip_suffix(".o"))
+                .and_then(|path| AsRef::<str>::as_ref(path).strip_suffix(".o"))
                 .unwrap_or("");
             let name = std::format!("{primary_output}.cpp");
             let path = Utf8PathBuf::from(name);

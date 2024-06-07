@@ -9,6 +9,7 @@ extern crate std;
 
 mod spec;
 mod util;
+mod vendor;
 
 pub mod r5 {
     #[cfg(feature = "builders")]

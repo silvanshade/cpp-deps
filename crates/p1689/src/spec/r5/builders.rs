@@ -2,9 +2,7 @@
 
 use alloc::{borrow::Cow, vec::Vec};
 
-use camino::Utf8Path;
-
-use crate::spec::r5;
+use crate::{spec::r5, vendor::camino::Utf8Path};
 
 pub struct DepFile<'a> {
     version: Option<u32>,

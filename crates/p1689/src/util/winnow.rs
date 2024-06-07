@@ -1,6 +1,5 @@
 use alloc::{borrow::Cow, vec::Vec};
 
-use camino::{Utf8Path, Utf8PathBuf};
 use winnow::{
     ascii::multispace0,
     combinator::{delimited, dispatch, empty, fail, peek, preceded, terminated, trace},
@@ -10,6 +9,8 @@ use winnow::{
     token::{any, literal},
     BStr,
 };
+
+use crate::vendor::camino::{Utf8Path, Utf8PathBuf};
 
 #[derive(Debug)]
 pub(crate) struct Finders {
@@ -329,7 +330,8 @@ pub mod string {
         trace("cow_utf8_path", |stream0: &mut StateStream<'i>| {
             let str = json_string.parse_next(stream0)?;
             let path = match str {
-                Cow::Borrowed(ptr) => Cow::Borrowed(Utf8Path::new(ptr)),
+                #[allow(clippy::useless_conversion)]
+                Cow::Borrowed(ptr) => Cow::Borrowed(ptr.into()),
                 Cow::Owned(val) => Cow::Owned(Utf8PathBuf::from(val)),
             };
             Ok(path)

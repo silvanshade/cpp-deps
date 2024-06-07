@@ -1,11 +1,15 @@
+#[cfg(any(feature = "deserialize", feature = "serialize"))]
+use alloc::borrow::Cow;
+
+#[cfg(feature = "deserialize")]
+use serde_with::BorrowCow;
 #[cfg(feature = "deserialize")]
 use serde_with::DeserializeAs;
 #[cfg(feature = "serialize")]
 use serde_with::SerializeAs;
+
 #[cfg(any(feature = "deserialize", feature = "serialize"))]
-use ::{alloc::borrow::Cow, camino::Utf8Path};
-#[cfg(feature = "deserialize")]
-use ::{camino::Utf8PathBuf, serde_with::BorrowCow};
+use crate::vendor::camino::{Utf8Path, Utf8PathBuf};
 
 // TODO: adjust skip serializations for default values (including bools, etc)
 
@@ -23,7 +27,8 @@ impl<'de> DeserializeAs<'de, Cow<'de, Utf8Path>> for CowUtf8Path {
     {
         let cow: Cow<str> = BorrowCow::deserialize_as(deserializer)?;
         let path = match cow {
-            Cow::Borrowed(str) => Cow::Borrowed(Utf8Path::new(str)),
+            #[allow(clippy::useless_conversion)]
+            Cow::Borrowed(str) => Cow::Borrowed(str.into()),
             Cow::Owned(string) => Cow::Owned(Utf8PathBuf::from(string)),
         };
         Ok(path)

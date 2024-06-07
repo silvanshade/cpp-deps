@@ -12,11 +12,12 @@ pub mod winnow;
 use alloc::{borrow::Cow, vec::Vec};
 use core::borrow::Borrow;
 
-use camino::Utf8Path;
 #[cfg(all(feature = "serde", any(feature = "deserialize", feature = "serialize")))]
 use serde_with::serde_as;
 #[cfg(all(feature = "serde", feature = "serialize"))]
 use serde_with::skip_serializing_none;
+
+use crate::vendor::camino::Utf8Path;
 
 #[cfg(all(feature = "serde", feature = "deserialize"))]
 mod defaults {
@@ -167,7 +168,7 @@ impl DepInfo<'_> {
             + self
                 .outputs
                 .iter()
-                .map(|output| crate::util::count_escapes(output.as_str()))
+                .map(|output| crate::util::count_escapes(output.as_ref()))
                 .sum::<u64>()
             + self
                 .provides
@@ -316,7 +317,7 @@ impl<'a> ModuleDesc<'a> {
                 ..
             } => {
                 crate::util::count_escapes(logical_name)
-                    + crate::util::count_escapes(source_path.as_str())
+                    + crate::util::count_escapes(source_path.as_ref())
                     + compiled_module_path
                         .as_deref()
                         .map(crate::util::count_escapes)
@@ -338,7 +339,8 @@ impl<'a> ModuleDesc<'a> {
             },
             #[rustfmt::skip]
             ModuleDesc::BySourcePath { ref logical_name, ref source_path, ref compiled_module_path, .. } => ModuleDescView {
-                key: source_path.as_str(),
+                #[allow(clippy::useless_asref)]
+                key: source_path.as_ref().as_ref(),
                 unique_by: UniqueBy::SourcePath,
                 source_path: Some(source_path.borrow()),
                 compiled_module_path: compiled_module_path.as_deref(),
@@ -489,9 +491,9 @@ mod test {
     use alloc::string::String;
 
     use ::proptest::prelude::*;
-    use camino::Utf8PathBuf;
 
     use super::*;
+    use crate::vendor::camino::Utf8PathBuf;
 
     proptest! {
         #[cfg_attr(miri, ignore)]
@@ -528,9 +530,10 @@ mod test {
                     assert!(matches!(view.unique_by, UniqueBy::LogicalName));
                     assert_eq!(view.key, logical_name);
                 }
+                #[allow(clippy::useless_asref)]
                 ModuleDesc::BySourcePath { .. } => {
                     assert!(matches!(view.unique_by, UniqueBy::SourcePath));
-                    assert_eq!(Some(view.key), source_path.as_deref().map(|s| s.as_str()));
+                    assert_eq!(Some(view.key), source_path.as_deref().map(|s| s.as_ref()));
                 }
             }
         }
