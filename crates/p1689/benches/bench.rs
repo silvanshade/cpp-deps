@@ -25,13 +25,13 @@ fn atoi_parsing(c: &mut Criterion) {
 }
 
 fn json_parsing(c: &mut Criterion) {
-    let rng = &mut rand_chacha::ChaCha8Rng::seed_from_u64(2);
+    let rng = &mut rand_chacha::ChaCha8Rng::seed_from_u64(r5::datagen::CHACHA8RNG_SEED);
     let mut bytes = alloc::vec![0u8; 8192];
     rng.fill_bytes(&mut bytes);
     let mut u = arbitrary::Unstructured::new(&bytes);
-    let node_count = u.int_in_range(0u8 ..= 16u8).unwrap();
+    let config = r5::datagen::graph::GraphGeneratorConfig::default().node_count(u.int_in_range(0u8 ..= 16u8).unwrap());
 
-    let mut dep_files = r5::datagen::graph::GraphGenerator::gen_dep_files(rng, node_count)
+    let mut dep_files = r5::datagen::graph::GraphGenerator::gen_dep_files(rng, config)
         .flat_map(|result| result.and_then(r5::datagen::json::pretty_print_unindented));
     let dep_file = dep_files.next().unwrap();
 
