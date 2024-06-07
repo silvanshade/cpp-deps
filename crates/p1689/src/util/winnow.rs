@@ -428,7 +428,7 @@ mod test {
     use crate::r5::parsers::State;
 
     #[test]
-    fn json_string_correctly_unescapes_while_parsing() {
+    fn string_json_string_correctly_unescapes_while_parsing() {
         for (esc, raw) in [
             ('"', b'"'),
             ('\\', b'\\'),
@@ -451,8 +451,18 @@ mod test {
     }
 
     #[test]
+    #[should_panic(expected = "Failed to find end of string")]
+    fn string_json_string_expectedly_fails_invalid_utf8() {
+        let text = "\"foo";
+        let input = BStr::new(text);
+        let state = State::default();
+        let mut stream = winnow::Stateful { input, state };
+        self::string::json_string::<()>.parse_next(&mut stream).unwrap();
+    }
+
+    #[test]
     #[should_panic(expected = "UTF-8 validation failed")]
-    fn cow_bstr_to_utf8_check_invalid_utf8_borrowed() {
+    fn string_bstr_to_utf8_expectedly_fails_invalid_utf8_borrowed() {
         let text = "";
         let input = BStr::new(text);
         let state = State::default();
@@ -465,7 +475,7 @@ mod test {
 
     #[test]
     #[should_panic(expected = "UTF-8 validation failed")]
-    fn cow_bstr_to_utf8_check_invalid_utf8_owned() {
+    fn string_bstr_to_utf8_expectedly_fails_invalid_utf8_owned() {
         let text = "";
         let input = BStr::new(text);
         let state = State::default();
@@ -477,18 +487,8 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "Failed to find end of string")]
-    fn json_string_invalid_utf8() {
-        let text = "\"foo";
-        let input = BStr::new(text);
-        let state = State::default();
-        let mut stream = winnow::Stateful { input, state };
-        self::string::json_string::<()>.parse_next(&mut stream).unwrap();
-    }
-
-    #[test]
     #[should_panic(expected = "Failed to convert unicode u32 to char")]
-    fn unescape_unicode_invalid_utf8() {
+    fn string_unescape_unicode_expectedly_fails_invalid_utf8() {
         let mut dst = Cow::Owned(vec![]);
         let src = &[];
         let text = "{D800}";
@@ -501,7 +501,7 @@ mod test {
     }
 
     #[test]
-    fn from_radix_16_works_static() {
+    fn number_from_radix_16_correct_static() {
         let char = '💯';
         let text = char.escape_unicode().to_string();
         let text = text.strip_prefix("\\u{").unwrap();
@@ -515,7 +515,7 @@ mod test {
 
     proptest! {
         #[test]
-        fn from_radix_16_works(char in proptest::prelude::any::<char>()) {
+        fn number_from_radix_16_correct(char in proptest::prelude::any::<char>()) {
             let text = char.escape_unicode().to_string();
             let text = text.strip_prefix("\\u{").unwrap();
             let state = crate::r5::parsers::State::default();
