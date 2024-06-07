@@ -43,6 +43,7 @@ impl<'a> SerializeAs<Cow<'a, Utf8Path>> for CowUtf8Path {
 #[cfg(feature = "deserialize")]
 mod test {
     use proptest::proptest;
+    #[cfg(feature = "datagen")]
     use rand::prelude::*;
 
     mod r5 {

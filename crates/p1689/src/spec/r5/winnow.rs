@@ -463,6 +463,7 @@ pub mod required_module_desc {
 #[cfg(test)]
 mod test {
     use proptest::proptest;
+    #[cfg(feature = "datagen")]
     use rand::prelude::*;
     use winnow::BStr;
 
@@ -470,10 +471,9 @@ mod test {
     use crate::util::winnow::State;
 
     mod r5 {
-        pub use crate::{
-            r5::parsers,
-            spec::r5::{proptest::strategy, *},
-        };
+        #[cfg(feature = "datagen")]
+        pub use crate::r5::parsers;
+        pub use crate::spec::r5::{proptest::strategy, *};
     }
 
     mod parse {
@@ -513,6 +513,7 @@ mod test {
             }
 
             #[cfg_attr(miri, ignore)] // NOTE: too expensive for `miri`
+            #[cfg(feature = "datagen")]
             #[test]
             fn only_escaped_strings_are_copied() {
                 let rng = &mut rand_chacha::ChaCha8Rng::seed_from_u64(crate::r5::datagen::CHACHA8RNG_SEED);

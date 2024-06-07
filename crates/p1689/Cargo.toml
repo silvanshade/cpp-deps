@@ -17,7 +17,7 @@ required-features = ["benchmark"]
 
 [features]
 default = ["alloc", "std"]
-full = ["datagen", "default", "arbitrary", "builders", "deserialize", "extra_traits", "memchr", "monostate", "serde", "serialize", "winnow"]
+full = ["default", "arbitrary", "builders", "deserialize", "extra_traits", "memchr", "monostate", "serde", "serialize", "winnow"]
 alloc = []
 arbitrary = ["dep:arbitrary", "arbitrary/derive"]
 benchmark = ["alloc", "datagen", "deserialize", "std", "winnow"]
