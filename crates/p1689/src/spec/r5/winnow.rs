@@ -10,192 +10,192 @@ use winnow::{
 
 use crate::{
     spec::r5,
-    util::winnow::{json, util, StateStream},
+    util::winnow::{json, number, spaces, string, StateStream},
 };
 
-pub fn dep_file<'i>(input: &mut StateStream<'i>) -> PResult<r5::DepFile<'i>> {
-    let fields = move |input0: &mut StateStream<'i>| {
+pub fn dep_file<'i>(stream: &mut StateStream<'i>) -> PResult<r5::DepFile<'i>> {
+    let fields = |stream0: &mut StateStream<'i>| {
         let mut rules = None;
         let mut revision = Option::default();
         let mut version = None;
-        while b'}' != peek(any).parse_next(input0)? {
-            let next0 = any.parse_next(input0)?;
+        while b'}' != peek(any).parse_next(stream0)? {
+            let next0 = any.parse_next(stream0)?;
             match next0 {
                 b'"' => {
-                    let next1 = any.parse_next(input0)?;
+                    let next1 = any.parse_next(stream0)?;
                     match next1 {
                         b'r' => {
-                            let next2 = any.parse_next(input0)?;
+                            let next2 = any.parse_next(stream0)?;
                             match next2 {
                                 b'e' => {
                                     if revision.is_some() {
                                         let message = r#"duplicate "revision" field"#;
-                                        return Err(winnow::error::ErrMode::assert(input0, message));
+                                        return Err(winnow::error::ErrMode::assert(stream0, message));
                                     }
                                     let key = b"vision\"".as_slice();
-                                    let val = self::util::dec_uint;
-                                    let val = trace("\"revision\"", self::json::field(key, val)).parse_next(input0)?;
+                                    let val = self::number::dec_uint;
+                                    let val = trace("\"revision\"", self::json::field(key, val)).parse_next(stream0)?;
                                     revision = Some(val);
                                 },
                                 b'u' => {
                                     if rules.is_some() {
                                         let message = r#"duplicate "rules" field"#;
-                                        return Err(winnow::error::ErrMode::assert(input0, message));
+                                        return Err(winnow::error::ErrMode::assert(stream0, message));
                                     }
                                     let key = b"les\"".as_slice();
                                     let val = self::json::vec(dep_info);
-                                    let val = trace("\"rules\"", self::json::field(key, val)).parse_next(input0)?;
+                                    let val = trace("\"rules\"", self::json::field(key, val)).parse_next(stream0)?;
                                     rules = Some(val);
                                 },
-                                _ => fail.parse_next(input0)?,
+                                _ => fail.parse_next(stream0)?,
                             }
                         },
                         b'v' => {
                             if version.is_some() {
                                 let message = r#"duplicate "version" field"#;
-                                return Err(winnow::error::ErrMode::assert(input0, message));
+                                return Err(winnow::error::ErrMode::assert(stream0, message));
                             }
                             let key = b"ersion\"".as_slice();
-                            let val = self::util::dec_uint;
-                            let val = trace("\"version\"", self::json::field(key, val)).parse_next(input0)?;
+                            let val = self::number::dec_uint;
+                            let val = trace("\"version\"", self::json::field(key, val)).parse_next(stream0)?;
                             version = Some(val);
                         },
-                        _ => fail.parse_next(input0)?,
+                        _ => fail.parse_next(stream0)?,
                     }
                 },
-                _ => fail.parse_next(input0)?,
+                _ => fail.parse_next(stream0)?,
             }
         }
         let dep_file = r5::DepFile {
             version: version.ok_or_else(|| {
                 let message = r#"missing "version" field"#;
-                winnow::error::ErrMode::assert(input0, message)
+                winnow::error::ErrMode::assert(stream0, message)
             })?,
             revision,
             rules: rules.ok_or_else(|| {
                 let message = r#"missing "rules" field"#;
-                winnow::error::ErrMode::assert(input0, message)
+                winnow::error::ErrMode::assert(stream0, message)
             })?,
         };
         Ok(dep_file)
     };
-    trace("r5::DepFile", self::util::ws_around(self::json::record(fields))).parse_next(input)
+    trace("r5::DepFile", self::spaces::around(self::json::record(fields))).parse_next(stream)
 }
 
 #[cfg(test)]
 pub(crate) mod dep_file {
     use alloc::vec::Vec;
 
-    use winnow::{ascii::multispace0, combinator::delimited, prelude::*};
+    use winnow::{ascii::multispace0, combinator::delimited};
 
-    use crate::{spec::r5, util::winnow::StateStream};
+    use super::*;
 
     #[cfg(test)]
-    pub fn version(input: &mut StateStream) -> PResult<u32> {
+    pub fn version(stream: &mut StateStream) -> PResult<u32> {
         let key = b"\"version\"".as_slice();
-        let val = super::util::dec_uint;
-        super::json::field(key, val).parse_next(input)
+        let val = self::number::dec_uint;
+        super::json::field(key, val).parse_next(stream)
     }
 
     #[cfg(test)]
-    pub fn revision(input: &mut StateStream) -> PResult<u32> {
+    pub fn revision(stream: &mut StateStream) -> PResult<u32> {
         let key = b"\"revision\"".as_slice();
-        let val = super::util::dec_uint;
-        super::json::field(key, val).parse_next(input)
+        let val = self::number::dec_uint;
+        super::json::field(key, val).parse_next(stream)
     }
 
     #[cfg(test)]
-    pub fn rules<'i>(input: &mut StateStream<'i>) -> PResult<Vec<r5::DepInfo<'i>>> {
+    pub fn rules<'i>(stream: &mut StateStream<'i>) -> PResult<Vec<r5::DepInfo<'i>>> {
         let key = b"\"rules\"".as_slice();
-        let val = move |input0: &mut StateStream<'i>| {
-            delimited(b'[', multispace0, b']').parse_next(input0)?;
+        let val = |stream0: &mut StateStream<'i>| {
+            delimited(b'[', multispace0, b']').parse_next(stream0)?;
             Ok(alloc::vec![])
         };
-        super::json::field(key, val).parse_next(input)
+        super::json::field(key, val).parse_next(stream)
     }
 }
 
-pub fn dep_info<'i>(input: &mut StateStream<'i>) -> PResult<r5::DepInfo<'i>> {
-    let fields = move |input0: &mut StateStream<'i>| {
+pub fn dep_info<'i>(stream: &mut StateStream<'i>) -> PResult<r5::DepInfo<'i>> {
+    let fields = |stream0: &mut StateStream<'i>| {
         let mut work_directory = Option::default();
         let mut primary_output = Option::default();
         let mut outputs = Option::default();
         let mut provides = Option::default();
         let mut requires = Option::default();
-        while b'}' != peek(any).parse_next(input0)? {
-            let next0 = any.parse_next(input0)?;
+        while b'}' != peek(any).parse_next(stream0)? {
+            let next0 = any.parse_next(stream0)?;
             match next0 {
                 b'"' => {
-                    let next1 = any.parse_next(input0)?;
+                    let next1 = any.parse_next(stream0)?;
                     match next1 {
                         b'o' => {
                             if outputs.is_some() {
                                 let message = r#"duplicate "outputs" field"#;
-                                return Err(winnow::error::ErrMode::assert(input0, message));
+                                return Err(winnow::error::ErrMode::assert(stream0, message));
                             }
                             let key = b"utputs\"".as_slice();
-                            let val = self::json::vec(self::util::cow_utf8_path);
-                            let val = trace("\"outputs\"", self::json::field(key, val)).parse_next(input0)?;
+                            let val = self::json::vec(self::string::utf8_path);
+                            let val = trace("\"outputs\"", self::json::field(key, val)).parse_next(stream0)?;
                             outputs = Some(val);
                         },
                         b'p' => {
-                            let next2 = any.parse_next(input0)?;
+                            let next2 = any.parse_next(stream0)?;
                             match next2 {
                                 b'r' => {
-                                    let next3 = any.parse_next(input0)?;
+                                    let next3 = any.parse_next(stream0)?;
                                     match next3 {
                                         b'i' => {
                                             if primary_output.is_some() {
                                                 let message = r#"duplicate "primary_output" field"#;
-                                                return Err(winnow::error::ErrMode::assert(input0, message));
+                                                return Err(winnow::error::ErrMode::assert(stream0, message));
                                             }
                                             let key = b"mary-output\"".as_slice();
-                                            let val = self::util::cow_utf8_path;
+                                            let val = self::string::utf8_path;
                                             let val = trace("\"primary-output\"", self::json::field(key, val))
-                                                .parse_next(input0)?;
+                                                .parse_next(stream0)?;
                                             primary_output = Some(val);
                                         },
                                         b'o' => {
                                             if provides.is_some() {
                                                 let message = r#"duplicate "provides" field"#;
-                                                return Err(winnow::error::ErrMode::assert(input0, message));
+                                                return Err(winnow::error::ErrMode::assert(stream0, message));
                                             }
                                             let key = b"vides\"".as_slice();
                                             let val = self::json::vec(provided_module_desc);
                                             let val = trace("\"provides\"", self::json::field(key, val))
-                                                .parse_next(input0)?;
+                                                .parse_next(stream0)?;
                                             provides = Some(val);
                                         },
-                                        _ => fail.parse_next(input0)?,
+                                        _ => fail.parse_next(stream0)?,
                                     }
                                 },
-                                _ => fail.parse_next(input0)?,
+                                _ => fail.parse_next(stream0)?,
                             }
                         },
                         b'r' => {
                             if requires.is_some() {
                                 let message = r#"duplicate "requires" field"#;
-                                return Err(winnow::error::ErrMode::assert(input0, message));
+                                return Err(winnow::error::ErrMode::assert(stream0, message));
                             }
                             let key = b"equires\"".as_slice();
                             let val = self::json::vec(required_module_desc);
-                            let val = trace("\"requires\"", self::json::field(key, val)).parse_next(input0)?;
+                            let val = trace("\"requires\"", self::json::field(key, val)).parse_next(stream0)?;
                             requires = Some(val);
                         },
                         b'w' => {
                             if work_directory.is_some() {
                                 let message = r#"duplicate "work_directory" field"#;
-                                return Err(winnow::error::ErrMode::assert(input0, message));
+                                return Err(winnow::error::ErrMode::assert(stream0, message));
                             }
                             let key = b"ork-directory\"".as_slice();
-                            let val = self::util::cow_utf8_path;
-                            let val = trace("\"work-directory\"", self::json::field(key, val)).parse_next(input0)?;
+                            let val = self::string::utf8_path;
+                            let val = trace("\"work-directory\"", self::json::field(key, val)).parse_next(stream0)?;
                             work_directory = Some(val);
                         },
-                        _ => fail.parse_next(input0)?,
+                        _ => fail.parse_next(stream0)?,
                     }
                 },
-                _ => fail.parse_next(input0)?,
+                _ => fail.parse_next(stream0)?,
             }
         }
         let dep_info = r5::DepInfo {
@@ -207,78 +207,78 @@ pub fn dep_info<'i>(input: &mut StateStream<'i>) -> PResult<r5::DepInfo<'i>> {
         };
         Ok(dep_info)
     };
-    trace("r5::DepInfo", self::util::ws_around(self::json::record(fields))).parse_next(input)
+    trace("r5::DepInfo", self::spaces::around(self::json::record(fields))).parse_next(stream)
 }
 pub mod dep_info {}
 
 #[allow(clippy::too_many_lines)]
-pub fn provided_module_desc<'i>(input: &mut StateStream<'i>) -> PResult<r5::ProvidedModuleDesc<'i>> {
-    let fields = |input0: &mut StateStream<'i>| {
+pub fn provided_module_desc<'i>(stream: &mut StateStream<'i>) -> PResult<r5::ProvidedModuleDesc<'i>> {
+    let fields = |stream0: &mut StateStream<'i>| {
         let mut source_path = None;
         let mut compiled_module_path = None;
         let mut logical_name = None;
         let mut unique_on_source_path = None;
         let mut is_interface = None;
-        while b'}' != peek(any).parse_next(input0)? {
-            let next0 = any.parse_next(input0)?;
+        while b'}' != peek(any).parse_next(stream0)? {
+            let next0 = any.parse_next(stream0)?;
             match next0 {
                 b'"' => {
-                    let next1 = any.parse_next(input0)?;
+                    let next1 = any.parse_next(stream0)?;
                     match next1 {
                         b's' => {
                             if source_path.is_some() {
                                 let message = r#"duplicate "source-path" field"#;
-                                return Err(winnow::error::ErrMode::assert(input0, message));
+                                return Err(winnow::error::ErrMode::assert(stream0, message));
                             }
                             let key = b"ource-path\"".as_slice();
-                            let val = self::util::cow_utf8_path;
-                            let val = self::json::field(key, val).parse_next(input0)?;
+                            let val = self::string::utf8_path;
+                            let val = self::json::field(key, val).parse_next(stream0)?;
                             source_path = Some(val);
                         },
                         b'c' => {
                             if compiled_module_path.is_some() {
                                 let message = r#"duplicate "compiled-module-path" field"#;
-                                return Err(winnow::error::ErrMode::assert(input0, message));
+                                return Err(winnow::error::ErrMode::assert(stream0, message));
                             }
                             let key = b"ompiled-module-path\"".as_slice();
-                            let val = self::util::cow_utf8_path;
-                            let val = self::json::field(key, val).parse_next(input0)?;
+                            let val = self::string::utf8_path;
+                            let val = self::json::field(key, val).parse_next(stream0)?;
                             compiled_module_path = Some(val);
                         },
                         b'l' => {
                             if logical_name.is_some() {
                                 let message = r#"duplicate "logical-name" field"#;
-                                return Err(winnow::error::ErrMode::assert(input0, message));
+                                return Err(winnow::error::ErrMode::assert(stream0, message));
                             }
                             let key = b"ogical-name\"".as_slice();
-                            let val = self::util::cow_module_str;
-                            let val = self::json::field(key, val).parse_next(input0)?;
+                            let val = self::string::module;
+                            let val = self::json::field(key, val).parse_next(stream0)?;
                             logical_name = Some(val);
                         },
                         b'u' => {
                             if unique_on_source_path.is_some() {
                                 let message = r#"duplicate "unique-on-source-path" field"#;
-                                return Err(winnow::error::ErrMode::assert(input0, message));
+                                return Err(winnow::error::ErrMode::assert(stream0, message));
                             }
                             let key = b"nique-on-source-path\"".as_slice();
                             let val = self::json::bool;
-                            let val = self::json::field(key, val).parse_next(input0)?;
+                            let val = self::json::field(key, val).parse_next(stream0)?;
                             unique_on_source_path = Some(val);
                         },
                         b'i' => {
                             if is_interface.is_some() {
                                 let message = r#"duplicate "is-interface" field"#;
-                                return Err(winnow::error::ErrMode::assert(input0, message));
+                                return Err(winnow::error::ErrMode::assert(stream0, message));
                             }
                             let key = b"s-interface\"".as_slice();
                             let val = self::json::bool;
-                            let val = self::json::field(key, val).parse_next(input0)?;
+                            let val = self::json::field(key, val).parse_next(stream0)?;
                             is_interface = Some(val);
                         },
-                        _ => fail.parse_next(input0)?,
+                        _ => fail.parse_next(stream0)?,
                     }
                 },
-                _ => fail.parse_next(input0)?,
+                _ => fail.parse_next(stream0)?,
             }
         }
         let desc = r5::ProvidedModuleDesc {
@@ -286,12 +286,12 @@ pub fn provided_module_desc<'i>(input: &mut StateStream<'i>) -> PResult<r5::Prov
                 r5::ModuleDesc::BySourcePath {
                     source_path: source_path.ok_or_else(|| {
                         let message = r#"missing "source-path" field (which should exist since "unique-on-source-path" is `true`)"#;
-                        winnow::error::ErrMode::assert(input0, message)
+                        winnow::error::ErrMode::assert(stream0, message)
                     })?,
                     compiled_module_path,
                     logical_name: logical_name.ok_or_else(|| {
                         let message = r#"missing "logical-name" field"#;
-                        winnow::error::ErrMode::assert(input0, message)
+                        winnow::error::ErrMode::assert(stream0, message)
                     })?,
                     #[cfg(feature = "monostate")]
                     unique_on_source_path: monostate::MustBe!(true),
@@ -302,7 +302,7 @@ pub fn provided_module_desc<'i>(input: &mut StateStream<'i>) -> PResult<r5::Prov
                     compiled_module_path,
                     logical_name: logical_name.ok_or_else(|| {
                         let message = r#"missing "logical-name" field"#;
-                        winnow::error::ErrMode::assert(input0, message)
+                        winnow::error::ErrMode::assert(stream0, message)
                     })?,
                     #[cfg(feature = "monostate")]
                     unique_on_source_path: unique_on_source_path.and(Some(monostate::MustBe!(false))),
@@ -310,92 +310,92 @@ pub fn provided_module_desc<'i>(input: &mut StateStream<'i>) -> PResult<r5::Prov
             },
             is_interface: is_interface.ok_or_else(|| {
                 let message = r#"missing "lookup-method" field"#;
-                winnow::error::ErrMode::assert(input0, message)
+                winnow::error::ErrMode::assert(stream0, message)
             })?,
         };
         Ok(desc)
     };
     trace(
         "r5::ProvidedModuleDesc",
-        self::util::ws_around(self::json::record(fields)),
+        self::spaces::around(self::json::record(fields)),
     )
-    .parse_next(input)
+    .parse_next(stream)
 }
 
 #[allow(clippy::too_many_lines)]
-pub fn required_module_desc<'i>(input: &mut StateStream<'i>) -> PResult<r5::RequiredModuleDesc<'i>> {
-    let fields = |input0: &mut StateStream<'i>| {
+pub fn required_module_desc<'i>(stream: &mut StateStream<'i>) -> PResult<r5::RequiredModuleDesc<'i>> {
+    let fields = |stream0: &mut StateStream<'i>| {
         let mut source_path = None;
         let mut compiled_module_path = None;
         let mut lookup_method = None;
         let mut unique_on_source_path = None;
         let mut logical_name = None;
-        while b'}' != peek(any).parse_next(input0)? {
-            let next0 = any.parse_next(input0)?;
+        while b'}' != peek(any).parse_next(stream0)? {
+            let next0 = any.parse_next(stream0)?;
             match next0 {
                 b'"' => {
-                    let next1 = any.parse_next(input0)?;
+                    let next1 = any.parse_next(stream0)?;
                     match next1 {
                         b's' => {
                             if source_path.is_some() {
                                 let message = r#"duplicate "source-path" field"#;
-                                return Err(winnow::error::ErrMode::assert(input0, message));
+                                return Err(winnow::error::ErrMode::assert(stream0, message));
                             }
                             let key = b"ource-path\"".as_slice();
-                            let val = self::util::cow_utf8_path;
-                            let val = self::json::field(key, val).parse_next(input0)?;
+                            let val = self::string::utf8_path;
+                            let val = self::json::field(key, val).parse_next(stream0)?;
                             source_path = Some(val);
                         },
                         b'c' => {
                             if compiled_module_path.is_some() {
                                 let message = r#"duplicate "compiled-module-path" field"#;
-                                return Err(winnow::error::ErrMode::assert(input0, message));
+                                return Err(winnow::error::ErrMode::assert(stream0, message));
                             }
                             let key = b"ompiled-module-path\"".as_slice();
-                            let val = self::util::cow_utf8_path;
-                            let val = self::json::field(key, val).parse_next(input0)?;
+                            let val = self::string::utf8_path;
+                            let val = self::json::field(key, val).parse_next(stream0)?;
                             compiled_module_path = Some(val);
                         },
                         b'l' => {
-                            let next2 = take(2usize).parse_next(input0)?;
+                            let next2 = take(2usize).parse_next(stream0)?;
                             match next2 {
                                 b"og" => {
                                     if logical_name.is_some() {
                                         let message = r#"duplicate "logical-name" field"#;
-                                        return Err(winnow::error::ErrMode::assert(input0, message));
+                                        return Err(winnow::error::ErrMode::assert(stream0, message));
                                     }
                                     let key = b"ical-name\"".as_slice();
-                                    let val = self::util::cow_module_str;
-                                    let val = self::json::field(key, val).parse_next(input0)?;
+                                    let val = self::string::module;
+                                    let val = self::json::field(key, val).parse_next(stream0)?;
                                     logical_name = Some(val);
                                 },
                                 b"oo" => {
                                     if lookup_method.is_some() {
                                         let message = r#"duplicate "lookup-method" field"#;
-                                        return Err(winnow::error::ErrMode::assert(input0, message));
+                                        return Err(winnow::error::ErrMode::assert(stream0, message));
                                     }
                                     let key = b"kup-method\"".as_slice();
                                     let val = self::required_module_desc::lookup_method;
-                                    let val = self::json::field(key, val).parse_next(input0)?;
+                                    let val = self::json::field(key, val).parse_next(stream0)?;
                                     lookup_method = Some(val);
                                 },
-                                _ => fail.parse_next(input0)?,
+                                _ => fail.parse_next(stream0)?,
                             }
                         },
                         b'u' => {
                             if unique_on_source_path.is_some() {
                                 let message = r#"duplicate "unique-on-source-path" field"#;
-                                return Err(winnow::error::ErrMode::assert(input0, message));
+                                return Err(winnow::error::ErrMode::assert(stream0, message));
                             }
                             let key = b"nique-on-source-path\"".as_slice();
                             let val = self::json::bool;
-                            let val = self::json::field(key, val).parse_next(input0)?;
+                            let val = self::json::field(key, val).parse_next(stream0)?;
                             unique_on_source_path = Some(val);
                         },
-                        _ => fail.parse_next(input0)?,
+                        _ => fail.parse_next(stream0)?,
                     }
                 },
-                _ => fail.parse_next(input0)?,
+                _ => fail.parse_next(stream0)?,
             }
         }
         let desc = r5::RequiredModuleDesc {
@@ -403,12 +403,12 @@ pub fn required_module_desc<'i>(input: &mut StateStream<'i>) -> PResult<r5::Requ
                 r5::ModuleDesc::BySourcePath {
                     source_path: source_path.ok_or_else(|| {
                         let message = r#"missing "source-path" field (which should exist since "unique-on-source-path" is `true`)"#;
-                        winnow::error::ErrMode::assert(input0, message)
+                        winnow::error::ErrMode::assert(stream0, message)
                     })?,
                     compiled_module_path,
                     logical_name: logical_name.ok_or_else(|| {
                         let message = r#"missing "logical-name" field"#;
-                        winnow::error::ErrMode::assert(input0, message)
+                        winnow::error::ErrMode::assert(stream0, message)
                     })?,
                     #[cfg(feature = "monostate")]
                     unique_on_source_path: monostate::MustBe!(true),
@@ -419,7 +419,7 @@ pub fn required_module_desc<'i>(input: &mut StateStream<'i>) -> PResult<r5::Requ
                     compiled_module_path,
                     logical_name: logical_name.ok_or_else(|| {
                         let message = r#"missing "logical-name" field"#;
-                        winnow::error::ErrMode::assert(input0, message)
+                        winnow::error::ErrMode::assert(stream0, message)
                     })?,
                     #[cfg(feature = "monostate")]
                     unique_on_source_path: unique_on_source_path.and(Some(monostate::MustBe!(false))),
@@ -431,16 +431,16 @@ pub fn required_module_desc<'i>(input: &mut StateStream<'i>) -> PResult<r5::Requ
     };
     trace(
         "r5::RequiredModuleDesc",
-        self::util::ws_around(self::json::record(fields)),
+        self::spaces::around(self::json::record(fields)),
     )
-    .parse_next(input)
+    .parse_next(stream)
 }
 
 pub mod required_module_desc {
     #[allow(clippy::wildcard_imports)]
     use super::*;
 
-    pub fn lookup_method(input: &mut StateStream) -> PResult<r5::RequiredModuleDescLookupMethod> {
+    pub fn lookup_method(stream: &mut StateStream) -> PResult<r5::RequiredModuleDescLookupMethod> {
         trace("r5::RequiredModuleDescLookupMethod",
             dispatch! { any;
                 b'"' => dispatch! { any;
@@ -454,7 +454,7 @@ pub mod required_module_desc {
                 },
                 _ => fail,
             }
-        ).parse_next(input)
+        ).parse_next(stream)
     }
 }
 
@@ -483,24 +483,24 @@ mod test {
 
             proptest! {
                 #[test]
-                fn revision(input in r5::strategy::dep_file::revision("[ \t\n\r]*[,}}]", false)) {
-                    let input = BStr::new(&input);
+                fn revision(text in r5::strategy::dep_file::revision("[ \t\n\r]*[,}}]", false)) {
+                    let input = BStr::new(&text);
                     let state = State::default();
                     let mut stream = StateStream { input, state };
                     r5::winnow::dep_file::revision.parse_next(&mut stream).unwrap();
                 }
 
                 #[test]
-                fn rules(input in r5::strategy::dep_file::rules("[ \t\n\r]*[,}}]")) {
-                    let input = BStr::new(&input);
+                fn rules(text in r5::strategy::dep_file::rules("[ \t\n\r]*[,}}]")) {
+                    let input = BStr::new(&text);
                     let state = State::default();
                     let mut stream = StateStream { input, state };
                     r5::winnow::dep_file::rules.parse_next(&mut stream).unwrap();
                 }
 
                 #[test]
-                fn version(input in r5::strategy::dep_file::version("[ \t\n\r]*[,}}]")) {
-                    let input = BStr::new(&input);
+                fn version(text in r5::strategy::dep_file::version("[ \t\n\r]*[,}}]")) {
+                    let input = BStr::new(&text);
                     let state = State::default();
                     let mut stream = StateStream { input, state };
                     r5::winnow::dep_file::version.parse_next(&mut stream).unwrap();
@@ -586,8 +586,8 @@ mod test {
 
         proptest! {
             #[test]
-            fn dep_file(input in r5::strategy::dep_file()) {
-                let input = BStr::new(&input);
+            fn dep_file(text in r5::strategy::dep_file()) {
+                let input = BStr::new(&text);
                 let state = State::default();
                 let mut stream = StateStream { input, state };
                 r5::winnow::dep_file.parse_next(&mut stream).unwrap();
@@ -599,8 +599,8 @@ mod test {
 
             proptest! {
                 #[test]
-                fn lookup_method(input in r5::strategy::required_module_desc::lookup_method()) {
-                    let input = BStr::new(&input);
+                fn lookup_method(text in r5::strategy::required_module_desc::lookup_method()) {
+                    let input = BStr::new(&text);
                     let state = State::default();
                     let mut stream = StateStream { input, state };
                     r5::winnow::required_module_desc::lookup_method(&mut stream).unwrap();

@@ -11,7 +11,7 @@ pub fn ws() -> impl Strategy<Value = String> {
 
 pub fn ws_around(strat: impl Strategy<Value = impl core::fmt::Display>) -> impl Strategy<Value = String> {
     let strat = (ws(), strat, ws());
-    Strategy::prop_map(strat, move |(ws0, s, ws1)| {
+    Strategy::prop_map(strat, |(ws0, s, ws1)| {
         let sd = s.to_string();
         // NOTE: If `strat` produces an empty string, don't add any padding.
         if sd.is_empty() {
@@ -33,8 +33,8 @@ mod test {
 
     proptest! {
         #[test]
-        fn ws_around_works(input in ws_around(Just("val"))) {
-            let res = input.split_whitespace().collect::<Vec<&str>>();
+        fn ws_around_works(text in ws_around(Just("val"))) {
+            let res = text.split_whitespace().collect::<Vec<&str>>();
             assert_eq!(res, ["val"])
         }
     }

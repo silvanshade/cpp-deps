@@ -32,8 +32,8 @@ mod test {
 
     proptest! {
         #[test]
-        fn field_works(input in field("key", Just("val"), Just("term"))) {
-            let res = input.split_whitespace().collect::<Vec<&str>>();
+        fn field_works(text in field("key", Just("val"), Just("term"))) {
+            let res = text.split_whitespace().collect::<Vec<&str>>();
             assert_eq!(res, ["key", ":", "val", "term"])
         }
     }

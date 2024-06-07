@@ -58,8 +58,8 @@ mod test {
 
             proptest! {
                 #[test]
-                fn dep_file(input in r5::strategy::dep_file()) {
-                    serde_json::from_str::<r5::DepFile>(&input).unwrap();
+                fn dep_file(text in r5::strategy::dep_file()) {
+                    serde_json::from_str::<r5::DepFile>(&text).unwrap();
                 }
             }
 
@@ -74,9 +74,9 @@ mod test {
                 let mut num_files_with_escaped_strings = 0;
                 // NOTE: Keep iterating until at least 16 files with escapes have been checked
                 while num_files_with_escaped_strings < 16 {
-                    if let Some(dep_file_text) = dep_file_texts.next() {
-                        let num_escaped_strings_within_file = crate::util::count_escaped_strings(&dep_file_text).1;
-                        let dep_file = serde_json::from_str::<r5::DepFile>(&dep_file_text).unwrap();
+                    if let Some(text) = dep_file_texts.next() {
+                        let num_escaped_strings_within_file = crate::util::count_escaped_strings(&text).1;
+                        let dep_file = serde_json::from_str::<r5::DepFile>(&text).unwrap();
                         assert_eq!(num_escaped_strings_within_file, dep_file.count_copies());
                         num_files_with_escaped_strings += u64::from(0 < num_escaped_strings_within_file);
                     }

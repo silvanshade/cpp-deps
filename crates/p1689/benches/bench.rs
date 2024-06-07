@@ -4,26 +4,6 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use p1689::r5;
 use rand::{RngCore, SeedableRng};
 
-fn atoi_parsing(c: &mut Criterion) {
-    let char = '💯';
-    let text = char.escape_unicode().to_string();
-    let text = text.strip_prefix("\\u{").unwrap();
-    let input = winnow::BStr::new(text);
-    c.bench_function("hex_to_u32", |b| {
-        b.iter_custom(|iters| {
-            let mut total_time = std::time::Duration::default();
-            for _ in 0 .. iters {
-                let state = crate::r5::parsers::State::default();
-                let stream = &mut winnow::Stateful { input, state };
-                let start = std::time::Instant::now();
-                stream.state.hex_to_u32::<()>(stream).unwrap();
-                total_time += start.elapsed();
-            }
-            total_time
-        })
-    });
-}
-
 fn json_parsing(c: &mut Criterion) {
     let rng = &mut rand_chacha::ChaCha8Rng::seed_from_u64(r5::datagen::CHACHA8RNG_SEED);
     let mut bytes = alloc::vec![0u8; 8192];
@@ -45,9 +25,9 @@ fn json_parsing(c: &mut Criterion) {
             for _ in 0 .. iters {
                 let input = winnow::BStr::new(dep_file.as_bytes());
                 let state = r5::parsers::State::default();
-                let mut state_stream = winnow::Stateful { input, state };
+                let mut stream = winnow::Stateful { input, state };
                 let start = std::time::Instant::now();
-                r5::parsers::dep_file(&mut state_stream).unwrap();
+                r5::parsers::dep_file(&mut stream).unwrap();
                 total_time += start.elapsed();
             }
             total_time
@@ -74,5 +54,5 @@ fn json_parsing(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, atoi_parsing, json_parsing);
+criterion_group!(benches, json_parsing);
 criterion_main!(benches);

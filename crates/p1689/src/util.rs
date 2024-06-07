@@ -1,7 +1,7 @@
 #[cfg(test)]
-pub(crate) mod proptest;
+pub mod proptest;
 #[cfg(feature = "winnow")]
-pub(crate) mod winnow;
+pub mod winnow;
 
 #[cfg(test)]
 use alloc::borrow::{Cow, ToOwned};
