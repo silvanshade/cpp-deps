@@ -366,7 +366,7 @@ pub struct ModuleDescView<'a> {
 
 #[cfg_attr(feature = "extra_traits", derive(Clone, Copy, Eq, Hash, Ord, PartialEq, PartialOrd))]
 #[cfg_attr(
-    any(feature = "debug", feature = "arbitrary", feature = "extra_traits"),
+    any(test, feature = "debug", feature = "arbitrary", feature = "extra_traits"),
     derive(Debug)
 )]
 #[allow(clippy::exhaustive_enums)]
