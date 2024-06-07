@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["UniqueBy"],"struct":["DepFile","DepInfo","ProvidedModuleDesc","RequiredModuleDesc"]};
