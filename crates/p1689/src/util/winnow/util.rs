@@ -214,7 +214,7 @@ mod string {
             let (number, needle) = input.state.hex_to_u32(input)?;
             input.next_slice(needle + 1);
             let escaped = core::char::from_u32(number).ok_or_else(|| {
-                let message = "failed to convert unicode u32 to char";
+                let message = "Failed to convert unicode u32 to char";
                 winnow::error::ErrMode::assert(input, message)
             })?;
             input.state.encode_utf8(dst, src, escaped);
@@ -247,6 +247,8 @@ mod string {
 
 #[cfg(test)]
 mod test {
+    use alloc::vec;
+
     use super::*;
     use crate::r5::parsers::State;
 
@@ -271,5 +273,45 @@ mod test {
             let rhs = std::format!("\"foo{}bar\"", char::from(raw));
             assert_eq!(lhs, rhs);
         }
+    }
+
+    #[test]
+    #[should_panic(expected = "UTF-8 validation failed")]
+    fn cow_bstr_to_utf8_check_invalid_utf8_borrowed() {
+        let text = "";
+        let input = BStr::new(text);
+        let state = State::default();
+        let stream = winnow::Stateful { input, state };
+        // NOTE: Here we use \u{D800} (leading surrogate) which is invalid standalone
+        let bor = BStr::new(&[0xed, 0xa0, 0x80]);
+        let cow = Cow::Borrowed(bor);
+        cow_bstr_to_utf8::<()>(&stream, cow).unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "UTF-8 validation failed")]
+    fn cow_bstr_to_utf8_check_invalid_utf8_owned() {
+        let text = "";
+        let input = BStr::new(text);
+        let state = State::default();
+        let stream = winnow::Stateful { input, state };
+        // NOTE: Here we use \u{D800} (leading surrogate) which is invalid standalone
+        let own = vec![0xed, 0xa0, 0x80];
+        let cow = Cow::Owned(own);
+        cow_bstr_to_utf8::<()>(&stream, cow).unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "Failed to convert unicode u32 to char")]
+    fn unescape_unicode_invalid_utf8() {
+        let mut dst = Cow::Owned(vec![]);
+        let src = &[];
+        let text = "{D800}";
+        let input = BStr::new(text);
+        let state = State::default();
+        let mut stream = winnow::Stateful { input, state };
+        string::unescape_unicode::<()>(&mut dst, src)
+            .parse_next(&mut stream)
+            .unwrap();
     }
 }
