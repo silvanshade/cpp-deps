@@ -9,7 +9,9 @@ use serde_with::DeserializeAs;
 use serde_with::SerializeAs;
 
 #[cfg(any(feature = "deserialize", feature = "serialize"))]
-use crate::vendor::camino::{Utf8Path, Utf8PathBuf};
+use crate::vendor::camino::Utf8Path;
+#[cfg(feature = "deserialize")]
+use crate::vendor::camino::Utf8PathBuf;
 
 // TODO: adjust skip serializations for default values (including bools, etc)
 

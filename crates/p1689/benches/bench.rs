@@ -1,7 +1,7 @@
 extern crate alloc;
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use p1689::r5;
+use p1689::r5::{self, parsers::ParseStream};
 use rand::{RngCore, SeedableRng};
 
 fn json_parsing(c: &mut Criterion) {
@@ -19,13 +19,32 @@ fn json_parsing(c: &mut Criterion) {
 
     group.throughput(criterion::Throughput::Bytes(dep_file.len() as u64));
 
-    group.bench_function("winnow", |b| {
+    #[cfg(feature = "memchr")]
+    group.bench_function("winnow-with-memchr", |b| {
         b.iter_custom(|iters| {
             let mut total_time = std::time::Duration::default();
             for _ in 0 .. iters {
-                let input = winnow::BStr::new(dep_file.as_bytes());
+                let path = "test.ddi";
+                let input = dep_file.as_bytes();
                 let state = r5::parsers::State::default();
-                let mut stream = winnow::Stateful { input, state };
+                let mut stream = ParseStream::new(path, input, state);
+                let start = std::time::Instant::now();
+                r5::parsers::dep_file(&mut stream).unwrap();
+                total_time += start.elapsed();
+            }
+            total_time
+        })
+    });
+
+    #[cfg(not(feature = "memchr"))]
+    group.bench_function("winnow-sans-memchr", |b| {
+        b.iter_custom(|iters| {
+            let mut total_time = std::time::Duration::default();
+            for _ in 0 .. iters {
+                let path = "test.ddi";
+                let input = dep_file.as_bytes();
+                let state = r5::parsers::State::default();
+                let mut stream = ParseStream::new(path, input, state);
                 let start = std::time::Instant::now();
                 r5::parsers::dep_file(&mut stream).unwrap();
                 total_time += start.elapsed();

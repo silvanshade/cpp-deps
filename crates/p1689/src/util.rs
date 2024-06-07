@@ -1,7 +1,7 @@
+#[cfg(feature = "parsing")]
+pub mod parsers;
 #[cfg(test)]
 pub mod proptest;
-#[cfg(feature = "winnow")]
-pub mod winnow;
 
 #[cfg(test)]
 use alloc::borrow::{Cow, ToOwned};

@@ -1,7 +1,7 @@
 #![no_std]
 #![allow(unexpected_cfgs)]
+#![allow(clippy::result_unit_err)]
 
-#[cfg(feature = "alloc")]
 extern crate alloc;
 
 #[cfg(feature = "std")]
@@ -9,7 +9,7 @@ extern crate std;
 
 mod spec;
 mod util;
-mod vendor;
+pub mod vendor;
 
 pub mod r5 {
     #[cfg(feature = "builders")]
@@ -29,11 +29,11 @@ pub mod r5 {
         UniqueBy,
     };
 
-    #[cfg(feature = "winnow")]
+    #[cfg(feature = "parsing")]
     pub mod parsers {
         pub use crate::{
-            spec::r5::winnow::dep_file,
-            util::winnow::{State, StateStream},
+            spec::r5::parsers::dep_file,
+            util::parsers::{ParseStream, State},
         };
     }
 }

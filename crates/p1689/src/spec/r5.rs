@@ -2,12 +2,12 @@
 pub mod builders;
 #[cfg(feature = "datagen")]
 pub mod datagen;
+#[cfg(feature = "parsing")]
+pub mod parsers;
 #[cfg(test)]
 pub mod proptest;
 #[cfg(feature = "serde")]
 pub mod serde;
-#[cfg(feature = "winnow")]
-pub mod winnow;
 
 use alloc::{borrow::Cow, vec::Vec};
 use core::borrow::Borrow;
