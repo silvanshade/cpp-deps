@@ -13,6 +13,7 @@ use crate::{
     util::winnow::{json, number, spaces, string, StateStream},
 };
 
+#[rustfmt::skip]
 pub fn dep_file<'i>(stream: &mut StateStream<'i>) -> PResult<r5::DepFile<'i>> {
     let fields = |stream0: &mut StateStream<'i>| {
         let mut rules = None;
@@ -21,23 +22,23 @@ pub fn dep_file<'i>(stream: &mut StateStream<'i>) -> PResult<r5::DepFile<'i>> {
         while b'}' != peek(any).parse_next(stream0)? {
             let next0 = any.parse_next(stream0)?;
             match next0 {
-                b'"' => {
+                b'"' => { // tarpaulin::hint
                     let next1 = any.parse_next(stream0)?;
                     match next1 {
-                        b'r' => {
+                        b'r' => { // tarpaulin::hint
                             let next2 = any.parse_next(stream0)?;
                             match next2 {
-                                b'e' => {
+                                b'e' => { // tarpaulin::hint
                                     if revision.is_some() {
                                         let message = r#"duplicate "revision" field"#;
                                         return Err(winnow::error::ErrMode::assert(stream0, message));
                                     }
                                     let key = b"vision\"".as_slice();
-                                    let val = self::number::dec_uint;
+                                    let val = self::number::dec_uint; // tarpaulin::hint
                                     let val = trace("\"revision\"", self::json::field(key, val)).parse_next(stream0)?;
                                     revision = Some(val);
                                 },
-                                b'u' => {
+                                b'u' => { // tarpaulin::hint
                                     if rules.is_some() {
                                         let message = r#"duplicate "rules" field"#;
                                         return Err(winnow::error::ErrMode::assert(stream0, message));
@@ -50,13 +51,13 @@ pub fn dep_file<'i>(stream: &mut StateStream<'i>) -> PResult<r5::DepFile<'i>> {
                                 _ => fail.parse_next(stream0)?,
                             }
                         },
-                        b'v' => {
+                        b'v' => { // tarpaulin::hint
                             if version.is_some() {
                                 let message = r#"duplicate "version" field"#;
                                 return Err(winnow::error::ErrMode::assert(stream0, message));
                             }
                             let key = b"ersion\"".as_slice();
-                            let val = self::number::dec_uint;
+                            let val = self::number::dec_uint; // tarpaulin::hint
                             let val = trace("\"version\"", self::json::field(key, val)).parse_next(stream0)?;
                             version = Some(val);
                         },
@@ -115,6 +116,7 @@ pub(crate) mod dep_file {
     }
 }
 
+#[rustfmt::skip]
 pub fn dep_info<'i>(stream: &mut StateStream<'i>) -> PResult<r5::DepInfo<'i>> {
     let fields = |stream0: &mut StateStream<'i>| {
         let mut work_directory = Option::default();
@@ -125,10 +127,10 @@ pub fn dep_info<'i>(stream: &mut StateStream<'i>) -> PResult<r5::DepInfo<'i>> {
         while b'}' != peek(any).parse_next(stream0)? {
             let next0 = any.parse_next(stream0)?;
             match next0 {
-                b'"' => {
+                b'"' => { // tarpaulin::hint
                     let next1 = any.parse_next(stream0)?;
                     match next1 {
-                        b'o' => {
+                        b'o' => { // tarpaulin::hint
                             if outputs.is_some() {
                                 let message = r#"duplicate "outputs" field"#;
                                 return Err(winnow::error::ErrMode::assert(stream0, message));
@@ -138,32 +140,30 @@ pub fn dep_info<'i>(stream: &mut StateStream<'i>) -> PResult<r5::DepInfo<'i>> {
                             let val = trace("\"outputs\"", self::json::field(key, val)).parse_next(stream0)?;
                             outputs = Some(val);
                         },
-                        b'p' => {
+                        b'p' => { // tarpaulin::hint
                             let next2 = any.parse_next(stream0)?;
                             match next2 {
-                                b'r' => {
+                                b'r' => { // tarpaulin::hint
                                     let next3 = any.parse_next(stream0)?;
                                     match next3 {
-                                        b'i' => {
+                                        b'i' => { // tarpaulin::hint
                                             if primary_output.is_some() {
                                                 let message = r#"duplicate "primary_output" field"#;
                                                 return Err(winnow::error::ErrMode::assert(stream0, message));
                                             }
                                             let key = b"mary-output\"".as_slice();
-                                            let val = self::string::utf8_path;
-                                            let val = trace("\"primary-output\"", self::json::field(key, val))
-                                                .parse_next(stream0)?;
+                                            let val = self::string::utf8_path; // tarpaulin::hint
+                                            let val = trace("\"primary-output\"", self::json::field(key, val)).parse_next(stream0)?;
                                             primary_output = Some(val);
                                         },
-                                        b'o' => {
+                                        b'o' => { // tarpaulin::hint
                                             if provides.is_some() {
                                                 let message = r#"duplicate "provides" field"#;
                                                 return Err(winnow::error::ErrMode::assert(stream0, message));
                                             }
                                             let key = b"vides\"".as_slice();
                                             let val = self::json::vec(provided_module_desc);
-                                            let val = trace("\"provides\"", self::json::field(key, val))
-                                                .parse_next(stream0)?;
+                                            let val = trace("\"provides\"", self::json::field(key, val)).parse_next(stream0)?;
                                             provides = Some(val);
                                         },
                                         _ => fail.parse_next(stream0)?,
@@ -172,7 +172,7 @@ pub fn dep_info<'i>(stream: &mut StateStream<'i>) -> PResult<r5::DepInfo<'i>> {
                                 _ => fail.parse_next(stream0)?,
                             }
                         },
-                        b'r' => {
+                        b'r' => { // tarpaulin::hint
                             if requires.is_some() {
                                 let message = r#"duplicate "requires" field"#;
                                 return Err(winnow::error::ErrMode::assert(stream0, message));
@@ -182,13 +182,13 @@ pub fn dep_info<'i>(stream: &mut StateStream<'i>) -> PResult<r5::DepInfo<'i>> {
                             let val = trace("\"requires\"", self::json::field(key, val)).parse_next(stream0)?;
                             requires = Some(val);
                         },
-                        b'w' => {
+                        b'w' => { // tarpaulin::hint
                             if work_directory.is_some() {
                                 let message = r#"duplicate "work_directory" field"#;
                                 return Err(winnow::error::ErrMode::assert(stream0, message));
                             }
                             let key = b"ork-directory\"".as_slice();
-                            let val = self::string::utf8_path;
+                            let val = self::string::utf8_path; // tarpaulin::hint
                             let val = trace("\"work-directory\"", self::json::field(key, val)).parse_next(stream0)?;
                             work_directory = Some(val);
                         },
@@ -211,6 +211,7 @@ pub fn dep_info<'i>(stream: &mut StateStream<'i>) -> PResult<r5::DepInfo<'i>> {
 }
 pub mod dep_info {}
 
+#[rustfmt::skip]
 #[allow(clippy::too_many_lines)]
 pub fn provided_module_desc<'i>(stream: &mut StateStream<'i>) -> PResult<r5::ProvidedModuleDesc<'i>> {
     let fields = |stream0: &mut StateStream<'i>| {
@@ -222,56 +223,56 @@ pub fn provided_module_desc<'i>(stream: &mut StateStream<'i>) -> PResult<r5::Pro
         while b'}' != peek(any).parse_next(stream0)? {
             let next0 = any.parse_next(stream0)?;
             match next0 {
-                b'"' => {
+                b'"' => { // tarpaulin::hint
                     let next1 = any.parse_next(stream0)?;
                     match next1 {
-                        b's' => {
+                        b's' => { // tarpaulin::hint
                             if source_path.is_some() {
                                 let message = r#"duplicate "source-path" field"#;
                                 return Err(winnow::error::ErrMode::assert(stream0, message));
                             }
                             let key = b"ource-path\"".as_slice();
-                            let val = self::string::utf8_path;
+                            let val = self::string::utf8_path; // tarpaulin::hint
                             let val = self::json::field(key, val).parse_next(stream0)?;
                             source_path = Some(val);
                         },
-                        b'c' => {
+                        b'c' => { // tarpaulin::hint
                             if compiled_module_path.is_some() {
                                 let message = r#"duplicate "compiled-module-path" field"#;
                                 return Err(winnow::error::ErrMode::assert(stream0, message));
                             }
                             let key = b"ompiled-module-path\"".as_slice();
-                            let val = self::string::utf8_path;
+                            let val = self::string::utf8_path; // tarpaulin::hint
                             let val = self::json::field(key, val).parse_next(stream0)?;
                             compiled_module_path = Some(val);
                         },
-                        b'l' => {
+                        b'l' => { // tarpaulin::hint
                             if logical_name.is_some() {
                                 let message = r#"duplicate "logical-name" field"#;
                                 return Err(winnow::error::ErrMode::assert(stream0, message));
                             }
                             let key = b"ogical-name\"".as_slice();
-                            let val = self::string::module;
+                            let val = self::string::module; // tarpaulin::hint
                             let val = self::json::field(key, val).parse_next(stream0)?;
                             logical_name = Some(val);
                         },
-                        b'u' => {
+                        b'u' => { // tarpaulin::hint
                             if unique_on_source_path.is_some() {
                                 let message = r#"duplicate "unique-on-source-path" field"#;
                                 return Err(winnow::error::ErrMode::assert(stream0, message));
                             }
                             let key = b"nique-on-source-path\"".as_slice();
-                            let val = self::json::bool;
+                            let val = self::json::bool; // tarpaulin::hint
                             let val = self::json::field(key, val).parse_next(stream0)?;
                             unique_on_source_path = Some(val);
                         },
-                        b'i' => {
+                        b'i' => { // tarpaulin::hint
                             if is_interface.is_some() {
                                 let message = r#"duplicate "is-interface" field"#;
                                 return Err(winnow::error::ErrMode::assert(stream0, message));
                             }
                             let key = b"s-interface\"".as_slice();
-                            let val = self::json::bool;
+                            let val = self::json::bool; // tarpaulin::hint
                             let val = self::json::field(key, val).parse_next(stream0)?;
                             is_interface = Some(val);
                         },
@@ -319,9 +320,10 @@ pub fn provided_module_desc<'i>(stream: &mut StateStream<'i>) -> PResult<r5::Pro
         "r5::ProvidedModuleDesc",
         self::spaces::around(self::json::record(fields)),
     )
-    .parse_next(stream)
+    .parse_next(stream) // tarpaulin::hint
 }
 
+#[rustfmt::skip]
 #[allow(clippy::too_many_lines)]
 pub fn required_module_desc<'i>(stream: &mut StateStream<'i>) -> PResult<r5::RequiredModuleDesc<'i>> {
     let fields = |stream0: &mut StateStream<'i>| {
@@ -333,20 +335,20 @@ pub fn required_module_desc<'i>(stream: &mut StateStream<'i>) -> PResult<r5::Req
         while b'}' != peek(any).parse_next(stream0)? {
             let next0 = any.parse_next(stream0)?;
             match next0 {
-                b'"' => {
+                b'"' => { // tarpaulin::hint
                     let next1 = any.parse_next(stream0)?;
                     match next1 {
-                        b's' => {
+                        b's' => { // tarpaulin::hint
                             if source_path.is_some() {
                                 let message = r#"duplicate "source-path" field"#;
                                 return Err(winnow::error::ErrMode::assert(stream0, message));
                             }
                             let key = b"ource-path\"".as_slice();
-                            let val = self::string::utf8_path;
+                            let val = self::string::utf8_path; // tarpaulin::hint
                             let val = self::json::field(key, val).parse_next(stream0)?;
                             source_path = Some(val);
                         },
-                        b'c' => {
+                        b'c' => { // tarpaulin::hint
                             if compiled_module_path.is_some() {
                                 let message = r#"duplicate "compiled-module-path" field"#;
                                 return Err(winnow::error::ErrMode::assert(stream0, message));
@@ -356,7 +358,7 @@ pub fn required_module_desc<'i>(stream: &mut StateStream<'i>) -> PResult<r5::Req
                             let val = self::json::field(key, val).parse_next(stream0)?;
                             compiled_module_path = Some(val);
                         },
-                        b'l' => {
+                        b'l' => { // tarpaulin::hint
                             let next2 = take(2usize).parse_next(stream0)?;
                             match next2 {
                                 b"og" => {
@@ -365,30 +367,30 @@ pub fn required_module_desc<'i>(stream: &mut StateStream<'i>) -> PResult<r5::Req
                                         return Err(winnow::error::ErrMode::assert(stream0, message));
                                     }
                                     let key = b"ical-name\"".as_slice();
-                                    let val = self::string::module;
+                                    let val = self::string::module; // tarpaulin::hint
                                     let val = self::json::field(key, val).parse_next(stream0)?;
                                     logical_name = Some(val);
                                 },
-                                b"oo" => {
+                                b"oo" => { // tarpaulin::hint
                                     if lookup_method.is_some() {
                                         let message = r#"duplicate "lookup-method" field"#;
                                         return Err(winnow::error::ErrMode::assert(stream0, message));
                                     }
                                     let key = b"kup-method\"".as_slice();
-                                    let val = self::required_module_desc::lookup_method;
+                                    let val = self::required_module_desc::lookup_method; // tarpaulin::hint
                                     let val = self::json::field(key, val).parse_next(stream0)?;
                                     lookup_method = Some(val);
                                 },
                                 _ => fail.parse_next(stream0)?,
                             }
                         },
-                        b'u' => {
+                        b'u' => { // tarpaulin::hint
                             if unique_on_source_path.is_some() {
                                 let message = r#"duplicate "unique-on-source-path" field"#;
                                 return Err(winnow::error::ErrMode::assert(stream0, message));
                             }
                             let key = b"nique-on-source-path\"".as_slice();
-                            let val = self::json::bool;
+                            let val = self::json::bool; // tarpaulin::hint
                             let val = self::json::field(key, val).parse_next(stream0)?;
                             unique_on_source_path = Some(val);
                         },
@@ -433,7 +435,7 @@ pub fn required_module_desc<'i>(stream: &mut StateStream<'i>) -> PResult<r5::Req
         "r5::RequiredModuleDesc",
         self::spaces::around(self::json::record(fields)),
     )
-    .parse_next(stream)
+    .parse_next(stream) // tarpaulin::hint
 }
 
 pub mod required_module_desc {

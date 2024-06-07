@@ -253,6 +253,7 @@ pub enum ModuleDesc<'a> {
 
 impl<'a> ModuleDesc<'a> {
     #[cfg(test)]
+    #[cfg(not(tarpaulin_include))]
     pub fn count_copies(&self) -> u64 {
         match *self {
             Self::ByLogicalName {
@@ -289,6 +290,7 @@ impl<'a> ModuleDesc<'a> {
     }
 
     #[cfg(test)]
+    #[cfg(not(tarpaulin_include))]
     pub fn count_escapes(&self) -> u64 {
         match *self {
             Self::ByLogicalName {
@@ -326,24 +328,16 @@ impl<'a> ModuleDesc<'a> {
     #[must_use]
     pub fn view(&self) -> ModuleDescView {
         match *self {
-            ModuleDesc::ByLogicalName {
-                ref logical_name,
-                ref source_path,
-                ref compiled_module_path,
-                ..
-            } => ModuleDescView {
+            #[rustfmt::skip]
+            ModuleDesc::ByLogicalName { ref logical_name, ref source_path, ref compiled_module_path, .. } => ModuleDescView {
                 key: logical_name.borrow(),
                 unique_by: UniqueBy::LogicalName,
                 source_path: source_path.as_deref(),
                 compiled_module_path: compiled_module_path.as_deref(),
                 logical_name: logical_name.borrow(),
             },
-            ModuleDesc::BySourcePath {
-                ref logical_name,
-                ref source_path,
-                ref compiled_module_path,
-                ..
-            } => ModuleDescView {
+            #[rustfmt::skip]
+            ModuleDesc::BySourcePath { ref logical_name, ref source_path, ref compiled_module_path, .. } => ModuleDescView {
                 key: source_path.as_str(),
                 unique_by: UniqueBy::SourcePath,
                 source_path: Some(source_path.borrow()),
@@ -457,6 +451,7 @@ pub enum RequiredModuleDescLookupMethod {
     IncludeAngle,
     IncludeQuote,
 }
+#[cfg(not(tarpaulin_include))]
 impl Default for RequiredModuleDescLookupMethod {
     fn default() -> Self {
         Self::ByName
@@ -464,6 +459,7 @@ impl Default for RequiredModuleDescLookupMethod {
 }
 
 #[cfg(feature = "extra_traits")]
+#[cfg(not(tarpaulin_include))]
 impl core::fmt::Display for RequiredModuleDescLookupMethod {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let repr = match *self {
@@ -485,5 +481,57 @@ impl<'a> ::arbitrary::Arbitrary<'a> for RequiredModuleDescLookupMethod {
         } else {
             Self::IncludeQuote
         })
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use alloc::string::String;
+
+    use ::proptest::prelude::*;
+    use camino::Utf8PathBuf;
+
+    use super::*;
+
+    proptest! {
+        #[test]
+        fn module_desc_view_by_logical_name_is_faithful(
+            logical_name in any::<String>(),
+            source_path in any::<Option<String>>(),
+            compiled_module_path in any::<Option<String>>(),
+            unique_on_source_path in any::<bool>(),
+        ) {
+            let logical_name = Cow::Owned::<str>(logical_name);
+            let source_path = source_path.map(|s| Cow::Owned::<Utf8Path>(Utf8PathBuf::from(s)));
+            let compiled_module_path = compiled_module_path.map(|s| Cow::Owned(Utf8PathBuf::from(s)));
+            let desc = match source_path.clone() {
+                Some(source_path) if unique_on_source_path => ModuleDesc::BySourcePath {
+                    logical_name: logical_name.clone(),
+                    source_path: source_path.clone(),
+                    compiled_module_path: compiled_module_path.clone(),
+                    unique_on_source_path: monostate::MustBeBool::<true>,
+                },
+                _ => ModuleDesc::ByLogicalName {
+                    logical_name: logical_name.clone(),
+                    source_path: source_path.clone(),
+                    compiled_module_path: compiled_module_path.clone(),
+                    unique_on_source_path: Some(monostate::MustBeBool::<false>),
+                }
+            };
+            let view = desc.view();
+            assert_eq!(view.logical_name, logical_name);
+            assert_eq!(view.source_path, source_path.as_deref());
+            assert_eq!(view.compiled_module_path, compiled_module_path.as_deref());
+            match desc {
+                ModuleDesc::ByLogicalName { .. } => {
+                    assert_eq!(view.unique_by, UniqueBy::LogicalName);
+                    assert_eq!(view.key, logical_name);
+                }
+                ModuleDesc::BySourcePath { .. } => {
+                    assert_eq!(view.unique_by, UniqueBy::SourcePath);
+                    assert_eq!(Some(view.key), source_path.as_deref().map(|s| s.as_str()));
+                }
+            }
+        }
     }
 }
