@@ -47,7 +47,7 @@ monostate = { version = "0.1", optional = true, default-features = false }
 petgraph = { version = "0.6", optional = true, default-features = false, features = ["graphmap"] }
 rand = { version = "0.8", optional = true, default-features = false}
 serde = { version = "1.0", optional = true, default-features = false }
-serde_json = { version = "1.0", optional = true, default-features = false, features = ["alloc"] }
+serde_json = { version = "1.0", optional = true, default-features = false, features = ["alloc", "std"] }
 serde_with = { version = "3.8", optional = true, default-features = false, features = ["alloc", "macros"] }
 winnow = { version = "0.6", optional = true, default-features = false, features = ["std"] }
 
