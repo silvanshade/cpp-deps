@@ -38,19 +38,6 @@ fn json_parsing(c: &mut Criterion) {
         b.iter(|| serde_json::from_str::<r5::DepFile>(&dep_file).unwrap())
     });
 
-    group.bench_function("simd_json", |b| {
-        b.iter_custom(|iters| {
-            let mut total_time = std::time::Duration::default();
-            for _ in 0 .. iters {
-                let mut buf = dep_file.clone().into_bytes();
-                let start = std::time::Instant::now();
-                simd_json::from_slice::<r5::DepFile>(&mut buf).unwrap();
-                total_time += start.elapsed();
-            }
-            total_time
-        })
-    });
-
     group.finish();
 }
 

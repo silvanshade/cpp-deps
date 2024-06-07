@@ -59,4 +59,3 @@ proptest = { version = "1.4", default-features = false, features = ["std"] }
 rand = { version = "0.8", default-features = false}
 rand_chacha = { version = "0.3", features = ["simd"] }
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
-simd-json = { version = "0.13" }
