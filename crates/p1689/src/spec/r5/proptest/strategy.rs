@@ -1,3 +1,5 @@
+#![cfg(not(tarpaulin_include))]
+
 use alloc::{format, string::String, vec::Vec};
 
 use proptest::prelude::*;

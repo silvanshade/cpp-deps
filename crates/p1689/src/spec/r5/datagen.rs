@@ -1,3 +1,5 @@
+#![cfg(not(tarpaulin_include))]
+
 pub mod graph;
 #[cfg(all(feature = "serde", feature = "serialize"))]
 pub mod json;

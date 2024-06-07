@@ -1,3 +1,5 @@
+#![cfg(not(tarpaulin_include))]
+
 use alloc::{borrow::Cow, vec::Vec};
 
 use camino::Utf8Path;

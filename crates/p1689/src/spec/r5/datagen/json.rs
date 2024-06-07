@@ -1,3 +1,5 @@
+#![cfg(not(tarpaulin_include))]
+
 use alloc::{string::String, vec::Vec};
 
 use serde::ser::Serialize;

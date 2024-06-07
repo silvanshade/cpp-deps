@@ -1,9 +1,9 @@
+#![cfg(not(tarpaulin_include))]
 // TODO:
 // 1. Generate more realistic paths (generate dir hierarchy)
 // 2. Make paths correspond properly with `lookup-method`
 // 3. Consider generating actual C++ source files
 //   - This should be easy since the modules can be empty, aside from the imports/exports.
-
 #![allow(clippy::arithmetic_side_effects)]
 #![allow(clippy::iter_nth_zero)]
 #![allow(clippy::missing_errors_doc)]
