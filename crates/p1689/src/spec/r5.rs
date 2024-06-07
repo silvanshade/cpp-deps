@@ -35,7 +35,7 @@ mod defaults {
     cfg_attr(feature = "serialize", derive(::serde::Serialize)),
     serde(rename_all = "kebab-case")
 )]
-#[cfg_attr(feature = "extra_traits", derive(Clone, Eq, PartialEq))]
+#[cfg_attr(feature = "extra_traits", derive(Clone, Eq, Hash, Ord, PartialEq, PartialOrd))]
 #[cfg_attr(
     any(test, feature = "debug", feature = "arbitrary", feature = "extra_traits"),
     derive(Debug)
@@ -73,33 +73,6 @@ impl DepFile<'_> {
     }
 }
 
-#[cfg(feature = "extra_traits")]
-impl core::hash::Hash for DepFile<'_> {
-    fn hash<H>(&self, state: &mut H)
-    where
-        H: core::hash::Hasher,
-    {
-        self.version.hash(state);
-        self.revision.hash(state);
-        self.rules.as_slice().hash(state);
-    }
-}
-#[cfg(feature = "extra_traits")]
-impl PartialOrd for DepFile<'_> {
-    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-#[cfg(feature = "extra_traits")]
-impl Ord for DepFile<'_> {
-    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
-        self.version
-            .cmp(&other.version)
-            .then(self.revision.cmp(&other.revision))
-            .then(self.rules.as_slice().cmp(other.rules.as_slice()))
-    }
-}
-
 /// Dependency information for a compilation rule.
 #[cfg_attr(feature = "serde", cfg_eval::cfg_eval)]
 #[cfg_attr(all(feature = "serde", feature = "serialize"), skip_serializing_none)]
@@ -110,12 +83,11 @@ impl Ord for DepFile<'_> {
     cfg_attr(feature = "serialize", derive(::serde::Serialize)),
     serde(rename_all = "kebab-case")
 )]
-#[cfg_attr(feature = "extra_traits", derive(Clone))]
+#[cfg_attr(feature = "extra_traits", derive(Clone, Eq, Hash, Ord, PartialEq, PartialOrd))]
 #[cfg_attr(
     any(test, feature = "debug", feature = "arbitrary", feature = "extra_traits"),
     derive(Debug)
 )]
-#[derive(Eq, PartialEq)]
 #[non_exhaustive]
 pub struct DepInfo<'a> {
     #[cfg_attr(
@@ -209,35 +181,6 @@ impl DepInfo<'_> {
                 .sum::<u64>()
     }
 }
-impl core::hash::Hash for DepInfo<'_> {
-    fn hash<H>(&self, state: &mut H)
-    where
-        H: core::hash::Hasher,
-    {
-        self.work_directory.hash(state);
-        self.primary_output.hash(state);
-        self.outputs.as_slice().hash(state);
-        self.provides.as_slice().hash(state);
-        self.requires.as_slice().hash(state);
-    }
-}
-#[cfg(feature = "extra_traits")]
-impl PartialOrd for DepInfo<'_> {
-    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-#[cfg(feature = "extra_traits")]
-impl Ord for DepInfo<'_> {
-    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
-        self.work_directory
-            .cmp(&other.work_directory)
-            .then(self.primary_output.cmp(&other.primary_output))
-            .then(self.outputs.as_slice().cmp(other.outputs.as_slice()))
-            .then(self.provides.as_slice().cmp(other.provides.as_slice()))
-            .then(self.requires.as_slice().cmp(other.requires.as_slice()))
-    }
-}
 
 #[cfg_attr(feature = "serde", cfg_eval::cfg_eval)]
 #[cfg_attr(all(feature = "serde", feature = "serialize"), skip_serializing_none)]
@@ -248,12 +191,11 @@ impl Ord for DepInfo<'_> {
     cfg_attr(feature = "serialize", derive(::serde::Serialize)),
     serde(rename_all = "kebab-case", untagged)
 )]
-#[cfg_attr(feature = "extra_traits", derive(Clone, Ord, PartialOrd))]
+#[cfg_attr(feature = "extra_traits", derive(Clone, Eq, Hash, Ord, PartialEq, PartialOrd))]
 #[cfg_attr(
     any(test, feature = "debug", feature = "arbitrary", feature = "extra_traits"),
     derive(Debug)
 )]
-#[derive(Eq, Hash, PartialEq)]
 #[non_exhaustive]
 pub enum ModuleDesc<'a> {
     #[cfg_attr(
@@ -448,12 +390,11 @@ pub enum UniqueBy {
     cfg_attr(feature = "serialize", derive(::serde::Serialize)),
     serde(rename_all = "kebab-case")
 )]
-#[cfg_attr(feature = "extra_traits", derive(Clone, Ord, PartialOrd))]
+#[cfg_attr(feature = "extra_traits", derive(Clone, Eq, Hash, Ord, PartialEq, PartialOrd))]
 #[cfg_attr(
     any(test, feature = "debug", feature = "arbitrary", feature = "extra_traits"),
     derive(Debug)
 )]
-#[derive(Eq, Hash, PartialEq)]
 #[non_exhaustive]
 pub struct ProvidedModuleDesc<'a> {
     #[cfg_attr(
@@ -477,12 +418,11 @@ pub struct ProvidedModuleDesc<'a> {
     cfg_attr(feature = "serialize", derive(::serde::Serialize)),
     serde(rename_all = "kebab-case")
 )]
-#[cfg_attr(feature = "extra_traits", derive(Clone, Ord, PartialOrd))]
+#[cfg_attr(feature = "extra_traits", derive(Clone, Eq, Hash, Ord, PartialEq, PartialOrd))]
 #[cfg_attr(
     any(test, feature = "debug", feature = "arbitrary", feature = "extra_traits"),
     derive(Debug)
 )]
-#[derive(Eq, Hash, PartialEq)]
 #[non_exhaustive]
 pub struct RequiredModuleDesc<'a> {
     #[cfg_attr(
@@ -505,19 +445,24 @@ pub struct RequiredModuleDesc<'a> {
     cfg_attr(feature = "serialize", derive(::serde::Serialize)),
     serde(rename_all = "kebab-case")
 )]
-#[cfg_attr(feature = "extra_traits", derive(Ord, PartialOrd))]
+#[cfg_attr(feature = "extra_traits", derive(Eq, Hash, Ord, PartialEq, PartialOrd))]
 #[cfg_attr(
     any(test, feature = "debug", feature = "arbitrary", feature = "extra_traits"),
     derive(Debug)
 )]
-#[derive(Clone, Copy, Default, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy)]
 #[non_exhaustive]
 pub enum RequiredModuleDescLookupMethod {
-    #[default]
     ByName,
     IncludeAngle,
     IncludeQuote,
 }
+impl Default for RequiredModuleDescLookupMethod {
+    fn default() -> Self {
+        Self::ByName
+    }
+}
+
 #[cfg(feature = "extra_traits")]
 impl core::fmt::Display for RequiredModuleDescLookupMethod {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
