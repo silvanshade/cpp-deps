@@ -174,8 +174,8 @@ where
         let mut text = Cow::Borrowed(BStr::new(b"".as_slice()));
         loop {
             let Some(needle) = input.state.finders.quotes_or_backslash.find(&input[off ..]) else {
-                let message = "failed to find end of string";
-                return Err(winnow::error::ErrMode::assert(input, message)); // tarpaulin::hint
+                let message = "Failed to find end of string";
+                return Err(winnow::error::ErrMode::assert(input, message));
             };
             let data = input.next_slice(needle + off + 1);
             match data[data.len() - 1] {
@@ -188,7 +188,7 @@ where
                     break; // tarpaulin::hint
                 },
                 b'\\' => self::string::unescape(&mut text, data).parse_next(input)?,
-                _ => unreachable!(), // tarpaulin::hint
+                _ => unreachable!(),
             }
             off = 0;
         }
@@ -299,6 +299,16 @@ mod test {
         let own = vec![0xed, 0xa0, 0x80];
         let cow = Cow::Owned(own);
         cow_bstr_to_utf8::<()>(&stream, cow).unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "Failed to find end of string")]
+    fn json_string_invalid_utf8() {
+        let text = "\"foo";
+        let input = BStr::new(text);
+        let state = State::default();
+        let mut stream = winnow::Stateful { input, state };
+        json_string::<()>.parse_next(&mut stream).unwrap();
     }
 
     #[test]
