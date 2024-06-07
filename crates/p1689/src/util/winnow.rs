@@ -225,7 +225,7 @@ pub mod number {
                 let message = "Failed to parse an unsigned integer";
                 return Err(winnow::error::ErrMode::assert(stream0, message));
             }
-            stream0.next_slice(needle);
+            stream0.next_slice(needle); // tarpaulin::hint
             Ok(number)
         })
         .parse_next(stream) // tarpaulin::hint
@@ -369,7 +369,7 @@ pub mod string {
         trace("unescape_unicode", |stream: &mut StateStream<'i>| {
             b'{'.parse_next(stream)?;
             let (number, needle) = self::number::from_radix_16(stream);
-            stream.next_slice(needle);
+            stream.next_slice(needle); // tarpaulin::hint
             b'}'.parse_next(stream)?;
             let escaped = core::char::from_u32(number).ok_or_else(|| {
                 let message = "Failed to convert unicode u32 to char";

@@ -20,6 +20,7 @@ use serde_with::skip_serializing_none;
 
 #[cfg(all(feature = "serde", feature = "deserialize"))]
 mod defaults {
+    #[cfg(not(tarpaulin_include))]
     pub const fn bool<const V: bool>() -> bool {
         V
     }
