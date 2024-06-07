@@ -524,11 +524,11 @@ mod test {
             assert_eq!(view.compiled_module_path, compiled_module_path.as_deref());
             match desc {
                 ModuleDesc::ByLogicalName { .. } => {
-                    assert_eq!(view.unique_by, UniqueBy::LogicalName);
+                    assert!(matches!(view.unique_by, UniqueBy::LogicalName));
                     assert_eq!(view.key, logical_name);
                 }
                 ModuleDesc::BySourcePath { .. } => {
-                    assert_eq!(view.unique_by, UniqueBy::SourcePath);
+                    assert!(matches!(view.unique_by, UniqueBy::SourcePath));
                     assert_eq!(Some(view.key), source_path.as_deref().map(|s| s.as_str()));
                 }
             }
