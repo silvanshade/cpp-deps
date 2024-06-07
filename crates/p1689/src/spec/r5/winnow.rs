@@ -484,6 +484,7 @@ mod test {
             use super::*;
 
             proptest! {
+                #[cfg_attr(miri, ignore)]
                 #[test]
                 fn revision(text in r5::strategy::dep_file::revision("[ \t\n\r]*[,}}]", false)) {
                     let input = BStr::new(&text);
@@ -492,6 +493,7 @@ mod test {
                     r5::winnow::dep_file::revision.parse_next(&mut stream).unwrap();
                 }
 
+                #[cfg_attr(miri, ignore)]
                 #[test]
                 fn rules(text in r5::strategy::dep_file::rules("[ \t\n\r]*[,}}]")) {
                     let input = BStr::new(&text);
@@ -500,6 +502,7 @@ mod test {
                     r5::winnow::dep_file::rules.parse_next(&mut stream).unwrap();
                 }
 
+                #[cfg_attr(miri, ignore)]
                 #[test]
                 fn version(text in r5::strategy::dep_file::version("[ \t\n\r]*[,}}]")) {
                     let input = BStr::new(&text);
@@ -509,6 +512,7 @@ mod test {
                 }
             }
 
+            #[cfg_attr(miri, ignore)] // NOTE: too expensive for `miri`
             #[test]
             fn only_escaped_strings_are_copied() {
                 let rng = &mut rand_chacha::ChaCha8Rng::seed_from_u64(crate::r5::datagen::CHACHA8RNG_SEED);
@@ -587,6 +591,7 @@ mod test {
         }
 
         proptest! {
+            #[cfg_attr(miri, ignore)]
             #[test]
             fn dep_file(text in r5::strategy::dep_file()) {
                 let input = BStr::new(&text);
@@ -600,6 +605,7 @@ mod test {
             use super::*;
 
             proptest! {
+                #[cfg_attr(miri, ignore)]
                 #[test]
                 fn lookup_method(text in r5::strategy::required_module_desc::lookup_method()) {
                     let input = BStr::new(&text);

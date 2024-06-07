@@ -57,12 +57,14 @@ mod test {
             use super::*;
 
             proptest! {
+                #[cfg_attr(miri, ignore)]
                 #[test]
                 fn dep_file(text in r5::strategy::dep_file()) {
                     serde_json::from_str::<r5::DepFile>(&text).unwrap();
                 }
             }
 
+            #[cfg_attr(miri, ignore)] // NOTE: too expensive for `miri`
             #[cfg(feature = "datagen")]
             #[test]
             fn only_escaped_strings_are_copied() {

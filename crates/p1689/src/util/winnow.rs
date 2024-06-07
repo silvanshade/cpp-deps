@@ -514,6 +514,7 @@ mod test {
     }
 
     proptest! {
+        #[cfg_attr(miri, ignore)]
         #[test]
         fn number_from_radix_16_correct(char in proptest::prelude::any::<char>()) {
             let text = char.escape_unicode().to_string();

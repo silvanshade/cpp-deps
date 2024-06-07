@@ -494,6 +494,7 @@ mod test {
     use super::*;
 
     proptest! {
+        #[cfg_attr(miri, ignore)]
         #[test]
         fn module_desc_view_by_logical_name_is_faithful(
             logical_name in any::<String>(),

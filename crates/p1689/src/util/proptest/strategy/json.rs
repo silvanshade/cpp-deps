@@ -31,6 +31,7 @@ mod test {
     use super::*;
 
     proptest! {
+        #[cfg_attr(miri, ignore)]
         #[test]
         fn field_works(text in field("key", Just("val"), Just("term"))) {
             let res = text.split_whitespace().collect::<Vec<&str>>();
