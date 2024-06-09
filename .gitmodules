@@ -1,0 +1,3 @@
+[submodule "corpus/gcc"]
+	path = corpus/gcc
+	url = git://gcc.gnu.org/git/gcc.git
