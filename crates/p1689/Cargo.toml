@@ -27,6 +27,8 @@ benchmark = ["datagen", "deserialize", "parsing", "std"]
 builders = []
 # UTF-8 paths instead of plain strings.
 camino = ["dep:camino"]
+# Enable tests against external corpus.
+corpus = []
 # Generation of p1689r5 data structures. Only intended for internal usage.
 datagen = ["dep:fake", "dep:petgraph", "dep:rand", "dep:serde_json", "arbitrary", "serde", "serialize"]
 # Deserialization support via serde.
