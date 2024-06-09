@@ -242,15 +242,11 @@
 <a href="#242" id="242">242</a>
 <a href="#243" id="243">243</a>
 <a href="#244" id="244">244</a>
-<a href="#245" id="245">245</a>
-<a href="#246" id="246">246</a>
 </pre></div><pre class="rust"><code><span class="attr">#![cfg(not(tarpaulin_include))]
 
 </span><span class="kw">use </span>alloc::{borrow::Cow, vec::Vec};
 
-<span class="kw">use </span>camino::Utf8Path;
-
-<span class="kw">use </span><span class="kw">crate</span>::spec::r5;
+<span class="kw">use crate</span>::{spec::r5, vendor::camino::Utf8Path};
 
 <span class="kw">pub struct </span>DepFile&lt;<span class="lifetime">'a</span>&gt; {
     version: <span class="prelude-ty">Option</span>&lt;u32&gt;,

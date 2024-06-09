@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"type":["Utf8Path","Utf8PathBuf"]};

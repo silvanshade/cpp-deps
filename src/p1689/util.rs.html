@@ -185,10 +185,10 @@
 <a href="#185" id="185">185</a>
 <a href="#186" id="186">186</a>
 <a href="#187" id="187">187</a>
-</pre></div><pre class="rust"><code><span class="attr">#[cfg(test)]
+</pre></div><pre class="rust"><code><span class="attr">#[cfg(feature = <span class="string">"parsing"</span>)]
+</span><span class="kw">pub mod </span>parsers;
+<span class="attr">#[cfg(test)]
 </span><span class="kw">pub mod </span>proptest;
-<span class="attr">#[cfg(feature = <span class="string">"winnow"</span>)]
-</span><span class="kw">pub mod </span>winnow;
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">use </span>alloc::borrow::{Cow, ToOwned};

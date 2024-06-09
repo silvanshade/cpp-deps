@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["dep_file"],"struct":["State"],"type":["StateStream"]};
+window.SIDEBAR_ITEMS = {"fn":["dep_file"],"struct":["ParseStream","State"]};

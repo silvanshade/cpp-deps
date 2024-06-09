@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["r5"]};
+window.SIDEBAR_ITEMS = {"mod":["r5","vendor"]};

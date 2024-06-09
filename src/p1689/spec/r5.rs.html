@@ -536,25 +536,29 @@
 <a href="#536" id="536">536</a>
 <a href="#537" id="537">537</a>
 <a href="#538" id="538">538</a>
+<a href="#539" id="539">539</a>
+<a href="#540" id="540">540</a>
+<a href="#541" id="541">541</a>
 </pre></div><pre class="rust"><code><span class="attr">#[cfg(feature = <span class="string">"builders"</span>)]
 </span><span class="kw">pub mod </span>builders;
 <span class="attr">#[cfg(feature = <span class="string">"datagen"</span>)]
 </span><span class="kw">pub mod </span>datagen;
+<span class="attr">#[cfg(feature = <span class="string">"parsing"</span>)]
+</span><span class="kw">pub mod </span>parsers;
 <span class="attr">#[cfg(test)]
 </span><span class="kw">pub mod </span>proptest;
 <span class="attr">#[cfg(feature = <span class="string">"serde"</span>)]
 </span><span class="kw">pub mod </span>serde;
-<span class="attr">#[cfg(feature = <span class="string">"winnow"</span>)]
-</span><span class="kw">pub mod </span>winnow;
 
 <span class="kw">use </span>alloc::{borrow::Cow, vec::Vec};
 <span class="kw">use </span>core::borrow::Borrow;
 
-<span class="kw">use </span>camino::Utf8Path;
 <span class="attr">#[cfg(all(feature = <span class="string">"serde"</span>, any(feature = <span class="string">"deserialize"</span>, feature = <span class="string">"serialize"</span>)))]
 </span><span class="kw">use </span>serde_with::serde_as;
 <span class="attr">#[cfg(all(feature = <span class="string">"serde"</span>, feature = <span class="string">"serialize"</span>))]
 </span><span class="kw">use </span>serde_with::skip_serializing_none;
+
+<span class="kw">use </span><span class="kw">crate</span>::vendor::camino::Utf8Path;
 
 <span class="attr">#[cfg(all(feature = <span class="string">"serde"</span>, feature = <span class="string">"deserialize"</span>))]
 </span><span class="kw">mod </span>defaults {
@@ -705,7 +709,7 @@
             + <span class="self">self
                 </span>.outputs
                 .iter()
-                .map(|output| <span class="kw">crate</span>::util::count_escapes(output.as_str()))
+                .map(|output| <span class="kw">crate</span>::util::count_escapes(output.as_ref()))
                 .sum::&lt;u64&gt;()
             + <span class="self">self
                 </span>.provides
@@ -854,7 +858,7 @@
                 ..
             } =&gt; {
                 <span class="kw">crate</span>::util::count_escapes(logical_name)
-                    + <span class="kw">crate</span>::util::count_escapes(source_path.as_str())
+                    + <span class="kw">crate</span>::util::count_escapes(source_path.as_ref())
                     + compiled_module_path
                         .as_deref()
                         .map(<span class="kw">crate</span>::util::count_escapes)
@@ -876,7 +880,8 @@
             },
             <span class="attr">#[rustfmt::skip]
             </span>ModuleDesc::BySourcePath { <span class="kw-2">ref </span>logical_name, <span class="kw-2">ref </span>source_path, <span class="kw-2">ref </span>compiled_module_path, .. } =&gt; ModuleDescView {
-                key: source_path.as_str(),
+                <span class="attr">#[allow(clippy::useless_asref)]
+                </span>key: source_path.as_ref().as_ref(),
                 unique_by: UniqueBy::SourcePath,
                 source_path: <span class="prelude-val">Some</span>(source_path.borrow()),
                 compiled_module_path: compiled_module_path.as_deref(),
@@ -1027,9 +1032,9 @@
     <span class="kw">use </span>alloc::string::String;
 
     <span class="kw">use </span>::proptest::prelude::<span class="kw-2">*</span>;
-    <span class="kw">use </span>camino::Utf8PathBuf;
 
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
+    <span class="kw">use </span><span class="kw">crate</span>::vendor::camino::Utf8PathBuf;
 
     <span class="macro">proptest!</span> {
         <span class="attr">#[cfg_attr(miri, ignore)]
@@ -1066,9 +1071,10 @@
                     <span class="macro">assert!</span>(<span class="macro">matches!</span>(view.unique_by, UniqueBy::LogicalName));
                     <span class="macro">assert_eq!</span>(view.key, logical_name);
                 }
-                ModuleDesc::BySourcePath { .. } =&gt; {
+                <span class="attr">#[allow(clippy::useless_asref)]
+                </span>ModuleDesc::BySourcePath { .. } =&gt; {
                     <span class="macro">assert!</span>(<span class="macro">matches!</span>(view.unique_by, UniqueBy::SourcePath));
-                    <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(view.key), source_path.as_deref().map(|s| s.as_str()));
+                    <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(view.key), source_path.as_deref().map(|s| s.as_ref()));
                 }
             }
         }
