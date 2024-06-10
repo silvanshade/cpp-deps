@@ -586,7 +586,7 @@ mod test {
                 use super::*;
 
                 #[test]
-                #[should_panic(expected = "test.ddi:6:28: error: Duplicate field: `revision`\n")]
+                #[should_panic(expected = "test.ddi:6:27: error: Duplicate field: `revision`\n")]
                 fn duplicate_field_revision() {
                     let text = r#"{
                         "version": 1,
@@ -605,7 +605,7 @@ mod test {
                 }
 
                 #[test]
-                #[should_panic(expected = "test.ddi:6:28: error: Duplicate field: `rules`\n")]
+                #[should_panic(expected = "test.ddi:6:27: error: Duplicate field: `rules`\n")]
                 fn duplicate_field_rules() {
                     let text = r#"{
                         "version": 1,
@@ -625,7 +625,7 @@ mod test {
                 }
 
                 #[test]
-                #[should_panic(expected = "test.ddi:6:27: error: Duplicate field: `version`\n")]
+                #[should_panic(expected = "test.ddi:6:26: error: Duplicate field: `version`\n")]
                 fn duplicate_field_version() {
                     let text = r#"{
                         "version": 1,
@@ -644,7 +644,7 @@ mod test {
                 }
 
                 #[test]
-                #[should_panic(expected = "test.ddi:3:21: error: Missing field: `rules`\n")]
+                #[should_panic(expected = "test.ddi:3:20: error: Missing field: `rules`\n")]
                 fn missing_field_rules() {
                     let text = r#"{
                         "version": 1
@@ -659,7 +659,7 @@ mod test {
                 }
 
                 #[test]
-                #[should_panic(expected = "test.ddi:3:21: error: Missing field: `version`\n")]
+                #[should_panic(expected = "test.ddi:3:20: error: Missing field: `version`\n")]
                 fn missing_field_version() {
                     let text = r#"{
                         "rules": []
@@ -675,7 +675,7 @@ mod test {
 
                 #[test]
                 #[should_panic(
-                    expected = "test.ddi:3:28: error: Failed parsing DepFile fields:\nexpected one of: { \"revision\", \"rules\", \"version\" }\n"
+                    expected = "test.ddi:3:27: error: Failed parsing DepFile fields:\nexpected one of: { \"revision\", \"rules\", \"version\" }\n"
                 )]
                 fn mismatch_field_revision() {
                     let text = r#"{
@@ -695,7 +695,7 @@ mod test {
 
                 #[test]
                 #[should_panic(
-                    expected = "test.ddi:4:28: error: Failed parsing DepFile fields:\nexpected one of: { \"revision\", \"rules\", \"version\" }\n"
+                    expected = "test.ddi:4:27: error: Failed parsing DepFile fields:\nexpected one of: { \"revision\", \"rules\", \"version\" }\n"
                 )]
                 fn mismatch_field_rules() {
                     let text = r#"{
@@ -715,7 +715,7 @@ mod test {
 
                 #[test]
                 #[should_panic(
-                    expected = "test.ddi:2:27: error: Failed parsing DepFile fields:\nexpected one of: { \"revision\", \"rules\", \"version\" }\n"
+                    expected = "test.ddi:2:26: error: Failed parsing DepFile fields:\nexpected one of: { \"revision\", \"rules\", \"version\" }\n"
                 )]
                 fn mismatch_field() {
                     let text = r#"{
@@ -736,7 +736,7 @@ mod test {
 
                 #[test]
                 #[should_panic(
-                    expected = "test.ddi:4:26: error: Failed parsing DepFile fields:\nexpected one of: { \"revision\", \"rules\", \"version\" }\n"
+                    expected = "test.ddi:4:25: error: Failed parsing DepFile fields:\nexpected one of: { \"revision\", \"rules\", \"version\" }\n"
                 )]
                 fn mismatch_field_unquoted() {
                     let text = r#"{
@@ -764,7 +764,7 @@ mod test {
                 use super::*;
 
                 #[test]
-                #[should_panic(expected = "test.ddi:7:35: error: Duplicate field: `outputs`\n")]
+                #[should_panic(expected = "test.ddi:7:34: error: Duplicate field: `outputs`\n")]
                 fn duplicate_field_outputs() {
                     let text = r#"{
                         "version": 1,
@@ -786,7 +786,7 @@ mod test {
                 }
 
                 #[test]
-                #[should_panic(expected = "test.ddi:7:37: error: Duplicate field: `primary_output`\n")]
+                #[should_panic(expected = "test.ddi:7:36: error: Duplicate field: `primary_output`\n")]
                 fn duplicate_field_primary_output() {
                     let text = r#"{
                         "version": 1,
@@ -808,7 +808,7 @@ mod test {
                 }
 
                 #[test]
-                #[should_panic(expected = "test.ddi:7:37: error: Duplicate field: `provides`\n")]
+                #[should_panic(expected = "test.ddi:7:36: error: Duplicate field: `provides`\n")]
                 fn duplicate_field_provides() {
                     let text = r#"{
                         "version": 1,
@@ -830,7 +830,7 @@ mod test {
                 }
 
                 #[test]
-                #[should_panic(expected = "test.ddi:7:35: error: Duplicate field: `requires`\n")]
+                #[should_panic(expected = "test.ddi:7:34: error: Duplicate field: `requires`\n")]
                 fn duplicate_field_requires() {
                     let text = r#"{
                         "version": 1,
@@ -852,7 +852,7 @@ mod test {
                 }
 
                 #[test]
-                #[should_panic(expected = "test.ddi:7:35: error: Duplicate field: `work-directory`\n")]
+                #[should_panic(expected = "test.ddi:7:34: error: Duplicate field: `work-directory`\n")]
                 fn duplicate_field_work_directory() {
                     let text = r#"{
                         "version": 1,
@@ -875,7 +875,7 @@ mod test {
 
                 #[test]
                 #[should_panic(
-                    expected = "test.ddi:6:37: error: Failed parsing DepInfo fields:\nexpected one of: { \"outputs\", \"primary-output\", \"provides\", \"requires\", \"work-directory\" }\n"
+                    expected = "test.ddi:6:36: error: Failed parsing DepInfo fields:\nexpected one of: { \"outputs\", \"primary-output\", \"provides\", \"requires\", \"work-directory\" }\n"
                 )]
                 fn mismatch_field_primary_output() {
                     let text = r#"{
@@ -899,7 +899,7 @@ mod test {
 
                 #[test]
                 #[should_panic(
-                    expected = "test.ddi:7:33: error: Failed parsing DepInfo fields:\nexpected one of: { \"outputs\", \"primary-output\", \"provides\", \"requires\", \"work-directory\" }\n"
+                    expected = "test.ddi:7:32: error: Failed parsing DepInfo fields:\nexpected one of: { \"outputs\", \"primary-output\", \"provides\", \"requires\", \"work-directory\" }\n"
                 )]
                 fn mismatch_field_provides() {
                     let text = r#"{
@@ -923,7 +923,7 @@ mod test {
 
                 #[test]
                 #[should_panic(
-                    expected = "test.ddi:6:32: error: Failed parsing DepInfo fields:\nexpected one of: { \"outputs\", \"primary-output\", \"provides\", \"requires\", \"work-directory\" }\n"
+                    expected = "test.ddi:6:31: error: Failed parsing DepInfo fields:\nexpected one of: { \"outputs\", \"primary-output\", \"provides\", \"requires\", \"work-directory\" }\n"
                 )]
                 fn mismatch_field_pr() {
                     let text = r#"{
@@ -946,7 +946,7 @@ mod test {
 
                 #[test]
                 #[should_panic(
-                    expected = "test.ddi:6:31: error: Failed parsing DepInfo fields:\nexpected one of: { \"outputs\", \"primary-output\", \"provides\", \"requires\", \"work-directory\" }\n"
+                    expected = "test.ddi:6:30: error: Failed parsing DepInfo fields:\nexpected one of: { \"outputs\", \"primary-output\", \"provides\", \"requires\", \"work-directory\" }\n"
                 )]
                 fn mismatch_field() {
                     let text = r#"{
@@ -969,7 +969,7 @@ mod test {
 
                 #[test]
                 #[should_panic(
-                    expected = "test.ddi:6:30: error: Failed parsing DepInfo fields:\nexpected one of: { \"outputs\", \"primary-output\", \"provides\", \"requires\", \"work-directory\" }\n"
+                    expected = "test.ddi:6:29: error: Failed parsing DepInfo fields:\nexpected one of: { \"outputs\", \"primary-output\", \"provides\", \"requires\", \"work-directory\" }\n"
                 )]
                 fn mismatch_field_unquoted() {
                     let text = r#"{
@@ -999,7 +999,7 @@ mod test {
                 use super::*;
 
                 #[test]
-                #[should_panic(expected = "test.ddi:9:43: error: Duplicate field: `source-path`\n")]
+                #[should_panic(expected = "test.ddi:9:42: error: Duplicate field: `source-path`\n")]
                 fn duplicate_field_source_path() {
                     let text = r#"{
                         "version": 1,
@@ -1025,7 +1025,7 @@ mod test {
                 }
 
                 #[test]
-                #[should_panic(expected = "test.ddi:9:43: error: Duplicate field: `compiled-module-path`\n")]
+                #[should_panic(expected = "test.ddi:9:42: error: Duplicate field: `compiled-module-path`\n")]
                 fn duplicate_field_compiled_module_path() {
                     let text = r#"{
                         "version": 1,
@@ -1051,7 +1051,7 @@ mod test {
                 }
 
                 #[test]
-                #[should_panic(expected = "test.ddi:9:43: error: Duplicate field: `logical-name`\n")]
+                #[should_panic(expected = "test.ddi:9:42: error: Duplicate field: `logical-name`\n")]
                 fn duplicate_field_logical_name() {
                     let text = r#"{
                         "version": 1,
@@ -1077,7 +1077,7 @@ mod test {
                 }
 
                 #[test]
-                #[should_panic(expected = "test.ddi:9:43: error: Duplicate field: `unique-on-source-path`\n")]
+                #[should_panic(expected = "test.ddi:9:42: error: Duplicate field: `unique-on-source-path`\n")]
                 fn duplicate_field_unique_on_source_path() {
                     let text = r#"{
                         "version": 1,
@@ -1103,7 +1103,7 @@ mod test {
                 }
 
                 #[test]
-                #[should_panic(expected = "test.ddi:9:43: error: Duplicate field: `is-interface`\n")]
+                #[should_panic(expected = "test.ddi:9:42: error: Duplicate field: `is-interface`\n")]
                 fn duplicate_field_is_interface() {
                     let text = r#"{
                         "version": 1,
@@ -1130,7 +1130,7 @@ mod test {
 
                 #[test]
                 #[should_panic(
-                    expected = "test.ddi:8:43: error: Failed parsing object fields:\nexpected one of: { \"compiled-module-path\", \"is-interface\", \"logical-name\", \"source-path\", \"unique-on-source-path\" }\n"
+                    expected = "test.ddi:8:42: error: Failed parsing object fields:\nexpected one of: { \"compiled-module-path\", \"is-interface\", \"logical-name\", \"source-path\", \"unique-on-source-path\" }\n"
                 )]
                 fn mismatch_field() {
                     let text = r#"{
@@ -1157,7 +1157,7 @@ mod test {
 
                 #[test]
                 #[should_panic(
-                    expected = "test.ddi:8:42: error: Failed parsing object fields:\nexpected one of: { \"compiled-module-path\", \"is-interface\", \"logical-name\", \"source-path\", \"unique-on-source-path\" }\n"
+                    expected = "test.ddi:8:41: error: Failed parsing object fields:\nexpected one of: { \"compiled-module-path\", \"is-interface\", \"logical-name\", \"source-path\", \"unique-on-source-path\" }\n"
                 )]
                 fn mismatch_field_unquoted() {
                     let text = r#"{
@@ -1203,7 +1203,7 @@ mod test {
                 use super::*;
 
                 #[test]
-                #[should_panic(expected = "test.ddi:9:43: error: Duplicate field: `source-path`\n")]
+                #[should_panic(expected = "test.ddi:9:42: error: Duplicate field: `source-path`\n")]
                 fn duplicate_field_source_path() {
                     let text = r#"{
                         "version": 1,
@@ -1229,7 +1229,7 @@ mod test {
                 }
 
                 #[test]
-                #[should_panic(expected = "test.ddi:9:43: error: Duplicate field: `compiled-module-path`\n")]
+                #[should_panic(expected = "test.ddi:9:42: error: Duplicate field: `compiled-module-path`\n")]
                 fn duplicate_field_compiled_module_path() {
                     let text = r#"{
                         "version": 1,
@@ -1255,7 +1255,7 @@ mod test {
                 }
 
                 #[test]
-                #[should_panic(expected = "test.ddi:9:45: error: Duplicate field: `logical-name`\n")]
+                #[should_panic(expected = "test.ddi:9:44: error: Duplicate field: `logical-name`\n")]
                 fn duplicate_field_logical_name() {
                     let text = r#"{
                         "version": 1,
@@ -1281,7 +1281,7 @@ mod test {
                 }
 
                 #[test]
-                #[should_panic(expected = "test.ddi:9:43: error: Duplicate field: `unique-on-source-path`\n")]
+                #[should_panic(expected = "test.ddi:9:42: error: Duplicate field: `unique-on-source-path`\n")]
                 fn duplicate_field_unique_on_source_path() {
                     let text = r#"{
                         "version": 1,
@@ -1307,7 +1307,7 @@ mod test {
                 }
 
                 #[test]
-                #[should_panic(expected = "test.ddi:9:45: error: Duplicate field: `lookup-method`\n")]
+                #[should_panic(expected = "test.ddi:9:44: error: Duplicate field: `lookup-method`\n")]
                 fn duplicate_field_lookup_method() {
                     let text = r#"{
                         "version": 1,
@@ -1334,7 +1334,7 @@ mod test {
 
                 #[test]
                 #[should_panic(
-                    expected = "test.ddi:8:45: error: Failed parsing object fields:\nexpected one of: { \"compiled-module-path\", \"logical-name\", \"lookup-method\", \"source-path\", \"unique-on-source-path\" }\n"
+                    expected = "test.ddi:8:44: error: Failed parsing object fields:\nexpected one of: { \"compiled-module-path\", \"logical-name\", \"lookup-method\", \"source-path\", \"unique-on-source-path\" }\n"
                 )]
                 fn mismatch_field_l() {
                     let text = r#"{
@@ -1361,7 +1361,7 @@ mod test {
 
                 #[test]
                 #[should_panic(
-                    expected = "test.ddi:8:43: error: Failed parsing object fields:\nexpected one of: { \"compiled-module-path\", \"logical-name\", \"lookup-method\", \"source-path\", \"unique-on-source-path\" }\n"
+                    expected = "test.ddi:8:42: error: Failed parsing object fields:\nexpected one of: { \"compiled-module-path\", \"logical-name\", \"lookup-method\", \"source-path\", \"unique-on-source-path\" }\n"
                 )]
                 fn mismatch_field() {
                     let text = r#"{
@@ -1388,7 +1388,7 @@ mod test {
 
                 #[test]
                 #[should_panic(
-                    expected = "test.ddi:8:42: error: Failed parsing object fields:\nexpected one of: { \"compiled-module-path\", \"logical-name\", \"lookup-method\", \"source-path\", \"unique-on-source-path\" }\n"
+                    expected = "test.ddi:8:41: error: Failed parsing object fields:\nexpected one of: { \"compiled-module-path\", \"logical-name\", \"lookup-method\", \"source-path\", \"unique-on-source-path\" }\n"
                 )]
                 fn mismatch_field_unquoted() {
                     let text = r#"{
@@ -1422,7 +1422,7 @@ mod test {
 
                     #[test]
                     #[should_panic(
-                        expected = "test.ddi:10:6: error: Failed parsing `LookupMethod`:\nexpected one of: { \"by-name\", \"include-angle\", \"include-quote\" }\n"
+                        expected = "test.ddi:10:5: error: Failed parsing `LookupMethod`:\nexpected one of: { \"by-name\", \"include-angle\", \"include-quote\" }\n"
                     )]
                     fn mismatch_field_include() {
                         let text = r#"{
@@ -1450,7 +1450,7 @@ mod test {
 
                     #[test]
                     #[should_panic(
-                        expected = "test.ddi:9:64: error: Failed parsing `LookupMethod`:\nexpected one of: { \"by-name\", \"include-angle\", \"include-quote\" }\n"
+                        expected = "test.ddi:9:63: error: Failed parsing `LookupMethod`:\nexpected one of: { \"by-name\", \"include-angle\", \"include-quote\" }\n"
                     )]
                     fn mismatch_field_by_name_include() {
                         let text = r#"{
@@ -1478,7 +1478,7 @@ mod test {
 
                     #[test]
                     #[should_panic(
-                        expected = "test.ddi:9:63: error: Failed parsing `LookupMethod`:\nexpected one of: { \"by-name\", \"include-angle\", \"include-quote\" }\n"
+                        expected = "test.ddi:9:62: error: Failed parsing `LookupMethod`:\nexpected one of: { \"by-name\", \"include-angle\", \"include-quote\" }\n"
                     )]
                     fn mismatch_field_unquoted() {
                         let text = r#"{
@@ -1516,7 +1516,7 @@ mod test {
                 "rules": [
                     {
                         "work-directory": "build",
-                        "primary-output": "fo\u{2764}o.\u{1f4af}o",
+                        "primary-output": "fo\u2764o.o",
                         "outputs": [
                             "foo.d"
                         ],
@@ -1531,6 +1531,40 @@ mod test {
             let state = State::default();
             let mut stream = ParseStream::new(path, input, state);
             let dep_file = r5::parsers::dep_file.parse(&mut stream).unwrap();
+            let primary_output = &dep_file.rules[0].primary_output;
+            assert_eq!(primary_output.as_deref().map(AsRef::<str>::as_ref), Some("fo❤o.o"));
+            assert_eq!(1, crate::util::count_escapes(text));
+            assert_eq!(1, crate::util::count_escaped_strings(text).1);
+            assert_eq!(0, dep_file.count_escapes_total());
+            assert_eq!(1, dep_file.count_copies());
+        }
+
+        #[test]
+        fn check_has_escapes_surrogates() {
+            let text = r#"
+            {
+                "version": 1,
+                "revision": 0,
+                "rules": [
+                    {
+                        "work-directory": "build",
+                        "primary-output": "fo\uD834\uDD1Eo.o",
+                        "outputs": [
+                            "foo.d"
+                        ],
+                        "provides": [],
+                        "requires": []
+                    }
+                ]
+            }
+            "#;
+            let path = "test.ddi";
+            let input = text.as_bytes();
+            let state = State::default();
+            let mut stream = ParseStream::new(path, input, state);
+            let dep_file = r5::parsers::dep_file.parse(&mut stream).unwrap();
+            let primary_output = &dep_file.rules[0].primary_output;
+            assert_eq!(primary_output.as_deref().map(AsRef::<str>::as_ref), Some("fo𝄞o.o"));
             assert_eq!(2, crate::util::count_escapes(text));
             assert_eq!(1, crate::util::count_escaped_strings(text).1);
             assert_eq!(0, dep_file.count_escapes_total());

@@ -28,7 +28,7 @@ builders = []
 # UTF-8 paths instead of plain strings.
 camino = ["dep:camino"]
 # Enable tests against external corpus.
-corpus = []
+corpus = ["std"]
 # Generation of p1689r5 data structures. Only intended for internal usage.
 datagen = ["dep:fake", "dep:petgraph", "dep:rand", "dep:serde_json", "arbitrary", "serde", "serialize"]
 # Deserialization support via serde.
@@ -68,4 +68,5 @@ monostate = { version = "0.1", default-features = false }
 proptest = { version = "1.4", default-features = false, features = ["std"] }
 rand = { version = "0.8", default-features = false}
 rand_chacha = { version = "0.3", features = ["simd"] }
+regex = { version = "1.10" }
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }

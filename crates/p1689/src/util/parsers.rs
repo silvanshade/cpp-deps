@@ -145,7 +145,10 @@ pub enum ErrorKind<'i, E> {
     FailedParsingJsonObjectProperty,
     FailedParsingJsonStringEscape,
     FailedParsingJsonUnsignedInteger,
+    InvalidUnicodeEscapeHex { bytes: [u8; 4] },
+    InvalidUnicodeLowerSurrogate { lo: u32 },
     MissingField { field: &'static str },
+    MissingUnicodeLowerSurrogate { hi: u32 },
     NextByte,
     ByteMismatch { expected: u8 },
     NextSlice { offset: usize },
@@ -168,11 +171,15 @@ impl<'i, E> Error<'i, E> {
         let bytes = String::from_utf8_lossy(self.bytes);
         let mut row = 0u64;
         let mut col = 0u64;
-        for line in input[.. input.len() - bytes.len()].lines() {
+        let text = &input[.. input.len() - bytes.len()];
+        if text.is_empty() {
+            row += 1;
+            col += 1;
+        }
+        for line in text.lines() {
             col = u64::try_from(line.len()).unwrap();
             row += 1;
         }
-        col += 1;
         write!(f, "{}:{}:{}: error: ", self.path, row, col)?;
         Ok(())
     }
@@ -190,7 +197,7 @@ where
         self.context(f)?;
         match &self.error {
             ErrorKind::CharFromUnicodeFailed { unicode } => {
-                writeln!(f, "Conversion of unicode u32 to char failed: u32 value: {unicode}")?;
+                writeln!(f, "Conversion of unicode u32 to char failed: u32 value: {unicode:#06x}")?;
             },
             ErrorKind::DuplicateField { field } => {
                 writeln!(f, "Duplicate field: `{field}`")?;
@@ -219,8 +226,17 @@ where
             ErrorKind::FailedParsingJsonUnsignedInteger => { // tarpaulin::hint
                 writeln!(f, "Failed parsing JSON unsigned integer")?;
             },
+            ErrorKind::InvalidUnicodeEscapeHex { bytes } => {
+                writeln!(f, "Invalid unicode escape hex: {}", String::from_utf8_lossy(bytes.as_slice()))?;
+            },
+            ErrorKind::InvalidUnicodeLowerSurrogate { lo } => {
+                writeln!(f, "Invalid unicode lower surrogate: {lo:#04x}")?;
+            }
             &ErrorKind::MissingField { field } => {
                 writeln!(f, "Missing field: `{field}`")?;
+            },
+            ErrorKind::MissingUnicodeLowerSurrogate { hi } => {
+                writeln!(f, "Missing unicode lower surrogate pair for leading high surrogate: {hi:#04x}")?;
             },
             ErrorKind::NextByte => { // tarpaulin::hint
                 writeln!(f, "No remaining bytes")?;
@@ -376,6 +392,35 @@ pub mod json {
 pub mod number {
     use super::*;
 
+    #[allow(clippy::identity_op)]
+    const fn dec_to_hex(num: u8) -> [u8; 2] {
+        let lut = b"0123456789abcdef";
+        let mut hex = [0u8; 2];
+        hex[0] = lut[(num as usize & 0xf0) >> 4];
+        hex[1] = lut[(num as usize & 0x0f) >> 0];
+        hex
+    }
+
+    const HEX_LUT: [u32; 0x10000] = {
+        let mut lut = [u32::MAX; 0x10000];
+        let mut dec = 0u8;
+        loop {
+            let mut hex = dec_to_hex(dec);
+            lut[u16::from_ne_bytes(hex) as usize] = dec as u32;
+            hex[0] -= 32;
+            lut[u16::from_ne_bytes(hex) as usize] = dec as u32;
+            hex[1] -= 32;
+            lut[u16::from_ne_bytes(hex) as usize] = dec as u32;
+            hex[0] += 32;
+            lut[u16::from_ne_bytes(hex) as usize] = dec as u32;
+            if dec == u8::MAX {
+                break;
+            }
+            dec += 1;
+        }
+        lut
+    };
+
     pub fn from_radix_10(text: &[u8]) -> (u32, usize) {
         let mut idx = 0;
         let mut num = 0;
@@ -391,19 +436,11 @@ pub mod number {
         (num, idx)
     }
 
-    pub fn from_radix_16(text: &[u8]) -> (u32, usize) {
-        let mut idx = 0;
-        let mut num = 0u32;
-        while idx != text.len() {
-            if let Some(dig) = self::number::ascii_to_hex_digit(text[idx]) {
-                num *= 16;
-                num += dig;
-                idx += 1;
-            } else {
-                break;
-            }
-        }
-        (num, idx)
+    pub fn from_radix_16(bytes: [u8; 4]) -> Option<u32> {
+        let fst = HEX_LUT[u16::from_ne_bytes([bytes[0], bytes[1]]) as usize];
+        let snd = HEX_LUT[u16::from_ne_bytes([bytes[2], bytes[3]]) as usize];
+        let val = fst << 8 | snd;
+        (val != u32::MAX).then_some(val)
     }
 
     #[cfg(feature = "parsing")]
@@ -419,29 +456,6 @@ pub mod number {
             b'7' => Some(7),
             b'8' => Some(8),
             b'9' => Some(9),
-            _ => None,
-        }
-    }
-
-    #[cfg(feature = "parsing")]
-    pub fn ascii_to_hex_digit(character: u8) -> Option<u32> {
-        match character {
-            b'0' => Some(0),
-            b'1' => Some(1),
-            b'2' => Some(2),
-            b'3' => Some(3),
-            b'4' => Some(4),
-            b'5' => Some(5),
-            b'6' => Some(6),
-            b'7' => Some(7),
-            b'8' => Some(8),
-            b'9' => Some(9),
-            b'a' | b'A' => Some(10),
-            b'b' | b'B' => Some(11),
-            b'c' | b'C' => Some(12),
-            b'd' | b'D' => Some(13),
-            b'e' | b'E' => Some(14),
-            b'f' | b'F' => Some(15),
             _ => None,
         }
     }
@@ -520,32 +534,28 @@ pub mod string {
     #[cfg(feature = "memchr")]
     #[rustfmt::skip]
     pub(crate) fn json_string<'i, E>(stream: &mut ParseStream<'i, E>) -> Result<Cow<'i, str>, Error<'i, E>> {
-        if stream.peek_byte()? != b'"' {
-            let error = ErrorKind::ByteMismatch { expected: b'"' };
-            return Err(stream.error(error));
-        }
-        let mut off = 1;
+        stream.match_byte(b'"')?;
         let mut text = Cow::Borrowed(b"".as_slice());
         loop {
-            let Some(needle) = stream.state.finders.quotes_or_backslash.find(&stream.bytes[off ..]) else {
+            let Some(needle) = stream.state.finders.quotes_or_backslash.find(stream.bytes) else {
                 let error = ErrorKind::EndOfStringNotFound;
                 return Err(stream.error(error));
             };
-            let data = stream.next_slice(needle + off + 1)?;
+            let data = stream.next_slice(needle + 1)?;
             match data[data.len() - 1] {
                 b'"' => { // tarpaulin::hint
+                    let trim = &data[.. data.len() - 1];
                     #[allow(clippy::useless_conversion)] // tarpaulin::hint
                     if text.is_empty() {
-                        text = Cow::Borrowed(data.into()) // tarpaulin::hint
+                        text = Cow::Borrowed(trim.into()) // tarpaulin::hint
                     } else {
-                        text.to_mut().extend_from_slice(data);
+                        text.to_mut().extend_from_slice(trim);
                     };
                     break; // tarpaulin::hint
                 },
                 b'\\' => unescape(&mut text, data).parse(stream)?,
                 _ => unreachable!(),
             }
-            off = 0;
         }
         let utf8 = bstr_to_utf8(stream, text)?;
         Ok(utf8)
@@ -562,35 +572,33 @@ pub mod string {
     #[rustfmt::skip]
     #[inline(always)]
     pub(crate) fn json_string_sans_memchr<'i, E>(stream: &mut ParseStream<'i, E>) -> Result<Cow<'i, str>, Error<'i, E>> { let _ = ();
-        if stream.peek_byte()? != b'"' {
-            let error = ErrorKind::ByteMismatch { expected: b'"' };
-            return Err(stream.error(error));
-        }
+        stream.match_byte(b'"')?;
         let mut text = Cow::Borrowed(b"".as_slice());
-        let mut off = 1;
+        let mut off = 0;
         loop {
             let Some(byte) = stream.bytes.get(off) else {
                 let error = ErrorKind::EndOfStringNotFound;
                 return Err(stream.error(error));
             };
             match byte {
-                b'\\' => { // tarpaulin::hint
-                    let data = stream.next_slice(off + 1)?;
-                    unescape(&mut text, data).parse(stream)?;
-                    off = 0;
-                },
                 b'"' => { // tarpaulin::hint
                     let data = stream.next_slice(off + 1)?;
+                    let trim = &data[.. data.len() - 1];
                     #[allow(clippy::useless_conversion)] // tarpaulin::hint
                     if text.is_empty() {
                         #[cfg(not(tarpaulin_include))]
                         {
-                            text = Cow::Borrowed(data.into())
+                            text = Cow::Borrowed(trim.into())
                         }
                     } else {
-                        text.to_mut().extend_from_slice(data);
+                        text.to_mut().extend_from_slice(trim);
                     };
                     break; // tarpaulin::hint
+                },
+                b'\\' => { // tarpaulin::hint
+                    let data = stream.next_slice(off + 1)?;
+                    unescape(&mut text, data).parse(stream)?;
+                    off = 0;
                 },
                 _ => {}, // tarpaulin::hint
             }
@@ -610,7 +618,7 @@ pub mod string {
         Ok(path)
     }
 
-    fn unescape<'i, 'r, E>(dst: &'r mut Cow<'i, [u8]>, src: &'i [u8]) -> impl Parser<'i, (), E> + 'r {
+    pub(crate) fn unescape<'i, 'r, E>(dst: &'r mut Cow<'i, [u8]>, src: &'i [u8]) -> impl Parser<'i, (), E> + 'r {
         |stream: &mut ParseStream<'i, E>| {
             let src = &src[.. src.len() - 1];
             match stream.next_byte()? {
@@ -629,22 +637,91 @@ pub mod string {
         }
     }
 
+    #[cfg(test)]
+    pub(crate) fn u32_to_utf8(char: char) -> alloc::string::String {
+        let mut dst = [0u8; 4];
+        char.encode_utf8(&mut dst);
+        let mut out = alloc::string::String::new();
+        out.push_str(&std::format!("{:#04x}", dst[0]).replace("0x", "\\u"));
+        out.push_str(&std::format!("{:#04x}", dst[1]).replace("0x", ""));
+        if dst[2] != 0 || dst[3] != 0 {
+            out.push_str(&std::format!("{:#04x}", dst[2]).replace("0x", "\\u"));
+            out.push_str(&std::format!("{:#04x}", dst[3]).replace("0x", ""));
+        }
+        out
+    }
+
+    #[cfg(test)]
+    pub(crate) fn u32_to_utf16(char: char) -> alloc::string::String {
+        let mut dst = [0u16; 2];
+        char.encode_utf16(&mut dst);
+        let mut out = alloc::string::String::new();
+        out.push_str(&std::format!("{:#06x}", dst[0]).replace("0x", "\\u"));
+        out.push_str(&std::format!("{:#06x}", dst[1]).replace("0x", "\\u"));
+        out
+    }
+
+    #[inline(always)]
+    fn is_high_surrogate(code: u32) -> bool {
+        (0xd800 ..= 0xdbff).contains(&code)
+    }
+
+    #[inline(always)]
+    fn is_low_surrogate(code: u32) -> bool {
+        (0xdc00 ..= 0xdfff).contains(&code)
+    }
+
+    #[inline(always)]
+    fn code_to_char<'i, E>(unicode: u32, stream: &ParseStream<'i, E>) -> Result<char, Error<'i, E>> {
+        core::char::from_u32(unicode).ok_or_else(|| {
+            let error = ErrorKind::CharFromUnicodeFailed { unicode };
+            stream.error(error)
+        })
+    }
+
     pub(crate) fn unescape_unicode<'i, 'r, E>(
         dst: &'r mut Cow<'i, [u8]>,
         src: &'i [u8],
     ) -> impl Parser<'i, (), E> + 'r {
         |stream: &mut ParseStream<'i, E>| {
-            stream.match_byte(b'{')?;
-            let (unicode, needle) = self::number::from_radix_16(stream.bytes);
-            stream.next_slice(needle)?; // tarpaulin::hint
-            stream.match_byte(b'}')?;
-            let escaped = core::char::from_u32(unicode).ok_or_else(|| {
-                let error = ErrorKind::CharFromUnicodeFailed { unicode };
-                stream.error(error)
-            })?;
-            stream.state.encode_utf8(dst, src, escaped);
+            let hi = {
+                let code = ucs_hex_code.parse(stream)?;
+                if !is_high_surrogate(code) {
+                    stream.state.encode_utf8(dst, src, code_to_char(code, stream)?);
+                    return Ok(());
+                }
+                code
+            };
+            let lo = {
+                if stream.next_slice(2)? != b"\\u" {
+                    let error = ErrorKind::MissingUnicodeLowerSurrogate { hi };
+                    return Err(stream.error(error));
+                };
+                let code = ucs_hex_code(stream)?;
+                if !is_low_surrogate(code) {
+                    let error = ErrorKind::InvalidUnicodeLowerSurrogate { lo: code };
+                    return Err(stream.error(error));
+                }
+                code
+            };
+            let code = ((hi - 0xd800) << 10) + (lo - 0xdc00) + 0x10000;
+            stream.state.encode_utf8(dst, src, code_to_char(code, stream)?);
             Ok(())
         }
+    }
+
+    #[inline(always)]
+    pub(crate) fn ucs_hex_code<'i, E>(stream: &mut ParseStream<'i, E>) -> Result<u32, Error<'i, E>> {
+        let offset = 4;
+        let bytes = stream.next_slice(offset)?.try_into().map_err(|_| {
+            let error = ErrorKind::NextSlice { offset };
+            stream.error(error)
+        })?;
+        let unicode = self::number::from_radix_16(bytes).ok_or_else(|| {
+            let error = ErrorKind::InvalidUnicodeEscapeHex { bytes };
+            stream.error(error)
+        })?;
+        Ok(unicode)
     }
 }
 
@@ -668,7 +745,7 @@ mod test {
             use super::*;
 
             #[test]
-            #[should_panic(expected = "test.ddi:0:1: error: No remaining bytes\n")]
+            #[should_panic(expected = "test.ddi:1:1: error: No remaining bytes\n")]
             fn peek_byte() {
                 let path = "test.ddi";
                 let input = b"".as_slice();
@@ -680,7 +757,7 @@ mod test {
             }
 
             #[test]
-            #[should_panic(expected = "test.ddi:1:2: error: Byte mismatch: expected `1`, actual `0`\n")]
+            #[should_panic(expected = "test.ddi:1:1: error: Byte mismatch: expected `1`, actual `0`\n")]
             fn match_byte() {
                 let path = "test.ddi";
                 let input = b"0".as_slice();
@@ -693,7 +770,7 @@ mod test {
 
             #[test]
             #[should_panic(
-                expected = "test.ddi:0:1: error: Remaining bytes less than requested slice length: remaining: 3, requested: 6\n"
+                expected = "test.ddi:1:1: error: Remaining bytes less than requested slice length: remaining: 3, requested: 6\n"
             )]
             fn next_slice() {
                 let path = "test.ddi";
@@ -706,7 +783,7 @@ mod test {
             }
 
             #[test]
-            #[should_panic(expected = "test.ddi:1:7: error: Slice mismatch: expected `barbaz`, actual `foobar`\n")]
+            #[should_panic(expected = "test.ddi:1:6: error: Slice mismatch: expected `barbaz`, actual `foobar`\n")]
             fn match_slice() {
                 let path = "test.ddi";
                 let input = b"foobar".as_slice();
@@ -727,7 +804,7 @@ mod test {
             use super::*;
 
             #[test]
-            #[should_panic(expected = "test.ddi:1:2: error: Failed parsing bool\n")]
+            #[should_panic(expected = "test.ddi:1:1: error: Failed parsing bool\n")]
             fn bool() {
                 let text = "#rue";
                 let path = "test.ddi";
@@ -741,7 +818,7 @@ mod test {
 
             #[test]
             #[should_panic(
-                expected = "test.ddi:1:10: error: Failed parsing JSON object property:\nexpected one of: { ',', '}' }\n"
+                expected = "test.ddi:1:9: error: Failed parsing JSON object property:\nexpected one of: { ',', '}' }\n"
             )]
             fn field() {
                 let text = "\"key\": 0 #";
@@ -759,7 +836,7 @@ mod test {
 
             #[test]
             #[should_panic(
-                expected = "test.ddi:1:6: error: Failed parsing JSON array:\nexpected one of: { ',', ']' }\n"
+                expected = "test.ddi:1:5: error: Failed parsing JSON array:\nexpected one of: { ',', ']' }\n"
             )]
             fn vec() {
                 let text = "[ 0 #";
@@ -778,37 +855,12 @@ mod test {
 
     mod number {
         use super::*;
-        use crate::util::parsers::number::*;
-
-        #[test]
-        fn number_from_radix_16_correct_static() {
-            let char = '💯';
-            let text = char.escape_unicode().to_string();
-            let text = text.strip_prefix("\\u{").unwrap();
-            let input = text.as_bytes();
-            let (number, index) = self::number::from_radix_16(input);
-            assert_eq!(number, u32::from(char));
-            assert_eq!(index, text.strip_suffix("}").unwrap().len());
-        }
-
-        proptest! {
-            #[cfg_attr(miri, ignore)]
-            #[test]
-            fn number_from_radix_16_correct(char in proptest::prelude::any::<char>()) {
-                let text = char.escape_unicode().to_string();
-                let text = text.strip_prefix("\\u{").unwrap();
-                let input = text.as_bytes();
-                let (number, index) = self::number::from_radix_16(input);
-                assert_eq!(number, u32::from(char));
-                assert_eq!(index, text.strip_suffix("}").unwrap().len());
-            }
-        }
 
         mod errors {
             use super::*;
 
             #[test]
-            #[should_panic(expected = "test.ddi:0:1: error: Failed parsing JSON unsigned integer\n")]
+            #[should_panic(expected = "test.ddi:1:1: error: Failed parsing JSON unsigned integer\n")]
             fn dec_uint() {
                 let text = "true";
                 let path = "test.ddi";
@@ -871,7 +923,7 @@ mod test {
                 let mut stream = ParseStream::<()>::new(path, input, state);
                 let unescaped = self::json_string.parse(&mut stream).unwrap();
                 let lhs = unescaped;
-                let rhs = std::format!("\"foo{}bar\"", char::from(raw));
+                let rhs = std::format!("foo{}bar", char::from(raw));
                 assert_eq!(lhs, rhs);
             }
         }
@@ -896,13 +948,13 @@ mod test {
                 let mut stream = ParseStream::<()>::new(path, input, state);
                 let unescaped = self::json_string_sans_memchr.parse(&mut stream).unwrap();
                 let lhs = unescaped;
-                let rhs = std::format!("\"foo{}bar\"", char::from(raw));
+                let rhs = std::format!("foo{}bar", char::from(raw));
                 assert_eq!(lhs, rhs);
             }
         }
 
         #[test]
-        #[should_panic(expected = "test.ddi:0:1: error: UTF-8 validation failed:")]
+        #[should_panic(expected = "test.ddi:1:1: error: UTF-8 validation failed:")]
         fn bstr_to_utf8_expectedly_fails_invalid_utf8_borrowed() {
             let text = "";
             let path = "test.ddi";
@@ -918,7 +970,7 @@ mod test {
         }
 
         #[test]
-        #[should_panic(expected = "test.ddi:0:1: error: UTF-8 validation failed:")]
+        #[should_panic(expected = "test.ddi:1:1: error: UTF-8 validation failed:")]
         fn bstr_to_utf8_expectedly_fails_invalid_utf8_owned() {
             let text = "";
             let path = "test.ddi";
@@ -934,25 +986,90 @@ mod test {
         }
 
         #[test]
-        #[should_panic(expected = "test.ddi:1:7: error: Conversion of unicode u32 to char failed: u32 value: 55296\n")]
-        fn unescape_unicode_expectedly_fails_invalid_utf8() {
-            let mut dst = Cow::Owned(vec![]);
-            let src = &[];
-            let text = "{D800}";
+        #[should_panic(expected = "test.ddi:1:11: error: Invalid unicode lower surrogate: 0x2764\n")]
+        fn unescape_unicode_expectedly_fails_invalid_lower_surrogate() {
+            let text = "uD800\\u2764";
             let path = "test.ddi";
             let input = text.as_bytes();
             let state = State::default();
             let mut stream = ParseStream::<r5::ErrorKind>::new(path, input, state);
-            if let Err(err) = self::unescape_unicode(&mut dst, src).parse(&mut stream) {
+            let mut dst = Cow::Owned(vec![]);
+            let src = b"//";
+            if let Err(err) = self::unescape(&mut dst, src).parse(&mut stream) {
                 panic!("{err}");
             };
+        }
+
+        #[test]
+        #[should_panic(expected = "test.ddi:1:5: error: Conversion of unicode u32 to char failed: u32 value: 0xdc00\n")]
+        fn unescape_unicode_expectedly_fails_invalid_utf8() {
+            let text = "uDC00";
+            let path = "test.ddi";
+            let input = text.as_bytes();
+            let state = State::default();
+            let mut stream = ParseStream::<r5::ErrorKind>::new(path, input, state);
+            let mut dst = Cow::Owned(vec![]);
+            let src = b"//";
+            if let Err(err) = self::unescape(&mut dst, src).parse(&mut stream) {
+                panic!("{err}");
+            };
+        }
+
+        #[test]
+        fn unescape_utf16_static() {
+            let char = '💯';
+            let text = self::string::u32_to_utf16(char);
+            let path = "test.ddi";
+            let input = text.as_bytes().strip_prefix(b"\\").unwrap();
+            let state = State::default();
+            let mut stream = ParseStream::<r5::ErrorKind>::new(path, input, state);
+            let mut dst = Cow::Owned(vec![]);
+            let src = b"\\";
+            if let Err(err) = self::string::unescape(&mut dst, src).parse(&mut stream) {
+                panic!("{err}");
+            };
+            assert_eq!(dst, String::from(char).as_bytes());
+        }
+
+        proptest! {
+            #[cfg_attr(miri, ignore)]
+            #[test]
+            fn unescape_utf8(char in proptest::char::range(char::from_u32(0x0000u32).unwrap(), char::from_u32(0xFFFF).unwrap())) {
+                let text = alloc::format!("{:#06x}", u32::from(char)).replace("0x", "\\u");
+                let path = "test.ddi";
+                let input = text.as_bytes().strip_prefix(b"\\").unwrap();
+                let state = State::default();
+                let mut stream = ParseStream::<r5::ErrorKind>::new(path, input, state);
+                let mut dst = Cow::Owned(vec![]);
+                let src = b"\\";
+                if let Err(err) = self::string::unescape(&mut dst, src).parse(&mut stream) {
+                    panic!("{err}");
+                };
+                assert_eq!(dst, String::from(char).as_bytes());
+            }
+
+            #[cfg_attr(miri, ignore)]
+            #[test]
+            fn unescape_utf16(char in proptest::char::range(char::from_u32(0x10000u32).unwrap(), char::from_u32(0x10FFFF).unwrap())) {
+                let text = self::string::u32_to_utf16(char);
+                let path = "test.ddi";
+                let input = text.as_bytes().strip_prefix(b"\\").unwrap();
+                let state = State::default();
+                let mut stream = ParseStream::<r5::ErrorKind>::new(path, input, state);
+                let mut dst = Cow::Owned(vec![]);
+                let src = b"\\";
+                if let Err(err) = self::string::unescape(&mut dst, src).parse(&mut stream) {
+                    panic!("{err}");
+                };
+                assert_eq!(dst, String::from(char).as_bytes());
+            }
         }
 
         mod errors {
             use super::*;
 
             #[test]
-            #[should_panic(expected = "test.ddi:0:1: error: End of string not found\n")]
+            #[should_panic(expected = "test.ddi:1:1: error: End of string not found\n")]
             fn json_string_partial_string() {
                 let text = "\"foo";
                 let path = "test.ddi";
@@ -965,7 +1082,7 @@ mod test {
             }
 
             #[test]
-            #[should_panic(expected = "test.ddi:0:1: error: End of string not found\n")]
+            #[should_panic(expected = "test.ddi:1:1: error: End of string not found\n")]
             fn json_string_sans_memchr_partial_string() {
                 let text = "\"foob4";
                 let path = "test.ddi";
@@ -978,7 +1095,7 @@ mod test {
             }
 
             #[test]
-            #[should_panic(expected = "test.ddi:0:1: error: Byte mismatch: expected `\\\"`, actual `t`\n")]
+            #[should_panic(expected = "test.ddi:1:1: error: Byte mismatch: expected `\\\"`, actual `t`\n")]
             fn json_string_non_string() {
                 let text = "true";
                 let path = "test.ddi";
@@ -992,7 +1109,7 @@ mod test {
             }
 
             #[test]
-            #[should_panic(expected = "test.ddi:0:1: error: Byte mismatch: expected `\\\"`, actual `t`\n")]
+            #[should_panic(expected = "test.ddi:1:1: error: Byte mismatch: expected `\\\"`, actual `t`\n")]
             fn json_string_sans_memchr_non_string() {
                 let text = "true";
                 let path = "test.ddi";
@@ -1007,7 +1124,7 @@ mod test {
 
             #[test]
             #[should_panic(
-                expected = "test.ddi:1:4: error: Failed parsing JSON string escape:\nexpected one of: { '\"', '\\', '/', 'b', 'f', 'n', 'r', 't', 'u' }\n"
+                expected = "test.ddi:1:3: error: Failed parsing JSON string escape:\nexpected one of: { '\"', '\\', '/', 'b', 'f', 'n', 'r', 't', 'u' }\n"
             )]
             fn unescape() {
                 let text = "\"\\#\"";
