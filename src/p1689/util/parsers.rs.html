@@ -2174,8 +2174,8 @@
         }
 
         <span class="macro">proptest!</span> {
-            <span class="comment">// #[cfg_attr(miri, ignore)]
-            </span><span class="attr">#[test]
+            <span class="attr">#[cfg_attr(miri, ignore)]
+            #[test]
             </span><span class="kw">fn </span>unescape_utf8(char <span class="kw">in </span>proptest::char::range(char::from_u32(<span class="number">0x0000u32</span>).unwrap(), char::from_u32(<span class="number">0xFFFF</span>).unwrap())) {
                 <span class="kw">let </span>text = <span class="macro">alloc::format!</span>(<span class="string">"{:#06x}"</span>, u32::from(char)).replace(<span class="string">"0x"</span>, <span class="string">"\\u"</span>);
                 <span class="kw">let </span>path = <span class="string">"test.ddi"</span>;
@@ -2190,8 +2190,8 @@
                 <span class="macro">assert_eq!</span>(dst, String::from(char).as_bytes());
             }
 
-            <span class="comment">// #[cfg_attr(miri, ignore)]
-            </span><span class="attr">#[test]
+            <span class="attr">#[cfg_attr(miri, ignore)]
+            #[test]
             </span><span class="kw">fn </span>unescape_utf16(char <span class="kw">in </span>proptest::char::range(char::from_u32(<span class="number">0x10000u32</span>).unwrap(), char::from_u32(<span class="number">0x10FFFF</span>).unwrap())) {
                 <span class="kw">let </span>text = <span class="self">self</span>::string::u32_to_utf16(char);
                 <span class="kw">let </span>path = <span class="string">"test.ddi"</span>;

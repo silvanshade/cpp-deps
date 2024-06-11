@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["ModuleDesc","RequiredModuleDescLookupMethod","UniqueBy"],"mod":["builders","parsers"],"struct":["DepFile","DepInfo","ModuleDescView","ProvidedModuleDesc","RequiredModuleDesc"]};
+window.SIDEBAR_ITEMS = {"enum":["ModuleDesc","RequiredModuleDescLookupMethod","UniqueBy"],"mod":["builders","datagen","parsers"],"struct":["DepFile","DepInfo","ModuleDescView","ProvidedModuleDesc","RequiredModuleDesc"]};
