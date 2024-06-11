@@ -1124,6 +1124,61 @@
 <a href="#1124" id="1124">1124</a>
 <a href="#1125" id="1125">1125</a>
 <a href="#1126" id="1126">1126</a>
+<a href="#1127" id="1127">1127</a>
+<a href="#1128" id="1128">1128</a>
+<a href="#1129" id="1129">1129</a>
+<a href="#1130" id="1130">1130</a>
+<a href="#1131" id="1131">1131</a>
+<a href="#1132" id="1132">1132</a>
+<a href="#1133" id="1133">1133</a>
+<a href="#1134" id="1134">1134</a>
+<a href="#1135" id="1135">1135</a>
+<a href="#1136" id="1136">1136</a>
+<a href="#1137" id="1137">1137</a>
+<a href="#1138" id="1138">1138</a>
+<a href="#1139" id="1139">1139</a>
+<a href="#1140" id="1140">1140</a>
+<a href="#1141" id="1141">1141</a>
+<a href="#1142" id="1142">1142</a>
+<a href="#1143" id="1143">1143</a>
+<a href="#1144" id="1144">1144</a>
+<a href="#1145" id="1145">1145</a>
+<a href="#1146" id="1146">1146</a>
+<a href="#1147" id="1147">1147</a>
+<a href="#1148" id="1148">1148</a>
+<a href="#1149" id="1149">1149</a>
+<a href="#1150" id="1150">1150</a>
+<a href="#1151" id="1151">1151</a>
+<a href="#1152" id="1152">1152</a>
+<a href="#1153" id="1153">1153</a>
+<a href="#1154" id="1154">1154</a>
+<a href="#1155" id="1155">1155</a>
+<a href="#1156" id="1156">1156</a>
+<a href="#1157" id="1157">1157</a>
+<a href="#1158" id="1158">1158</a>
+<a href="#1159" id="1159">1159</a>
+<a href="#1160" id="1160">1160</a>
+<a href="#1161" id="1161">1161</a>
+<a href="#1162" id="1162">1162</a>
+<a href="#1163" id="1163">1163</a>
+<a href="#1164" id="1164">1164</a>
+<a href="#1165" id="1165">1165</a>
+<a href="#1166" id="1166">1166</a>
+<a href="#1167" id="1167">1167</a>
+<a href="#1168" id="1168">1168</a>
+<a href="#1169" id="1169">1169</a>
+<a href="#1170" id="1170">1170</a>
+<a href="#1171" id="1171">1171</a>
+<a href="#1172" id="1172">1172</a>
+<a href="#1173" id="1173">1173</a>
+<a href="#1174" id="1174">1174</a>
+<a href="#1175" id="1175">1175</a>
+<a href="#1176" id="1176">1176</a>
+<a href="#1177" id="1177">1177</a>
+<a href="#1178" id="1178">1178</a>
+<a href="#1179" id="1179">1179</a>
+<a href="#1180" id="1180">1180</a>
+<a href="#1181" id="1181">1181</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>alloc::{borrow::Cow, string::String};
 
 <span class="kw">pub struct </span>ParseStream&lt;<span class="lifetime">'i</span>, E&gt; {
@@ -1352,8 +1407,8 @@
             ErrorKind::FailedParsingJsonUnsignedInteger =&gt; { <span class="comment">// tarpaulin::hint
                 </span><span class="macro">writeln!</span>(f, <span class="string">"Failed parsing JSON unsigned integer"</span>)<span class="question-mark">?</span>;
             },
-            ErrorKind::InvalidUnicodeEscapeHex { bytes } =&gt; {
-                <span class="macro">writeln!</span>(f, <span class="string">"Invalid unicode escape hex: {}"</span>, String::from_utf8_lossy(bytes.as_slice()))<span class="question-mark">?</span>;
+            ErrorKind::InvalidUnicodeEscapeHex { bytes } =&gt; { <span class="comment">// tarpaulin::hint
+                </span><span class="macro">writeln!</span>(f, <span class="string">"Invalid unicode escape hex: {}"</span>, String::from_utf8_lossy(bytes.as_slice()))<span class="question-mark">?</span>;
             },
             ErrorKind::InvalidUnicodeLowerSurrogate { lo } =&gt; {
                 <span class="macro">writeln!</span>(f, <span class="string">"Invalid unicode lower surrogate: {lo:#04x}"</span>)<span class="question-mark">?</span>;
@@ -1361,8 +1416,8 @@
             <span class="kw-2">&amp;</span>ErrorKind::MissingField { field } =&gt; {
                 <span class="macro">writeln!</span>(f, <span class="string">"Missing field: `{field}`"</span>)<span class="question-mark">?</span>;
             },
-            ErrorKind::MissingUnicodeLowerSurrogate { hi } =&gt; {
-                <span class="macro">writeln!</span>(f, <span class="string">"Missing unicode lower surrogate pair for leading high surrogate: {hi:#04x}"</span>)<span class="question-mark">?</span>;
+            ErrorKind::MissingUnicodeLowerSurrogate { hi } =&gt; { <span class="comment">// tarpaulin::hint
+                </span><span class="macro">writeln!</span>(f, <span class="string">"Missing unicode lower surrogate pair for leading high surrogate: {hi:#04x}"</span>)<span class="question-mark">?</span>;
             },
             ErrorKind::NextByte =&gt; { <span class="comment">// tarpaulin::hint
                 </span><span class="macro">writeln!</span>(f, <span class="string">"No remaining bytes"</span>)<span class="question-mark">?</span>;
@@ -1518,16 +1573,15 @@
 <span class="kw">pub mod </span>number {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-    <span class="attr">#[allow(clippy::identity_op)]
-    </span><span class="kw">const fn </span>dec_to_hex(num: u8) -&gt; [u8; <span class="number">2</span>] {
-        <span class="kw">let </span>lut = <span class="string">b"0123456789abcdef"</span>;
-        <span class="kw">let </span><span class="kw-2">mut </span>hex = [<span class="number">0u8</span>; <span class="number">2</span>];
-        hex[<span class="number">0</span>] = lut[(num <span class="kw">as </span>usize &amp; <span class="number">0xf0</span>) &gt;&gt; <span class="number">4</span>];
-        hex[<span class="number">1</span>] = lut[(num <span class="kw">as </span>usize &amp; <span class="number">0x0f</span>) &gt;&gt; <span class="number">0</span>];
-        hex
-    }
-
     <span class="kw">const </span>HEX_LUT: [u32; <span class="number">0x10000</span>] = {
+        <span class="attr">#[allow(clippy::identity_op)]
+        </span><span class="kw">const fn </span>dec_to_hex(num: u8) -&gt; [u8; <span class="number">2</span>] {
+            <span class="kw">let </span>lut = <span class="string">b"0123456789abcdef"</span>;
+            <span class="kw">let </span><span class="kw-2">mut </span>hex = [<span class="number">0u8</span>; <span class="number">2</span>];
+            hex[<span class="number">0</span>] = lut[(num <span class="kw">as </span>usize &amp; <span class="number">0xf0</span>) &gt;&gt; <span class="number">4</span>];
+            hex[<span class="number">1</span>] = lut[(num <span class="kw">as </span>usize &amp; <span class="number">0x0f</span>) &gt;&gt; <span class="number">0</span>];
+            hex
+        }
         <span class="kw">let </span><span class="kw-2">mut </span>lut = [u32::MAX; <span class="number">0x10000</span>];
         <span class="kw">let </span><span class="kw-2">mut </span>dec = <span class="number">0u8</span>;
         <span class="kw">loop </span>{
@@ -1773,39 +1827,43 @@
         out
     }
 
-    <span class="attr">#[inline(always)]
+    <span class="attr">#[cfg(not(tarpaulin_include))]
+    #[inline(always)]
     </span><span class="kw">fn </span>is_high_surrogate(code: u32) -&gt; bool {
         (<span class="number">0xd800 </span>..= <span class="number">0xdbff</span>).contains(<span class="kw-2">&amp;</span>code)
     }
 
-    <span class="attr">#[inline(always)]
+    <span class="attr">#[cfg(not(tarpaulin_include))]
+    #[inline(always)]
     </span><span class="kw">fn </span>is_low_surrogate(code: u32) -&gt; bool {
         (<span class="number">0xdc00 </span>..= <span class="number">0xdfff</span>).contains(<span class="kw-2">&amp;</span>code)
     }
 
-    <span class="attr">#[inline(always)]
-    </span><span class="kw">fn </span>code_to_char&lt;<span class="lifetime">'i</span>, E&gt;(unicode: u32, stream: <span class="kw-2">&amp;</span>ParseStream&lt;<span class="lifetime">'i</span>, E&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;char, Error&lt;<span class="lifetime">'i</span>, E&gt;&gt; {
-        core::char::from_u32(unicode).ok_or_else(|| {
+    <span class="attr">#[rustfmt::skip]
+    #[inline(always)]
+    </span><span class="kw">fn </span>code_to_char&lt;<span class="lifetime">'i</span>, E&gt;(unicode: u32, stream: <span class="kw-2">&amp;</span>ParseStream&lt;<span class="lifetime">'i</span>, E&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;char, Error&lt;<span class="lifetime">'i</span>, E&gt;&gt; { <span class="comment">// tarpaulin::hint
+        </span>core::char::from_u32(unicode).ok_or_else(|| {
             <span class="kw">let </span>error = ErrorKind::CharFromUnicodeFailed { unicode };
             stream.error(error)
         })
     }
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>unescape_unicode&lt;<span class="lifetime">'i</span>, <span class="lifetime">'r</span>, E&gt;(
+    <span class="attr">#[rustfmt::skip]
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>unescape_unicode&lt;<span class="lifetime">'i</span>, <span class="lifetime">'r</span>, E&gt;(
         dst: <span class="kw-2">&amp;</span><span class="lifetime">'r </span><span class="kw-2">mut </span>Cow&lt;<span class="lifetime">'i</span>, [u8]&gt;,
         src: <span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8],
     ) -&gt; <span class="kw">impl </span>Parser&lt;<span class="lifetime">'i</span>, (), E&gt; + <span class="lifetime">'r </span>{
         |stream: <span class="kw-2">&amp;mut </span>ParseStream&lt;<span class="lifetime">'i</span>, E&gt;| {
-            <span class="kw">let </span>hi = {
-                <span class="kw">let </span>code = ucs_hex_code.parse(stream)<span class="question-mark">?</span>;
+            <span class="kw">let </span>hi = { <span class="comment">// tarpaulin::hint
+                </span><span class="kw">let </span>code = ucs_hex_code.parse(stream)<span class="question-mark">?</span>;
                 <span class="kw">if </span>!is_high_surrogate(code) {
                     stream.state.encode_utf8(dst, src, code_to_char(code, stream)<span class="question-mark">?</span>);
                     <span class="kw">return </span><span class="prelude-val">Ok</span>(());
                 }
-                code
-            };
-            <span class="kw">let </span>lo = {
-                <span class="kw">if </span>stream.next_slice(<span class="number">2</span>)<span class="question-mark">? </span>!= <span class="string">b"\\u" </span>{
+                code <span class="comment">// tarpaulin::hint
+            </span>};
+            <span class="kw">let </span>lo = { <span class="comment">// tarpaulin::hint
+                </span><span class="kw">if </span>stream.next_slice(<span class="number">2</span>)<span class="question-mark">? </span>!= <span class="string">b"\\u" </span>{
                     <span class="kw">let </span>error = ErrorKind::MissingUnicodeLowerSurrogate { hi };
                     <span class="kw">return </span><span class="prelude-val">Err</span>(stream.error(error));
                 };
@@ -1814,21 +1872,22 @@
                     <span class="kw">let </span>error = ErrorKind::InvalidUnicodeLowerSurrogate { lo: code };
                     <span class="kw">return </span><span class="prelude-val">Err</span>(stream.error(error));
                 }
-                code
-            };
+                code <span class="comment">// tarpaulin::hint
+            </span>};
             <span class="kw">let </span>code = ((hi - <span class="number">0xd800</span>) &lt;&lt; <span class="number">10</span>) + (lo - <span class="number">0xdc00</span>) + <span class="number">0x10000</span>;
             stream.state.encode_utf8(dst, src, code_to_char(code, stream)<span class="question-mark">?</span>);
             <span class="prelude-val">Ok</span>(())
         }
     }
 
-    <span class="attr">#[inline(always)]
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>ucs_hex_code&lt;<span class="lifetime">'i</span>, E&gt;(stream: <span class="kw-2">&amp;mut </span>ParseStream&lt;<span class="lifetime">'i</span>, E&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;u32, Error&lt;<span class="lifetime">'i</span>, E&gt;&gt; {
-        <span class="kw">let </span>offset = <span class="number">4</span>;
-        <span class="kw">let </span>bytes = stream.next_slice(offset)<span class="question-mark">?</span>.try_into().map_err(|<span class="kw">_</span>| {
-            <span class="kw">let </span>error = ErrorKind::NextSlice { offset };
-            stream.error(error)
-        })<span class="question-mark">?</span>;
+    <span class="attr">#[rustfmt::skip]
+    #[inline(always)]
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>ucs_hex_code&lt;<span class="lifetime">'i</span>, E&gt;(stream: <span class="kw-2">&amp;mut </span>ParseStream&lt;<span class="lifetime">'i</span>, E&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;u32, Error&lt;<span class="lifetime">'i</span>, E&gt;&gt; { <span class="comment">// tarpaulin::hint
+        </span><span class="kw">let </span>offset = <span class="number">4</span>;
+        <span class="kw">let </span><span class="prelude-val">Ok</span>(bytes) = stream.next_slice(offset)<span class="question-mark">?</span>.try_into() <span class="kw">else </span>{
+            <span class="comment">// SAFETY: `.next_slice` already verified we have a slice of length 4
+            </span><span class="kw">unsafe </span>{ core::hint::unreachable_unchecked() }
+        };
         <span class="kw">let </span>unicode = <span class="self">self</span>::number::from_radix_16(bytes).ok_or_else(|| {
             <span class="kw">let </span>error = ErrorKind::InvalidUnicodeEscapeHex { bytes };
             stream.error(error)
@@ -2064,68 +2123,6 @@
         }
 
         <span class="attr">#[test]
-        #[should_panic(expected = <span class="string">"test.ddi:1:1: error: UTF-8 validation failed:"</span>)]
-        </span><span class="kw">fn </span>bstr_to_utf8_expectedly_fails_invalid_utf8_borrowed() {
-            <span class="kw">let </span>text = <span class="string">""</span>;
-            <span class="kw">let </span>path = <span class="string">"test.ddi"</span>;
-            <span class="kw">let </span>input = text.as_bytes();
-            <span class="kw">let </span>state = State::default();
-            <span class="kw">let </span>stream = ParseStream::&lt;r5::ErrorKind&gt;::new(path, input, state);
-            <span class="comment">// NOTE: Here we use \u{D800} (leading surrogate) which is invalid standalone
-            </span><span class="kw">let </span>bor = [<span class="number">0xedu8</span>, <span class="number">0xa0u8</span>, <span class="number">0x80u8</span>].as_slice();
-            <span class="kw">let </span>cow = Cow::Borrowed(bor);
-            <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = <span class="self">self</span>::bstr_to_utf8(<span class="kw-2">&amp;</span>stream, cow) {
-                <span class="macro">panic!</span>(<span class="string">"{err}"</span>);
-            };
-        }
-
-        <span class="attr">#[test]
-        #[should_panic(expected = <span class="string">"test.ddi:1:1: error: UTF-8 validation failed:"</span>)]
-        </span><span class="kw">fn </span>bstr_to_utf8_expectedly_fails_invalid_utf8_owned() {
-            <span class="kw">let </span>text = <span class="string">""</span>;
-            <span class="kw">let </span>path = <span class="string">"test.ddi"</span>;
-            <span class="kw">let </span>input = text.as_bytes();
-            <span class="kw">let </span>state = State::default();
-            <span class="kw">let </span>stream = ParseStream::&lt;r5::ErrorKind&gt;::new(path, input, state);
-            <span class="comment">// NOTE: Here we use \u{D800} (leading surrogate) which is invalid standalone
-            </span><span class="kw">let </span>own = <span class="macro">alloc::vec!</span>[<span class="number">0xed</span>, <span class="number">0xa0</span>, <span class="number">0x80</span>];
-            <span class="kw">let </span>cow = Cow::Owned(own);
-            <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = <span class="self">self</span>::bstr_to_utf8(<span class="kw-2">&amp;</span>stream, cow) {
-                <span class="macro">panic!</span>(<span class="string">"{err}"</span>);
-            };
-        }
-
-        <span class="attr">#[test]
-        #[should_panic(expected = <span class="string">"test.ddi:1:11: error: Invalid unicode lower surrogate: 0x2764\n"</span>)]
-        </span><span class="kw">fn </span>unescape_unicode_expectedly_fails_invalid_lower_surrogate() {
-            <span class="kw">let </span>text = <span class="string">"uD800\\u2764"</span>;
-            <span class="kw">let </span>path = <span class="string">"test.ddi"</span>;
-            <span class="kw">let </span>input = text.as_bytes();
-            <span class="kw">let </span>state = State::default();
-            <span class="kw">let </span><span class="kw-2">mut </span>stream = ParseStream::&lt;r5::ErrorKind&gt;::new(path, input, state);
-            <span class="kw">let </span><span class="kw-2">mut </span>dst = Cow::Owned(<span class="macro">alloc::vec!</span>[]);
-            <span class="kw">let </span>src = <span class="string">b"//"</span>;
-            <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = <span class="self">self</span>::unescape(<span class="kw-2">&amp;mut </span>dst, src).parse(<span class="kw-2">&amp;mut </span>stream) {
-                <span class="macro">panic!</span>(<span class="string">"{err}"</span>);
-            };
-        }
-
-        <span class="attr">#[test]
-        #[should_panic(expected = <span class="string">"test.ddi:1:5: error: Conversion of unicode u32 to char failed: u32 value: 0xdc00\n"</span>)]
-        </span><span class="kw">fn </span>unescape_unicode_expectedly_fails_invalid_utf8() {
-            <span class="kw">let </span>text = <span class="string">"uDC00"</span>;
-            <span class="kw">let </span>path = <span class="string">"test.ddi"</span>;
-            <span class="kw">let </span>input = text.as_bytes();
-            <span class="kw">let </span>state = State::default();
-            <span class="kw">let </span><span class="kw-2">mut </span>stream = ParseStream::&lt;r5::ErrorKind&gt;::new(path, input, state);
-            <span class="kw">let </span><span class="kw-2">mut </span>dst = Cow::Owned(<span class="macro">alloc::vec!</span>[]);
-            <span class="kw">let </span>src = <span class="string">b"//"</span>;
-            <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = <span class="self">self</span>::unescape(<span class="kw-2">&amp;mut </span>dst, src).parse(<span class="kw-2">&amp;mut </span>stream) {
-                <span class="macro">panic!</span>(<span class="string">"{err}"</span>);
-            };
-        }
-
-        <span class="attr">#[test]
         </span><span class="kw">fn </span>unescape_utf16_static() {
             <span class="kw">let </span>char = <span class="string">'💯'</span>;
             <span class="kw">let </span>text = <span class="self">self</span>::string::u32_to_utf16(char);
@@ -2246,6 +2243,119 @@
                 <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = p.parse(<span class="kw-2">&amp;mut </span>stream) {
                     <span class="macro">panic!</span>(<span class="string">"{err}"</span>);
                 }
+            }
+
+            <span class="attr">#[test]
+            #[should_panic(expected = <span class="string">"test.ddi:1:1: error: UTF-8 validation failed:"</span>)]
+            </span><span class="kw">fn </span>bstr_to_utf8_expectedly_fails_invalid_utf8_borrowed() {
+                <span class="kw">let </span>text = <span class="string">""</span>;
+                <span class="kw">let </span>path = <span class="string">"test.ddi"</span>;
+                <span class="kw">let </span>input = text.as_bytes();
+                <span class="kw">let </span>state = State::default();
+                <span class="kw">let </span>stream = ParseStream::&lt;r5::ErrorKind&gt;::new(path, input, state);
+                <span class="comment">// NOTE: Here we use \u{D800} (leading surrogate) which is invalid standalone
+                </span><span class="kw">let </span>bor = [<span class="number">0xedu8</span>, <span class="number">0xa0u8</span>, <span class="number">0x80u8</span>].as_slice();
+                <span class="kw">let </span>cow = Cow::Borrowed(bor);
+                <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = <span class="self">self</span>::bstr_to_utf8(<span class="kw-2">&amp;</span>stream, cow) {
+                    <span class="macro">panic!</span>(<span class="string">"{err}"</span>);
+                };
+            }
+
+            <span class="attr">#[test]
+            #[should_panic(expected = <span class="string">"test.ddi:1:1: error: UTF-8 validation failed:"</span>)]
+            </span><span class="kw">fn </span>bstr_to_utf8_expectedly_fails_invalid_utf8_owned() {
+                <span class="kw">let </span>text = <span class="string">""</span>;
+                <span class="kw">let </span>path = <span class="string">"test.ddi"</span>;
+                <span class="kw">let </span>input = text.as_bytes();
+                <span class="kw">let </span>state = State::default();
+                <span class="kw">let </span>stream = ParseStream::&lt;r5::ErrorKind&gt;::new(path, input, state);
+                <span class="comment">// NOTE: Here we use \u{D800} (leading surrogate) which is invalid standalone
+                </span><span class="kw">let </span>own = <span class="macro">alloc::vec!</span>[<span class="number">0xed</span>, <span class="number">0xa0</span>, <span class="number">0x80</span>];
+                <span class="kw">let </span>cow = Cow::Owned(own);
+                <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = <span class="self">self</span>::bstr_to_utf8(<span class="kw-2">&amp;</span>stream, cow) {
+                    <span class="macro">panic!</span>(<span class="string">"{err}"</span>);
+                };
+            }
+
+            <span class="attr">#[test]
+            #[should_panic(expected = <span class="string">"test.ddi:1:11: error: Invalid unicode lower surrogate: 0x2764\n"</span>)]
+            </span><span class="kw">fn </span>unescape_unicode_expectedly_fails_invalid_lower_surrogate() {
+                <span class="kw">let </span>text = <span class="string">"uD800\\u2764"</span>;
+                <span class="kw">let </span>path = <span class="string">"test.ddi"</span>;
+                <span class="kw">let </span>input = text.as_bytes();
+                <span class="kw">let </span>state = State::default();
+                <span class="kw">let </span><span class="kw-2">mut </span>stream = ParseStream::&lt;r5::ErrorKind&gt;::new(path, input, state);
+                <span class="kw">let </span><span class="kw-2">mut </span>dst = Cow::Owned(<span class="macro">alloc::vec!</span>[]);
+                <span class="kw">let </span>src = <span class="string">b"\\"</span>;
+                <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = <span class="kw">super</span>::unescape(<span class="kw-2">&amp;mut </span>dst, src).parse(<span class="kw-2">&amp;mut </span>stream) {
+                    <span class="macro">panic!</span>(<span class="string">"{err}"</span>);
+                };
+            }
+
+            <span class="attr">#[test]
+            #[should_panic(
+                expected = <span class="string">"test.ddi:1:7: error: Missing unicode lower surrogate pair for leading high surrogate: 0xd834\n"
+            </span>)]
+            </span><span class="kw">fn </span>unescape_unicode_missing_lower_surrogate() {
+                <span class="kw">let </span>text = <span class="string">"uD834missing"</span>;
+                <span class="kw">let </span>path = <span class="string">"test.ddi"</span>;
+                <span class="kw">let </span>input = text.as_bytes();
+                <span class="kw">let </span>state = State::default();
+                <span class="kw">let </span><span class="kw-2">mut </span>stream = ParseStream::&lt;r5::ErrorKind&gt;::new(path, input, state);
+                <span class="kw">let </span><span class="kw-2">mut </span>dst = Cow::Owned(<span class="macro">alloc::vec!</span>[]);
+                <span class="kw">let </span>src = <span class="string">b"\\"</span>;
+                <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = <span class="kw">super</span>::unescape(<span class="kw-2">&amp;mut </span>dst, src).parse(<span class="kw-2">&amp;mut </span>stream) {
+                    <span class="macro">panic!</span>(<span class="string">"{err}"</span>);
+                };
+            }
+
+            <span class="attr">#[test]
+            #[should_panic(
+                expected = <span class="string">"test.ddi:1:5: error: Conversion of unicode u32 to char failed: u32 value: 0xdc00\n"
+            </span>)]
+            </span><span class="kw">fn </span>unescape_unicode_expectedly_fails_invalid_utf8() {
+                <span class="kw">let </span>text = <span class="string">"uDC00"</span>;
+                <span class="kw">let </span>path = <span class="string">"test.ddi"</span>;
+                <span class="kw">let </span>input = text.as_bytes();
+                <span class="kw">let </span>state = State::default();
+                <span class="kw">let </span><span class="kw-2">mut </span>stream = ParseStream::&lt;r5::ErrorKind&gt;::new(path, input, state);
+                <span class="kw">let </span><span class="kw-2">mut </span>dst = Cow::Owned(<span class="macro">alloc::vec!</span>[]);
+                <span class="kw">let </span>src = <span class="string">b"\\"</span>;
+                <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = <span class="kw">super</span>::unescape(<span class="kw-2">&amp;mut </span>dst, src).parse(<span class="kw-2">&amp;mut </span>stream) {
+                    <span class="macro">panic!</span>(<span class="string">"{err}"</span>);
+                };
+            }
+
+            <span class="attr">#[test]
+            #[should_panic(
+                expected = <span class="string">"test.ddi:1:1: error: Remaining bytes less than requested slice length: remaining: 2, requested: 4\n"
+            </span>)]
+            </span><span class="kw">fn </span>unescape_unicode_truncated() {
+                <span class="kw">let </span>text = <span class="string">"uDC"</span>;
+                <span class="kw">let </span>path = <span class="string">"test.ddi"</span>;
+                <span class="kw">let </span>input = text.as_bytes();
+                <span class="kw">let </span>state = State::default();
+                <span class="kw">let </span><span class="kw-2">mut </span>stream = ParseStream::&lt;r5::ErrorKind&gt;::new(path, input, state);
+                <span class="kw">let </span><span class="kw-2">mut </span>dst = Cow::Owned(<span class="macro">alloc::vec!</span>[]);
+                <span class="kw">let </span>src = <span class="string">b"\\"</span>;
+                <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = <span class="kw">super</span>::unescape(<span class="kw-2">&amp;mut </span>dst, src).parse(<span class="kw-2">&amp;mut </span>stream) {
+                    <span class="macro">panic!</span>(<span class="string">"{err}"</span>);
+                };
+            }
+
+            <span class="attr">#[test]
+            #[should_panic(expected = <span class="string">"test.ddi:1:5: error: Invalid unicode escape hex: DCXX\n"</span>)]
+            </span><span class="kw">fn </span>unescape_unicode_invalid_hex() {
+                <span class="kw">let </span>text = <span class="string">"uDCXX"</span>;
+                <span class="kw">let </span>path = <span class="string">"test.ddi"</span>;
+                <span class="kw">let </span>input = text.as_bytes();
+                <span class="kw">let </span>state = State::default();
+                <span class="kw">let </span><span class="kw-2">mut </span>stream = ParseStream::&lt;r5::ErrorKind&gt;::new(path, input, state);
+                <span class="kw">let </span><span class="kw-2">mut </span>dst = Cow::Owned(<span class="macro">alloc::vec!</span>[]);
+                <span class="kw">let </span>src = <span class="string">b"\\"</span>;
+                <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = <span class="kw">super</span>::unescape(<span class="kw-2">&amp;mut </span>dst, src).parse(<span class="kw-2">&amp;mut </span>stream) {
+                    <span class="macro">panic!</span>(<span class="string">"{err}"</span>);
+                };
             }
         }
     }
