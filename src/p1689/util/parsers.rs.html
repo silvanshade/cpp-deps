@@ -1124,22 +1124,6 @@
 <a href="#1124" id="1124">1124</a>
 <a href="#1125" id="1125">1125</a>
 <a href="#1126" id="1126">1126</a>
-<a href="#1127" id="1127">1127</a>
-<a href="#1128" id="1128">1128</a>
-<a href="#1129" id="1129">1129</a>
-<a href="#1130" id="1130">1130</a>
-<a href="#1131" id="1131">1131</a>
-<a href="#1132" id="1132">1132</a>
-<a href="#1133" id="1133">1133</a>
-<a href="#1134" id="1134">1134</a>
-<a href="#1135" id="1135">1135</a>
-<a href="#1136" id="1136">1136</a>
-<a href="#1137" id="1137">1137</a>
-<a href="#1138" id="1138">1138</a>
-<a href="#1139" id="1139">1139</a>
-<a href="#1140" id="1140">1140</a>
-<a href="#1141" id="1141">1141</a>
-<a href="#1142" id="1142">1142</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>alloc::{borrow::Cow, string::String};
 
 <span class="kw">pub struct </span>ParseStream&lt;<span class="lifetime">'i</span>, E&gt; {
@@ -1780,20 +1764,6 @@
     }
 
     <span class="attr">#[cfg(test)]
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>u32_to_utf8(char: char) -&gt; alloc::string::String {
-        <span class="kw">let </span><span class="kw-2">mut </span>dst = [<span class="number">0u8</span>; <span class="number">4</span>];
-        char.encode_utf8(<span class="kw-2">&amp;mut </span>dst);
-        <span class="kw">let </span><span class="kw-2">mut </span>out = alloc::string::String::new();
-        out.push_str(<span class="kw-2">&amp;</span><span class="macro">std::format!</span>(<span class="string">"{:#04x}"</span>, dst[<span class="number">0</span>]).replace(<span class="string">"0x"</span>, <span class="string">"\\u"</span>));
-        out.push_str(<span class="kw-2">&amp;</span><span class="macro">std::format!</span>(<span class="string">"{:#04x}"</span>, dst[<span class="number">1</span>]).replace(<span class="string">"0x"</span>, <span class="string">""</span>));
-        <span class="kw">if </span>dst[<span class="number">2</span>] != <span class="number">0 </span>|| dst[<span class="number">3</span>] != <span class="number">0 </span>{
-            out.push_str(<span class="kw-2">&amp;</span><span class="macro">std::format!</span>(<span class="string">"{:#04x}"</span>, dst[<span class="number">2</span>]).replace(<span class="string">"0x"</span>, <span class="string">"\\u"</span>));
-            out.push_str(<span class="kw-2">&amp;</span><span class="macro">std::format!</span>(<span class="string">"{:#04x}"</span>, dst[<span class="number">3</span>]).replace(<span class="string">"0x"</span>, <span class="string">""</span>));
-        }
-        out
-    }
-
-    <span class="attr">#[cfg(test)]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>u32_to_utf16(char: char) -&gt; alloc::string::String {
         <span class="kw">let </span><span class="kw-2">mut </span>dst = [<span class="number">0u16</span>; <span class="number">2</span>];
         char.encode_utf16(<span class="kw-2">&amp;mut </span>dst);
@@ -1869,8 +1839,6 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
-    <span class="kw">use </span>alloc::{string::ToString, vec};
-
     <span class="kw">use </span>proptest::prelude::<span class="kw-2">*</span>;
 
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
@@ -2120,7 +2088,7 @@
             <span class="kw">let </span>state = State::default();
             <span class="kw">let </span>stream = ParseStream::&lt;r5::ErrorKind&gt;::new(path, input, state);
             <span class="comment">// NOTE: Here we use \u{D800} (leading surrogate) which is invalid standalone
-            </span><span class="kw">let </span>own = <span class="macro">vec!</span>[<span class="number">0xed</span>, <span class="number">0xa0</span>, <span class="number">0x80</span>];
+            </span><span class="kw">let </span>own = <span class="macro">alloc::vec!</span>[<span class="number">0xed</span>, <span class="number">0xa0</span>, <span class="number">0x80</span>];
             <span class="kw">let </span>cow = Cow::Owned(own);
             <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = <span class="self">self</span>::bstr_to_utf8(<span class="kw-2">&amp;</span>stream, cow) {
                 <span class="macro">panic!</span>(<span class="string">"{err}"</span>);
@@ -2135,7 +2103,7 @@
             <span class="kw">let </span>input = text.as_bytes();
             <span class="kw">let </span>state = State::default();
             <span class="kw">let </span><span class="kw-2">mut </span>stream = ParseStream::&lt;r5::ErrorKind&gt;::new(path, input, state);
-            <span class="kw">let </span><span class="kw-2">mut </span>dst = Cow::Owned(<span class="macro">vec!</span>[]);
+            <span class="kw">let </span><span class="kw-2">mut </span>dst = Cow::Owned(<span class="macro">alloc::vec!</span>[]);
             <span class="kw">let </span>src = <span class="string">b"//"</span>;
             <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = <span class="self">self</span>::unescape(<span class="kw-2">&amp;mut </span>dst, src).parse(<span class="kw-2">&amp;mut </span>stream) {
                 <span class="macro">panic!</span>(<span class="string">"{err}"</span>);
@@ -2150,7 +2118,7 @@
             <span class="kw">let </span>input = text.as_bytes();
             <span class="kw">let </span>state = State::default();
             <span class="kw">let </span><span class="kw-2">mut </span>stream = ParseStream::&lt;r5::ErrorKind&gt;::new(path, input, state);
-            <span class="kw">let </span><span class="kw-2">mut </span>dst = Cow::Owned(<span class="macro">vec!</span>[]);
+            <span class="kw">let </span><span class="kw-2">mut </span>dst = Cow::Owned(<span class="macro">alloc::vec!</span>[]);
             <span class="kw">let </span>src = <span class="string">b"//"</span>;
             <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = <span class="self">self</span>::unescape(<span class="kw-2">&amp;mut </span>dst, src).parse(<span class="kw-2">&amp;mut </span>stream) {
                 <span class="macro">panic!</span>(<span class="string">"{err}"</span>);
@@ -2165,7 +2133,7 @@
             <span class="kw">let </span>input = text.as_bytes().strip_prefix(<span class="string">b"\\"</span>).unwrap();
             <span class="kw">let </span>state = State::default();
             <span class="kw">let </span><span class="kw-2">mut </span>stream = ParseStream::&lt;r5::ErrorKind&gt;::new(path, input, state);
-            <span class="kw">let </span><span class="kw-2">mut </span>dst = Cow::Owned(<span class="macro">vec!</span>[]);
+            <span class="kw">let </span><span class="kw-2">mut </span>dst = Cow::Owned(<span class="macro">alloc::vec!</span>[]);
             <span class="kw">let </span>src = <span class="string">b"\\"</span>;
             <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = <span class="self">self</span>::string::unescape(<span class="kw-2">&amp;mut </span>dst, src).parse(<span class="kw-2">&amp;mut </span>stream) {
                 <span class="macro">panic!</span>(<span class="string">"{err}"</span>);
@@ -2182,7 +2150,7 @@
                 <span class="kw">let </span>input = text.as_bytes().strip_prefix(<span class="string">b"\\"</span>).unwrap();
                 <span class="kw">let </span>state = State::default();
                 <span class="kw">let </span><span class="kw-2">mut </span>stream = ParseStream::&lt;r5::ErrorKind&gt;::new(path, input, state);
-                <span class="kw">let </span><span class="kw-2">mut </span>dst = Cow::Owned(<span class="macro">vec!</span>[]);
+                <span class="kw">let </span><span class="kw-2">mut </span>dst = Cow::Owned(<span class="macro">alloc::vec!</span>[]);
                 <span class="kw">let </span>src = <span class="string">b"\\"</span>;
                 <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = <span class="self">self</span>::string::unescape(<span class="kw-2">&amp;mut </span>dst, src).parse(<span class="kw-2">&amp;mut </span>stream) {
                     <span class="macro">panic!</span>(<span class="string">"{err}"</span>);
@@ -2198,7 +2166,7 @@
                 <span class="kw">let </span>input = text.as_bytes().strip_prefix(<span class="string">b"\\"</span>).unwrap();
                 <span class="kw">let </span>state = State::default();
                 <span class="kw">let </span><span class="kw-2">mut </span>stream = ParseStream::&lt;r5::ErrorKind&gt;::new(path, input, state);
-                <span class="kw">let </span><span class="kw-2">mut </span>dst = Cow::Owned(<span class="macro">vec!</span>[]);
+                <span class="kw">let </span><span class="kw-2">mut </span>dst = Cow::Owned(<span class="macro">alloc::vec!</span>[]);
                 <span class="kw">let </span>src = <span class="string">b"\\"</span>;
                 <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = <span class="self">self</span>::string::unescape(<span class="kw-2">&amp;mut </span>dst, src).parse(<span class="kw-2">&amp;mut </span>stream) {
                     <span class="macro">panic!</span>(<span class="string">"{err}"</span>);
