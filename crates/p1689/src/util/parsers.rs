@@ -638,20 +638,6 @@ pub mod string {
     }
 
     #[cfg(test)]
-    pub(crate) fn u32_to_utf8(char: char) -> alloc::string::String {
-        let mut dst = [0u8; 4];
-        char.encode_utf8(&mut dst);
-        let mut out = alloc::string::String::new();
-        out.push_str(&std::format!("{:#04x}", dst[0]).replace("0x", "\\u"));
-        out.push_str(&std::format!("{:#04x}", dst[1]).replace("0x", ""));
-        if dst[2] != 0 || dst[3] != 0 {
-            out.push_str(&std::format!("{:#04x}", dst[2]).replace("0x", "\\u"));
-            out.push_str(&std::format!("{:#04x}", dst[3]).replace("0x", ""));
-        }
-        out
-    }
-
-    #[cfg(test)]
     pub(crate) fn u32_to_utf16(char: char) -> alloc::string::String {
         let mut dst = [0u16; 2];
         char.encode_utf16(&mut dst);
@@ -727,8 +713,6 @@ pub mod string {
 
 #[cfg(test)]
 mod test {
-    use alloc::{string::ToString, vec};
-
     use proptest::prelude::*;
 
     use super::*;
@@ -978,7 +962,7 @@ mod test {
             let state = State::default();
             let stream = ParseStream::<r5::ErrorKind>::new(path, input, state);
             // NOTE: Here we use \u{D800} (leading surrogate) which is invalid standalone
-            let own = vec![0xed, 0xa0, 0x80];
+            let own = alloc::vec![0xed, 0xa0, 0x80];
             let cow = Cow::Owned(own);
             if let Err(err) = self::bstr_to_utf8(&stream, cow) {
                 panic!("{err}");
@@ -993,7 +977,7 @@ mod test {
             let input = text.as_bytes();
             let state = State::default();
             let mut stream = ParseStream::<r5::ErrorKind>::new(path, input, state);
-            let mut dst = Cow::Owned(vec![]);
+            let mut dst = Cow::Owned(alloc::vec![]);
             let src = b"//";
             if let Err(err) = self::unescape(&mut dst, src).parse(&mut stream) {
                 panic!("{err}");
@@ -1008,7 +992,7 @@ mod test {
             let input = text.as_bytes();
             let state = State::default();
             let mut stream = ParseStream::<r5::ErrorKind>::new(path, input, state);
-            let mut dst = Cow::Owned(vec![]);
+            let mut dst = Cow::Owned(alloc::vec![]);
             let src = b"//";
             if let Err(err) = self::unescape(&mut dst, src).parse(&mut stream) {
                 panic!("{err}");
@@ -1023,7 +1007,7 @@ mod test {
             let input = text.as_bytes().strip_prefix(b"\\").unwrap();
             let state = State::default();
             let mut stream = ParseStream::<r5::ErrorKind>::new(path, input, state);
-            let mut dst = Cow::Owned(vec![]);
+            let mut dst = Cow::Owned(alloc::vec![]);
             let src = b"\\";
             if let Err(err) = self::string::unescape(&mut dst, src).parse(&mut stream) {
                 panic!("{err}");
@@ -1040,7 +1024,7 @@ mod test {
                 let input = text.as_bytes().strip_prefix(b"\\").unwrap();
                 let state = State::default();
                 let mut stream = ParseStream::<r5::ErrorKind>::new(path, input, state);
-                let mut dst = Cow::Owned(vec![]);
+                let mut dst = Cow::Owned(alloc::vec![]);
                 let src = b"\\";
                 if let Err(err) = self::string::unescape(&mut dst, src).parse(&mut stream) {
                     panic!("{err}");
@@ -1056,7 +1040,7 @@ mod test {
                 let input = text.as_bytes().strip_prefix(b"\\").unwrap();
                 let state = State::default();
                 let mut stream = ParseStream::<r5::ErrorKind>::new(path, input, state);
-                let mut dst = Cow::Owned(vec![]);
+                let mut dst = Cow::Owned(alloc::vec![]);
                 let src = b"\\";
                 if let Err(err) = self::string::unescape(&mut dst, src).parse(&mut stream) {
                     panic!("{err}");
