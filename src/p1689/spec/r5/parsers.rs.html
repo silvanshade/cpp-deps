@@ -1550,6 +1550,40 @@
 <a href="#1550" id="1550">1550</a>
 <a href="#1551" id="1551">1551</a>
 <a href="#1552" id="1552">1552</a>
+<a href="#1553" id="1553">1553</a>
+<a href="#1554" id="1554">1554</a>
+<a href="#1555" id="1555">1555</a>
+<a href="#1556" id="1556">1556</a>
+<a href="#1557" id="1557">1557</a>
+<a href="#1558" id="1558">1558</a>
+<a href="#1559" id="1559">1559</a>
+<a href="#1560" id="1560">1560</a>
+<a href="#1561" id="1561">1561</a>
+<a href="#1562" id="1562">1562</a>
+<a href="#1563" id="1563">1563</a>
+<a href="#1564" id="1564">1564</a>
+<a href="#1565" id="1565">1565</a>
+<a href="#1566" id="1566">1566</a>
+<a href="#1567" id="1567">1567</a>
+<a href="#1568" id="1568">1568</a>
+<a href="#1569" id="1569">1569</a>
+<a href="#1570" id="1570">1570</a>
+<a href="#1571" id="1571">1571</a>
+<a href="#1572" id="1572">1572</a>
+<a href="#1573" id="1573">1573</a>
+<a href="#1574" id="1574">1574</a>
+<a href="#1575" id="1575">1575</a>
+<a href="#1576" id="1576">1576</a>
+<a href="#1577" id="1577">1577</a>
+<a href="#1578" id="1578">1578</a>
+<a href="#1579" id="1579">1579</a>
+<a href="#1580" id="1580">1580</a>
+<a href="#1581" id="1581">1581</a>
+<a href="#1582" id="1582">1582</a>
+<a href="#1583" id="1583">1583</a>
+<a href="#1584" id="1584">1584</a>
+<a href="#1585" id="1585">1585</a>
+<a href="#1586" id="1586">1586</a>
 </pre></div><pre class="rust"><code><span class="comment">// Almost all parsers are inherently fallible so don't require error docs.
 </span><span class="attr">#![allow(clippy::missing_errors_doc)]
 
@@ -2138,7 +2172,7 @@
                 <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
                 <span class="attr">#[test]
-                #[should_panic(expected = <span class="string">"test.ddi:6:28: error: Duplicate field: `revision`\n"</span>)]
+                #[should_panic(expected = <span class="string">"test.ddi:6:27: error: Duplicate field: `revision`\n"</span>)]
                 </span><span class="kw">fn </span>duplicate_field_revision() {
                     <span class="kw">let </span>text = <span class="string">r#"{
                         "version": 1,
@@ -2157,7 +2191,7 @@
                 }
 
                 <span class="attr">#[test]
-                #[should_panic(expected = <span class="string">"test.ddi:6:28: error: Duplicate field: `rules`\n"</span>)]
+                #[should_panic(expected = <span class="string">"test.ddi:6:27: error: Duplicate field: `rules`\n"</span>)]
                 </span><span class="kw">fn </span>duplicate_field_rules() {
                     <span class="kw">let </span>text = <span class="string">r#"{
                         "version": 1,
@@ -2177,7 +2211,7 @@
                 }
 
                 <span class="attr">#[test]
-                #[should_panic(expected = <span class="string">"test.ddi:6:27: error: Duplicate field: `version`\n"</span>)]
+                #[should_panic(expected = <span class="string">"test.ddi:6:26: error: Duplicate field: `version`\n"</span>)]
                 </span><span class="kw">fn </span>duplicate_field_version() {
                     <span class="kw">let </span>text = <span class="string">r#"{
                         "version": 1,
@@ -2196,7 +2230,7 @@
                 }
 
                 <span class="attr">#[test]
-                #[should_panic(expected = <span class="string">"test.ddi:3:21: error: Missing field: `rules`\n"</span>)]
+                #[should_panic(expected = <span class="string">"test.ddi:3:20: error: Missing field: `rules`\n"</span>)]
                 </span><span class="kw">fn </span>missing_field_rules() {
                     <span class="kw">let </span>text = <span class="string">r#"{
                         "version": 1
@@ -2211,7 +2245,7 @@
                 }
 
                 <span class="attr">#[test]
-                #[should_panic(expected = <span class="string">"test.ddi:3:21: error: Missing field: `version`\n"</span>)]
+                #[should_panic(expected = <span class="string">"test.ddi:3:20: error: Missing field: `version`\n"</span>)]
                 </span><span class="kw">fn </span>missing_field_version() {
                     <span class="kw">let </span>text = <span class="string">r#"{
                         "rules": []
@@ -2227,7 +2261,7 @@
 
                 <span class="attr">#[test]
                 #[should_panic(
-                    expected = <span class="string">"test.ddi:3:28: error: Failed parsing DepFile fields:\nexpected one of: { \"revision\", \"rules\", \"version\" }\n"
+                    expected = <span class="string">"test.ddi:3:27: error: Failed parsing DepFile fields:\nexpected one of: { \"revision\", \"rules\", \"version\" }\n"
                 </span>)]
                 </span><span class="kw">fn </span>mismatch_field_revision() {
                     <span class="kw">let </span>text = <span class="string">r#"{
@@ -2247,7 +2281,7 @@
 
                 <span class="attr">#[test]
                 #[should_panic(
-                    expected = <span class="string">"test.ddi:4:28: error: Failed parsing DepFile fields:\nexpected one of: { \"revision\", \"rules\", \"version\" }\n"
+                    expected = <span class="string">"test.ddi:4:27: error: Failed parsing DepFile fields:\nexpected one of: { \"revision\", \"rules\", \"version\" }\n"
                 </span>)]
                 </span><span class="kw">fn </span>mismatch_field_rules() {
                     <span class="kw">let </span>text = <span class="string">r#"{
@@ -2267,7 +2301,7 @@
 
                 <span class="attr">#[test]
                 #[should_panic(
-                    expected = <span class="string">"test.ddi:2:27: error: Failed parsing DepFile fields:\nexpected one of: { \"revision\", \"rules\", \"version\" }\n"
+                    expected = <span class="string">"test.ddi:2:26: error: Failed parsing DepFile fields:\nexpected one of: { \"revision\", \"rules\", \"version\" }\n"
                 </span>)]
                 </span><span class="kw">fn </span>mismatch_field() {
                     <span class="kw">let </span>text = <span class="string">r#"{
@@ -2288,7 +2322,7 @@
 
                 <span class="attr">#[test]
                 #[should_panic(
-                    expected = <span class="string">"test.ddi:4:26: error: Failed parsing DepFile fields:\nexpected one of: { \"revision\", \"rules\", \"version\" }\n"
+                    expected = <span class="string">"test.ddi:4:25: error: Failed parsing DepFile fields:\nexpected one of: { \"revision\", \"rules\", \"version\" }\n"
                 </span>)]
                 </span><span class="kw">fn </span>mismatch_field_unquoted() {
                     <span class="kw">let </span>text = <span class="string">r#"{
@@ -2316,7 +2350,7 @@
                 <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
                 <span class="attr">#[test]
-                #[should_panic(expected = <span class="string">"test.ddi:7:35: error: Duplicate field: `outputs`\n"</span>)]
+                #[should_panic(expected = <span class="string">"test.ddi:7:34: error: Duplicate field: `outputs`\n"</span>)]
                 </span><span class="kw">fn </span>duplicate_field_outputs() {
                     <span class="kw">let </span>text = <span class="string">r#"{
                         "version": 1,
@@ -2338,7 +2372,7 @@
                 }
 
                 <span class="attr">#[test]
-                #[should_panic(expected = <span class="string">"test.ddi:7:37: error: Duplicate field: `primary_output`\n"</span>)]
+                #[should_panic(expected = <span class="string">"test.ddi:7:36: error: Duplicate field: `primary_output`\n"</span>)]
                 </span><span class="kw">fn </span>duplicate_field_primary_output() {
                     <span class="kw">let </span>text = <span class="string">r#"{
                         "version": 1,
@@ -2360,7 +2394,7 @@
                 }
 
                 <span class="attr">#[test]
-                #[should_panic(expected = <span class="string">"test.ddi:7:37: error: Duplicate field: `provides`\n"</span>)]
+                #[should_panic(expected = <span class="string">"test.ddi:7:36: error: Duplicate field: `provides`\n"</span>)]
                 </span><span class="kw">fn </span>duplicate_field_provides() {
                     <span class="kw">let </span>text = <span class="string">r#"{
                         "version": 1,
@@ -2382,7 +2416,7 @@
                 }
 
                 <span class="attr">#[test]
-                #[should_panic(expected = <span class="string">"test.ddi:7:35: error: Duplicate field: `requires`\n"</span>)]
+                #[should_panic(expected = <span class="string">"test.ddi:7:34: error: Duplicate field: `requires`\n"</span>)]
                 </span><span class="kw">fn </span>duplicate_field_requires() {
                     <span class="kw">let </span>text = <span class="string">r#"{
                         "version": 1,
@@ -2404,7 +2438,7 @@
                 }
 
                 <span class="attr">#[test]
-                #[should_panic(expected = <span class="string">"test.ddi:7:35: error: Duplicate field: `work-directory`\n"</span>)]
+                #[should_panic(expected = <span class="string">"test.ddi:7:34: error: Duplicate field: `work-directory`\n"</span>)]
                 </span><span class="kw">fn </span>duplicate_field_work_directory() {
                     <span class="kw">let </span>text = <span class="string">r#"{
                         "version": 1,
@@ -2427,7 +2461,7 @@
 
                 <span class="attr">#[test]
                 #[should_panic(
-                    expected = <span class="string">"test.ddi:6:37: error: Failed parsing DepInfo fields:\nexpected one of: { \"outputs\", \"primary-output\", \"provides\", \"requires\", \"work-directory\" }\n"
+                    expected = <span class="string">"test.ddi:6:36: error: Failed parsing DepInfo fields:\nexpected one of: { \"outputs\", \"primary-output\", \"provides\", \"requires\", \"work-directory\" }\n"
                 </span>)]
                 </span><span class="kw">fn </span>mismatch_field_primary_output() {
                     <span class="kw">let </span>text = <span class="string">r#"{
@@ -2451,7 +2485,7 @@
 
                 <span class="attr">#[test]
                 #[should_panic(
-                    expected = <span class="string">"test.ddi:7:33: error: Failed parsing DepInfo fields:\nexpected one of: { \"outputs\", \"primary-output\", \"provides\", \"requires\", \"work-directory\" }\n"
+                    expected = <span class="string">"test.ddi:7:32: error: Failed parsing DepInfo fields:\nexpected one of: { \"outputs\", \"primary-output\", \"provides\", \"requires\", \"work-directory\" }\n"
                 </span>)]
                 </span><span class="kw">fn </span>mismatch_field_provides() {
                     <span class="kw">let </span>text = <span class="string">r#"{
@@ -2475,7 +2509,7 @@
 
                 <span class="attr">#[test]
                 #[should_panic(
-                    expected = <span class="string">"test.ddi:6:32: error: Failed parsing DepInfo fields:\nexpected one of: { \"outputs\", \"primary-output\", \"provides\", \"requires\", \"work-directory\" }\n"
+                    expected = <span class="string">"test.ddi:6:31: error: Failed parsing DepInfo fields:\nexpected one of: { \"outputs\", \"primary-output\", \"provides\", \"requires\", \"work-directory\" }\n"
                 </span>)]
                 </span><span class="kw">fn </span>mismatch_field_pr() {
                     <span class="kw">let </span>text = <span class="string">r#"{
@@ -2498,7 +2532,7 @@
 
                 <span class="attr">#[test]
                 #[should_panic(
-                    expected = <span class="string">"test.ddi:6:31: error: Failed parsing DepInfo fields:\nexpected one of: { \"outputs\", \"primary-output\", \"provides\", \"requires\", \"work-directory\" }\n"
+                    expected = <span class="string">"test.ddi:6:30: error: Failed parsing DepInfo fields:\nexpected one of: { \"outputs\", \"primary-output\", \"provides\", \"requires\", \"work-directory\" }\n"
                 </span>)]
                 </span><span class="kw">fn </span>mismatch_field() {
                     <span class="kw">let </span>text = <span class="string">r#"{
@@ -2521,7 +2555,7 @@
 
                 <span class="attr">#[test]
                 #[should_panic(
-                    expected = <span class="string">"test.ddi:6:30: error: Failed parsing DepInfo fields:\nexpected one of: { \"outputs\", \"primary-output\", \"provides\", \"requires\", \"work-directory\" }\n"
+                    expected = <span class="string">"test.ddi:6:29: error: Failed parsing DepInfo fields:\nexpected one of: { \"outputs\", \"primary-output\", \"provides\", \"requires\", \"work-directory\" }\n"
                 </span>)]
                 </span><span class="kw">fn </span>mismatch_field_unquoted() {
                     <span class="kw">let </span>text = <span class="string">r#"{
@@ -2551,7 +2585,7 @@
                 <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
                 <span class="attr">#[test]
-                #[should_panic(expected = <span class="string">"test.ddi:9:43: error: Duplicate field: `source-path`\n"</span>)]
+                #[should_panic(expected = <span class="string">"test.ddi:9:42: error: Duplicate field: `source-path`\n"</span>)]
                 </span><span class="kw">fn </span>duplicate_field_source_path() {
                     <span class="kw">let </span>text = <span class="string">r#"{
                         "version": 1,
@@ -2577,7 +2611,7 @@
                 }
 
                 <span class="attr">#[test]
-                #[should_panic(expected = <span class="string">"test.ddi:9:43: error: Duplicate field: `compiled-module-path`\n"</span>)]
+                #[should_panic(expected = <span class="string">"test.ddi:9:42: error: Duplicate field: `compiled-module-path`\n"</span>)]
                 </span><span class="kw">fn </span>duplicate_field_compiled_module_path() {
                     <span class="kw">let </span>text = <span class="string">r#"{
                         "version": 1,
@@ -2603,7 +2637,7 @@
                 }
 
                 <span class="attr">#[test]
-                #[should_panic(expected = <span class="string">"test.ddi:9:43: error: Duplicate field: `logical-name`\n"</span>)]
+                #[should_panic(expected = <span class="string">"test.ddi:9:42: error: Duplicate field: `logical-name`\n"</span>)]
                 </span><span class="kw">fn </span>duplicate_field_logical_name() {
                     <span class="kw">let </span>text = <span class="string">r#"{
                         "version": 1,
@@ -2629,7 +2663,7 @@
                 }
 
                 <span class="attr">#[test]
-                #[should_panic(expected = <span class="string">"test.ddi:9:43: error: Duplicate field: `unique-on-source-path`\n"</span>)]
+                #[should_panic(expected = <span class="string">"test.ddi:9:42: error: Duplicate field: `unique-on-source-path`\n"</span>)]
                 </span><span class="kw">fn </span>duplicate_field_unique_on_source_path() {
                     <span class="kw">let </span>text = <span class="string">r#"{
                         "version": 1,
@@ -2655,7 +2689,7 @@
                 }
 
                 <span class="attr">#[test]
-                #[should_panic(expected = <span class="string">"test.ddi:9:43: error: Duplicate field: `is-interface`\n"</span>)]
+                #[should_panic(expected = <span class="string">"test.ddi:9:42: error: Duplicate field: `is-interface`\n"</span>)]
                 </span><span class="kw">fn </span>duplicate_field_is_interface() {
                     <span class="kw">let </span>text = <span class="string">r#"{
                         "version": 1,
@@ -2682,7 +2716,7 @@
 
                 <span class="attr">#[test]
                 #[should_panic(
-                    expected = <span class="string">"test.ddi:8:43: error: Failed parsing object fields:\nexpected one of: { \"compiled-module-path\", \"is-interface\", \"logical-name\", \"source-path\", \"unique-on-source-path\" }\n"
+                    expected = <span class="string">"test.ddi:8:42: error: Failed parsing object fields:\nexpected one of: { \"compiled-module-path\", \"is-interface\", \"logical-name\", \"source-path\", \"unique-on-source-path\" }\n"
                 </span>)]
                 </span><span class="kw">fn </span>mismatch_field() {
                     <span class="kw">let </span>text = <span class="string">r#"{
@@ -2709,7 +2743,7 @@
 
                 <span class="attr">#[test]
                 #[should_panic(
-                    expected = <span class="string">"test.ddi:8:42: error: Failed parsing object fields:\nexpected one of: { \"compiled-module-path\", \"is-interface\", \"logical-name\", \"source-path\", \"unique-on-source-path\" }\n"
+                    expected = <span class="string">"test.ddi:8:41: error: Failed parsing object fields:\nexpected one of: { \"compiled-module-path\", \"is-interface\", \"logical-name\", \"source-path\", \"unique-on-source-path\" }\n"
                 </span>)]
                 </span><span class="kw">fn </span>mismatch_field_unquoted() {
                     <span class="kw">let </span>text = <span class="string">r#"{
@@ -2755,7 +2789,7 @@
                 <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
                 <span class="attr">#[test]
-                #[should_panic(expected = <span class="string">"test.ddi:9:43: error: Duplicate field: `source-path`\n"</span>)]
+                #[should_panic(expected = <span class="string">"test.ddi:9:42: error: Duplicate field: `source-path`\n"</span>)]
                 </span><span class="kw">fn </span>duplicate_field_source_path() {
                     <span class="kw">let </span>text = <span class="string">r#"{
                         "version": 1,
@@ -2781,7 +2815,7 @@
                 }
 
                 <span class="attr">#[test]
-                #[should_panic(expected = <span class="string">"test.ddi:9:43: error: Duplicate field: `compiled-module-path`\n"</span>)]
+                #[should_panic(expected = <span class="string">"test.ddi:9:42: error: Duplicate field: `compiled-module-path`\n"</span>)]
                 </span><span class="kw">fn </span>duplicate_field_compiled_module_path() {
                     <span class="kw">let </span>text = <span class="string">r#"{
                         "version": 1,
@@ -2807,7 +2841,7 @@
                 }
 
                 <span class="attr">#[test]
-                #[should_panic(expected = <span class="string">"test.ddi:9:45: error: Duplicate field: `logical-name`\n"</span>)]
+                #[should_panic(expected = <span class="string">"test.ddi:9:44: error: Duplicate field: `logical-name`\n"</span>)]
                 </span><span class="kw">fn </span>duplicate_field_logical_name() {
                     <span class="kw">let </span>text = <span class="string">r#"{
                         "version": 1,
@@ -2833,7 +2867,7 @@
                 }
 
                 <span class="attr">#[test]
-                #[should_panic(expected = <span class="string">"test.ddi:9:43: error: Duplicate field: `unique-on-source-path`\n"</span>)]
+                #[should_panic(expected = <span class="string">"test.ddi:9:42: error: Duplicate field: `unique-on-source-path`\n"</span>)]
                 </span><span class="kw">fn </span>duplicate_field_unique_on_source_path() {
                     <span class="kw">let </span>text = <span class="string">r#"{
                         "version": 1,
@@ -2859,7 +2893,7 @@
                 }
 
                 <span class="attr">#[test]
-                #[should_panic(expected = <span class="string">"test.ddi:9:45: error: Duplicate field: `lookup-method`\n"</span>)]
+                #[should_panic(expected = <span class="string">"test.ddi:9:44: error: Duplicate field: `lookup-method`\n"</span>)]
                 </span><span class="kw">fn </span>duplicate_field_lookup_method() {
                     <span class="kw">let </span>text = <span class="string">r#"{
                         "version": 1,
@@ -2886,7 +2920,7 @@
 
                 <span class="attr">#[test]
                 #[should_panic(
-                    expected = <span class="string">"test.ddi:8:45: error: Failed parsing object fields:\nexpected one of: { \"compiled-module-path\", \"logical-name\", \"lookup-method\", \"source-path\", \"unique-on-source-path\" }\n"
+                    expected = <span class="string">"test.ddi:8:44: error: Failed parsing object fields:\nexpected one of: { \"compiled-module-path\", \"logical-name\", \"lookup-method\", \"source-path\", \"unique-on-source-path\" }\n"
                 </span>)]
                 </span><span class="kw">fn </span>mismatch_field_l() {
                     <span class="kw">let </span>text = <span class="string">r#"{
@@ -2913,7 +2947,7 @@
 
                 <span class="attr">#[test]
                 #[should_panic(
-                    expected = <span class="string">"test.ddi:8:43: error: Failed parsing object fields:\nexpected one of: { \"compiled-module-path\", \"logical-name\", \"lookup-method\", \"source-path\", \"unique-on-source-path\" }\n"
+                    expected = <span class="string">"test.ddi:8:42: error: Failed parsing object fields:\nexpected one of: { \"compiled-module-path\", \"logical-name\", \"lookup-method\", \"source-path\", \"unique-on-source-path\" }\n"
                 </span>)]
                 </span><span class="kw">fn </span>mismatch_field() {
                     <span class="kw">let </span>text = <span class="string">r#"{
@@ -2940,7 +2974,7 @@
 
                 <span class="attr">#[test]
                 #[should_panic(
-                    expected = <span class="string">"test.ddi:8:42: error: Failed parsing object fields:\nexpected one of: { \"compiled-module-path\", \"logical-name\", \"lookup-method\", \"source-path\", \"unique-on-source-path\" }\n"
+                    expected = <span class="string">"test.ddi:8:41: error: Failed parsing object fields:\nexpected one of: { \"compiled-module-path\", \"logical-name\", \"lookup-method\", \"source-path\", \"unique-on-source-path\" }\n"
                 </span>)]
                 </span><span class="kw">fn </span>mismatch_field_unquoted() {
                     <span class="kw">let </span>text = <span class="string">r#"{
@@ -2974,7 +3008,7 @@
 
                     <span class="attr">#[test]
                     #[should_panic(
-                        expected = <span class="string">"test.ddi:10:6: error: Failed parsing `LookupMethod`:\nexpected one of: { \"by-name\", \"include-angle\", \"include-quote\" }\n"
+                        expected = <span class="string">"test.ddi:10:5: error: Failed parsing `LookupMethod`:\nexpected one of: { \"by-name\", \"include-angle\", \"include-quote\" }\n"
                     </span>)]
                     </span><span class="kw">fn </span>mismatch_field_include() {
                         <span class="kw">let </span>text = <span class="string">r#"{
@@ -3002,7 +3036,7 @@
 
                     <span class="attr">#[test]
                     #[should_panic(
-                        expected = <span class="string">"test.ddi:9:64: error: Failed parsing `LookupMethod`:\nexpected one of: { \"by-name\", \"include-angle\", \"include-quote\" }\n"
+                        expected = <span class="string">"test.ddi:9:63: error: Failed parsing `LookupMethod`:\nexpected one of: { \"by-name\", \"include-angle\", \"include-quote\" }\n"
                     </span>)]
                     </span><span class="kw">fn </span>mismatch_field_by_name_include() {
                         <span class="kw">let </span>text = <span class="string">r#"{
@@ -3030,7 +3064,7 @@
 
                     <span class="attr">#[test]
                     #[should_panic(
-                        expected = <span class="string">"test.ddi:9:63: error: Failed parsing `LookupMethod`:\nexpected one of: { \"by-name\", \"include-angle\", \"include-quote\" }\n"
+                        expected = <span class="string">"test.ddi:9:62: error: Failed parsing `LookupMethod`:\nexpected one of: { \"by-name\", \"include-angle\", \"include-quote\" }\n"
                     </span>)]
                     </span><span class="kw">fn </span>mismatch_field_unquoted() {
                         <span class="kw">let </span>text = <span class="string">r#"{
@@ -3068,7 +3102,7 @@
                 "rules": [
                     {
                         "work-directory": "build",
-                        "primary-output": "fo\u{2764}o.\u{1f4af}o",
+                        "primary-output": "fo\u2764o.o",
                         "outputs": [
                             "foo.d"
                         ],
@@ -3083,6 +3117,40 @@
             <span class="kw">let </span>state = State::default();
             <span class="kw">let </span><span class="kw-2">mut </span>stream = ParseStream::new(path, input, state);
             <span class="kw">let </span>dep_file = r5::parsers::dep_file.parse(<span class="kw-2">&amp;mut </span>stream).unwrap();
+            <span class="kw">let </span>primary_output = <span class="kw-2">&amp;</span>dep_file.rules[<span class="number">0</span>].primary_output;
+            <span class="macro">assert_eq!</span>(primary_output.as_deref().map(AsRef::&lt;str&gt;::as_ref), <span class="prelude-val">Some</span>(<span class="string">"fo❤o.o"</span>));
+            <span class="macro">assert_eq!</span>(<span class="number">1</span>, <span class="kw">crate</span>::util::count_escapes(text));
+            <span class="macro">assert_eq!</span>(<span class="number">1</span>, <span class="kw">crate</span>::util::count_escaped_strings(text).<span class="number">1</span>);
+            <span class="macro">assert_eq!</span>(<span class="number">0</span>, dep_file.count_escapes_total());
+            <span class="macro">assert_eq!</span>(<span class="number">1</span>, dep_file.count_copies());
+        }
+
+        <span class="attr">#[test]
+        </span><span class="kw">fn </span>check_has_escapes_surrogates() {
+            <span class="kw">let </span>text = <span class="string">r#"
+            {
+                "version": 1,
+                "revision": 0,
+                "rules": [
+                    {
+                        "work-directory": "build",
+                        "primary-output": "fo\uD834\uDD1Eo.o",
+                        "outputs": [
+                            "foo.d"
+                        ],
+                        "provides": [],
+                        "requires": []
+                    }
+                ]
+            }
+            "#</span>;
+            <span class="kw">let </span>path = <span class="string">"test.ddi"</span>;
+            <span class="kw">let </span>input = text.as_bytes();
+            <span class="kw">let </span>state = State::default();
+            <span class="kw">let </span><span class="kw-2">mut </span>stream = ParseStream::new(path, input, state);
+            <span class="kw">let </span>dep_file = r5::parsers::dep_file.parse(<span class="kw-2">&amp;mut </span>stream).unwrap();
+            <span class="kw">let </span>primary_output = <span class="kw-2">&amp;</span>dep_file.rules[<span class="number">0</span>].primary_output;
+            <span class="macro">assert_eq!</span>(primary_output.as_deref().map(AsRef::&lt;str&gt;::as_ref), <span class="prelude-val">Some</span>(<span class="string">"fo𝄞o.o"</span>));
             <span class="macro">assert_eq!</span>(<span class="number">2</span>, <span class="kw">crate</span>::util::count_escapes(text));
             <span class="macro">assert_eq!</span>(<span class="number">1</span>, <span class="kw">crate</span>::util::count_escaped_strings(text).<span class="number">1</span>);
             <span class="macro">assert_eq!</span>(<span class="number">0</span>, dep_file.count_escapes_total());
