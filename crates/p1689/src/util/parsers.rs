@@ -226,7 +226,7 @@ where
             ErrorKind::FailedParsingJsonUnsignedInteger => { // tarpaulin::hint
                 writeln!(f, "Failed parsing JSON unsigned integer")?;
             },
-            ErrorKind::InvalidUnicodeEscapeHex { bytes } => {
+            ErrorKind::InvalidUnicodeEscapeHex { bytes } => { // tarpaulin::hint
                 writeln!(f, "Invalid unicode escape hex: {}", String::from_utf8_lossy(bytes.as_slice()))?;
             },
             ErrorKind::InvalidUnicodeLowerSurrogate { lo } => {
@@ -235,7 +235,7 @@ where
             &ErrorKind::MissingField { field } => {
                 writeln!(f, "Missing field: `{field}`")?;
             },
-            ErrorKind::MissingUnicodeLowerSurrogate { hi } => {
+            ErrorKind::MissingUnicodeLowerSurrogate { hi } => { // tarpaulin::hint
                 writeln!(f, "Missing unicode lower surrogate pair for leading high surrogate: {hi:#04x}")?;
             },
             ErrorKind::NextByte => { // tarpaulin::hint
@@ -392,16 +392,15 @@ pub mod json {
 pub mod number {
     use super::*;
 
-    #[allow(clippy::identity_op)]
-    const fn dec_to_hex(num: u8) -> [u8; 2] {
-        let lut = b"0123456789abcdef";
-        let mut hex = [0u8; 2];
-        hex[0] = lut[(num as usize & 0xf0) >> 4];
-        hex[1] = lut[(num as usize & 0x0f) >> 0];
-        hex
-    }
-
     const HEX_LUT: [u32; 0x10000] = {
+        #[allow(clippy::identity_op)]
+        const fn dec_to_hex(num: u8) -> [u8; 2] {
+            let lut = b"0123456789abcdef";
+            let mut hex = [0u8; 2];
+            hex[0] = lut[(num as usize & 0xf0) >> 4];
+            hex[1] = lut[(num as usize & 0x0f) >> 0];
+            hex
+        }
         let mut lut = [u32::MAX; 0x10000];
         let mut dec = 0u8;
         loop {
@@ -647,38 +646,42 @@ pub mod string {
         out
     }
 
+    #[cfg(not(tarpaulin_include))]
     #[inline(always)]
     fn is_high_surrogate(code: u32) -> bool {
         (0xd800 ..= 0xdbff).contains(&code)
     }
 
+    #[cfg(not(tarpaulin_include))]
     #[inline(always)]
     fn is_low_surrogate(code: u32) -> bool {
         (0xdc00 ..= 0xdfff).contains(&code)
     }
 
+    #[rustfmt::skip]
     #[inline(always)]
-    fn code_to_char<'i, E>(unicode: u32, stream: &ParseStream<'i, E>) -> Result<char, Error<'i, E>> {
+    fn code_to_char<'i, E>(unicode: u32, stream: &ParseStream<'i, E>) -> Result<char, Error<'i, E>> { // tarpaulin::hint
         core::char::from_u32(unicode).ok_or_else(|| {
             let error = ErrorKind::CharFromUnicodeFailed { unicode };
             stream.error(error)
         })
     }
 
+    #[rustfmt::skip]
     pub(crate) fn unescape_unicode<'i, 'r, E>(
         dst: &'r mut Cow<'i, [u8]>,
         src: &'i [u8],
     ) -> impl Parser<'i, (), E> + 'r {
         |stream: &mut ParseStream<'i, E>| {
-            let hi = {
+            let hi = { // tarpaulin::hint
                 let code = ucs_hex_code.parse(stream)?;
                 if !is_high_surrogate(code) {
                     stream.state.encode_utf8(dst, src, code_to_char(code, stream)?);
                     return Ok(());
                 }
-                code
+                code // tarpaulin::hint
             };
-            let lo = {
+            let lo = { // tarpaulin::hint
                 if stream.next_slice(2)? != b"\\u" {
                     let error = ErrorKind::MissingUnicodeLowerSurrogate { hi };
                     return Err(stream.error(error));
@@ -688,7 +691,7 @@ pub mod string {
                     let error = ErrorKind::InvalidUnicodeLowerSurrogate { lo: code };
                     return Err(stream.error(error));
                 }
-                code
+                code // tarpaulin::hint
             };
             let code = ((hi - 0xd800) << 10) + (lo - 0xdc00) + 0x10000;
             stream.state.encode_utf8(dst, src, code_to_char(code, stream)?);
@@ -696,13 +699,14 @@ pub mod string {
         }
     }
 
+    #[rustfmt::skip]
     #[inline(always)]
-    pub(crate) fn ucs_hex_code<'i, E>(stream: &mut ParseStream<'i, E>) -> Result<u32, Error<'i, E>> {
+    pub(crate) fn ucs_hex_code<'i, E>(stream: &mut ParseStream<'i, E>) -> Result<u32, Error<'i, E>> { // tarpaulin::hint
         let offset = 4;
-        let bytes = stream.next_slice(offset)?.try_into().map_err(|_| {
-            let error = ErrorKind::NextSlice { offset };
-            stream.error(error)
-        })?;
+        let Ok(bytes) = stream.next_slice(offset)?.try_into() else {
+            // SAFETY: `.next_slice` already verified we have a slice of length 4
+            unsafe { core::hint::unreachable_unchecked() }
+        };
         let unicode = self::number::from_radix_16(bytes).ok_or_else(|| {
             let error = ErrorKind::InvalidUnicodeEscapeHex { bytes };
             stream.error(error)
@@ -938,68 +942,6 @@ mod test {
         }
 
         #[test]
-        #[should_panic(expected = "test.ddi:1:1: error: UTF-8 validation failed:")]
-        fn bstr_to_utf8_expectedly_fails_invalid_utf8_borrowed() {
-            let text = "";
-            let path = "test.ddi";
-            let input = text.as_bytes();
-            let state = State::default();
-            let stream = ParseStream::<r5::ErrorKind>::new(path, input, state);
-            // NOTE: Here we use \u{D800} (leading surrogate) which is invalid standalone
-            let bor = [0xedu8, 0xa0u8, 0x80u8].as_slice();
-            let cow = Cow::Borrowed(bor);
-            if let Err(err) = self::bstr_to_utf8(&stream, cow) {
-                panic!("{err}");
-            };
-        }
-
-        #[test]
-        #[should_panic(expected = "test.ddi:1:1: error: UTF-8 validation failed:")]
-        fn bstr_to_utf8_expectedly_fails_invalid_utf8_owned() {
-            let text = "";
-            let path = "test.ddi";
-            let input = text.as_bytes();
-            let state = State::default();
-            let stream = ParseStream::<r5::ErrorKind>::new(path, input, state);
-            // NOTE: Here we use \u{D800} (leading surrogate) which is invalid standalone
-            let own = alloc::vec![0xed, 0xa0, 0x80];
-            let cow = Cow::Owned(own);
-            if let Err(err) = self::bstr_to_utf8(&stream, cow) {
-                panic!("{err}");
-            };
-        }
-
-        #[test]
-        #[should_panic(expected = "test.ddi:1:11: error: Invalid unicode lower surrogate: 0x2764\n")]
-        fn unescape_unicode_expectedly_fails_invalid_lower_surrogate() {
-            let text = "uD800\\u2764";
-            let path = "test.ddi";
-            let input = text.as_bytes();
-            let state = State::default();
-            let mut stream = ParseStream::<r5::ErrorKind>::new(path, input, state);
-            let mut dst = Cow::Owned(alloc::vec![]);
-            let src = b"//";
-            if let Err(err) = self::unescape(&mut dst, src).parse(&mut stream) {
-                panic!("{err}");
-            };
-        }
-
-        #[test]
-        #[should_panic(expected = "test.ddi:1:5: error: Conversion of unicode u32 to char failed: u32 value: 0xdc00\n")]
-        fn unescape_unicode_expectedly_fails_invalid_utf8() {
-            let text = "uDC00";
-            let path = "test.ddi";
-            let input = text.as_bytes();
-            let state = State::default();
-            let mut stream = ParseStream::<r5::ErrorKind>::new(path, input, state);
-            let mut dst = Cow::Owned(alloc::vec![]);
-            let src = b"//";
-            if let Err(err) = self::unescape(&mut dst, src).parse(&mut stream) {
-                panic!("{err}");
-            };
-        }
-
-        #[test]
         fn unescape_utf16_static() {
             let char = '💯';
             let text = self::string::u32_to_utf16(char);
@@ -1120,6 +1062,119 @@ mod test {
                 if let Err(err) = p.parse(&mut stream) {
                     panic!("{err}");
                 }
+            }
+
+            #[test]
+            #[should_panic(expected = "test.ddi:1:1: error: UTF-8 validation failed:")]
+            fn bstr_to_utf8_expectedly_fails_invalid_utf8_borrowed() {
+                let text = "";
+                let path = "test.ddi";
+                let input = text.as_bytes();
+                let state = State::default();
+                let stream = ParseStream::<r5::ErrorKind>::new(path, input, state);
+                // NOTE: Here we use \u{D800} (leading surrogate) which is invalid standalone
+                let bor = [0xedu8, 0xa0u8, 0x80u8].as_slice();
+                let cow = Cow::Borrowed(bor);
+                if let Err(err) = self::bstr_to_utf8(&stream, cow) {
+                    panic!("{err}");
+                };
+            }
+
+            #[test]
+            #[should_panic(expected = "test.ddi:1:1: error: UTF-8 validation failed:")]
+            fn bstr_to_utf8_expectedly_fails_invalid_utf8_owned() {
+                let text = "";
+                let path = "test.ddi";
+                let input = text.as_bytes();
+                let state = State::default();
+                let stream = ParseStream::<r5::ErrorKind>::new(path, input, state);
+                // NOTE: Here we use \u{D800} (leading surrogate) which is invalid standalone
+                let own = alloc::vec![0xed, 0xa0, 0x80];
+                let cow = Cow::Owned(own);
+                if let Err(err) = self::bstr_to_utf8(&stream, cow) {
+                    panic!("{err}");
+                };
+            }
+
+            #[test]
+            #[should_panic(expected = "test.ddi:1:11: error: Invalid unicode lower surrogate: 0x2764\n")]
+            fn unescape_unicode_expectedly_fails_invalid_lower_surrogate() {
+                let text = "uD800\\u2764";
+                let path = "test.ddi";
+                let input = text.as_bytes();
+                let state = State::default();
+                let mut stream = ParseStream::<r5::ErrorKind>::new(path, input, state);
+                let mut dst = Cow::Owned(alloc::vec![]);
+                let src = b"\\";
+                if let Err(err) = super::unescape(&mut dst, src).parse(&mut stream) {
+                    panic!("{err}");
+                };
+            }
+
+            #[test]
+            #[should_panic(
+                expected = "test.ddi:1:7: error: Missing unicode lower surrogate pair for leading high surrogate: 0xd834\n"
+            )]
+            fn unescape_unicode_missing_lower_surrogate() {
+                let text = "uD834missing";
+                let path = "test.ddi";
+                let input = text.as_bytes();
+                let state = State::default();
+                let mut stream = ParseStream::<r5::ErrorKind>::new(path, input, state);
+                let mut dst = Cow::Owned(alloc::vec![]);
+                let src = b"\\";
+                if let Err(err) = super::unescape(&mut dst, src).parse(&mut stream) {
+                    panic!("{err}");
+                };
+            }
+
+            #[test]
+            #[should_panic(
+                expected = "test.ddi:1:5: error: Conversion of unicode u32 to char failed: u32 value: 0xdc00\n"
+            )]
+            fn unescape_unicode_expectedly_fails_invalid_utf8() {
+                let text = "uDC00";
+                let path = "test.ddi";
+                let input = text.as_bytes();
+                let state = State::default();
+                let mut stream = ParseStream::<r5::ErrorKind>::new(path, input, state);
+                let mut dst = Cow::Owned(alloc::vec![]);
+                let src = b"\\";
+                if let Err(err) = super::unescape(&mut dst, src).parse(&mut stream) {
+                    panic!("{err}");
+                };
+            }
+
+            #[test]
+            #[should_panic(
+                expected = "test.ddi:1:1: error: Remaining bytes less than requested slice length: remaining: 2, requested: 4\n"
+            )]
+            fn unescape_unicode_truncated() {
+                let text = "uDC";
+                let path = "test.ddi";
+                let input = text.as_bytes();
+                let state = State::default();
+                let mut stream = ParseStream::<r5::ErrorKind>::new(path, input, state);
+                let mut dst = Cow::Owned(alloc::vec![]);
+                let src = b"\\";
+                if let Err(err) = super::unescape(&mut dst, src).parse(&mut stream) {
+                    panic!("{err}");
+                };
+            }
+
+            #[test]
+            #[should_panic(expected = "test.ddi:1:5: error: Invalid unicode escape hex: DCXX\n")]
+            fn unescape_unicode_invalid_hex() {
+                let text = "uDCXX";
+                let path = "test.ddi";
+                let input = text.as_bytes();
+                let state = State::default();
+                let mut stream = ParseStream::<r5::ErrorKind>::new(path, input, state);
+                let mut dst = Cow::Owned(alloc::vec![]);
+                let src = b"\\";
+                if let Err(err) = super::unescape(&mut dst, src).parse(&mut stream) {
+                    panic!("{err}");
+                };
             }
         }
     }
