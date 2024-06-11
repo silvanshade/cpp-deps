@@ -35,7 +35,7 @@ jobs:
         run: cargo install --root ${{ runner.tool_cache }}/cargo-careful --force cargo-careful
       - run: echo "${{ runner.tool_cache }}/cargo-careful/bin" >> $GITHUB_PATH
       - uses: Swatinem/rust-cache@v2
-      - run: cargo +${{ env.RUST_NIGHTLY_TOOLCHAIN }} careful test --all-features
+      - run: cargo +${{ env.RUST_NIGHTLY_TOOLCHAIN }} careful test --features="full"
 
   cargo-deny:
     runs-on: ubuntu-latest
@@ -127,6 +127,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo test --all-targets --all-features
@@ -151,7 +153,7 @@ jobs:
         run: cargo install --root ${{ runner.tool_cache }}/cargo-tarpaulin --force cargo-tarpaulin
       - run: echo "${{ runner.tool_cache }}/cargo-tarpaulin/bin" >> $GITHUB_PATH
       - uses: Swatinem/rust-cache@v2
-      - run: cargo +${{ env.RUST_NIGHTLY_TOOLCHAIN }} tarpaulin --package p1689 --all-features --verbose --timeout 120 --out Xml
+      - run: cargo +${{ env.RUST_NIGHTLY_TOOLCHAIN }} tarpaulin --exclude-files="corpus/*" --exclude-files="crates/p1689/tests/*" --package p1689 --features="full" --verbose --timeout 120 --out Xml
       - uses: codecov/codecov-action@v4
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
@@ -168,4 +170,4 @@ jobs:
           toolchain: ${{ env.RUST_NIGHTLY_TOOLCHAIN }}
           components: miri
       - uses: Swatinem/rust-cache@v2
-      - run: cargo +${{ env.RUST_NIGHTLY_TOOLCHAIN }} miri test --all-features
+      - run: cargo +${{ env.RUST_NIGHTLY_TOOLCHAIN }} miri test --features="full"

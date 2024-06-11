@@ -18,7 +18,7 @@ required-features = ["benchmark"]
 [features]
 default = ["memchr", "std"]
 # Everything intended for normal usage.
-full = ["default", "arbitrary", "builders", "deserialize", "extra_traits", "monostate", "parsing", "serde", "serialize"]
+full = ["default", "arbitrary", "benchmark", "builders", "camino", "datagen", "deserialize", "extra_traits", "memchr", "monostate", "parsing", "serde", "serialize", "std"]
 # Arbitrary impls for p1689r5 data structures.
 arbitrary = ["dep:arbitrary", "arbitrary/derive"]
 # Feature collection only intended for internal benchmarks.
