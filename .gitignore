@@ -1,3 +1,4 @@
+cobertura.xml
 examples/**/main
 tarpaulin-report.html
 *.d
