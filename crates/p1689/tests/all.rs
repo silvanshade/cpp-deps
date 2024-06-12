@@ -1,3 +1,4 @@
+#[cfg(feature = "corpus")]
 mod common;
 
 #[cfg(feature = "corpus")]

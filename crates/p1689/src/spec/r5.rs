@@ -491,13 +491,9 @@ mod test {
     use alloc::string::String;
 
     use ::proptest::prelude::*;
-    use rand::prelude::*;
 
     use super::*;
-    use crate::{
-        r5::parsers::{ParseStream, State},
-        vendor::camino::Utf8PathBuf,
-    };
+    use crate::vendor::camino::Utf8PathBuf;
 
     proptest! {
         #[cfg_attr(miri, ignore)]
@@ -543,8 +539,19 @@ mod test {
         }
     }
 
+    #[cfg_attr(miri, ignore)]
+    #[cfg(all(
+        feature = "serde",
+        feature = "deserialize",
+        feature = "serialize",
+        feature = "parsing"
+    ))]
     #[test]
     fn parser_and_serde_agree() {
+        use rand::prelude::*;
+
+        use crate::r5::parsers::{ParseStream, State};
+
         let rng = &mut rand_chacha::ChaCha8Rng::seed_from_u64(crate::r5::datagen::CHACHA8RNG_SEED);
         let config = crate::r5::datagen::graph::GraphGeneratorConfig::default().node_count(rng.gen_range(0u8 ..= 16u8));
         let dep_files = crate::r5::datagen::graph::GraphGenerator::gen_dep_files(rng, config)
