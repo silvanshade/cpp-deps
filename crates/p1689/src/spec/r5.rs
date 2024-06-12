@@ -491,9 +491,13 @@ mod test {
     use alloc::string::String;
 
     use ::proptest::prelude::*;
+    use rand::prelude::*;
 
     use super::*;
-    use crate::vendor::camino::Utf8PathBuf;
+    use crate::{
+        r5::parsers::{ParseStream, State},
+        vendor::camino::Utf8PathBuf,
+    };
 
     proptest! {
         #[cfg_attr(miri, ignore)]
@@ -536,6 +540,26 @@ mod test {
                     assert_eq!(Some(view.key), source_path.as_deref().map(|s| s.as_ref()));
                 }
             }
+        }
+    }
+
+    #[test]
+    fn parser_and_serde_agree() {
+        let rng = &mut rand_chacha::ChaCha8Rng::seed_from_u64(crate::r5::datagen::CHACHA8RNG_SEED);
+        let config = crate::r5::datagen::graph::GraphGeneratorConfig::default().node_count(rng.gen_range(0u8 ..= 16u8));
+        let dep_files = crate::r5::datagen::graph::GraphGenerator::gen_dep_files(rng, config)
+            .flat_map(|result| result.and_then(crate::r5::datagen::json::pretty_print_unindented));
+        for text in dep_files.take(128) {
+            let from_serde = serde_json::from_str::<crate::r5::DepFile>(&text).unwrap();
+            let from_parsers = {
+                let path = "test.ddi";
+                let input = text.as_bytes();
+                let state = State::default();
+                let mut stream = ParseStream::new(path, input, state);
+                crate::r5::parsers::dep_file(&mut stream)
+            }
+            .unwrap();
+            assert_eq!(from_serde, from_parsers);
         }
     }
 }
