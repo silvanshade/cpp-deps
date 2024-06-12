@@ -25,6 +25,32 @@ use rand::prelude::*;
 use super::BoxResult;
 use crate::{r5, vendor::camino::Utf8PathBuf};
 
+fn name_sep<R>(rng: &mut R) -> String
+where
+    R: RngCore,
+{
+    if rng.gen::<bool>() {
+        let mut dst = [0u16; 2];
+        let code = rng.gen_range(0x10000u32 .. 0x10ffff);
+        let char = unsafe { char::from_u32_unchecked(code) };
+        char.encode_utf16(&mut dst);
+        alloc::format!("{:#06x}{:#06x}", dst[0], dst[1]).replace("0x", "\\u")
+    } else {
+        let code = {
+            let codes = [0x0020 .. 0x007e, 0x00a0 .. 0xd7ff, 0xe000 .. 0xffff];
+            let idx = rng.gen_range(0 .. 3);
+            rng.gen_range(codes[idx].clone())
+        };
+        if rng.gen::<bool>() {
+            alloc::format!("{}", unsafe { char::from_u32_unchecked(code) })
+                .replace("{", "")
+                .replace("}", "")
+        } else {
+            alloc::format!("{code:#06x}").replace("0x", "\\u")
+        }
+    }
+}
+
 fn fake_name<R>(rng: &mut R) -> String
 where
     R: RngCore,
@@ -39,10 +65,14 @@ where
         6 => String::dummy_with_rng(&Name(ZH_TW), rng),
         _ => unreachable!(),
     };
-    name.split_whitespace()
-        .map(|frag| frag.to_lowercase())
-        .collect::<Vec<_>>()
-        .join("-")
+    let mut res = String::new();
+    for (i, frag) in name.split_whitespace().enumerate() {
+        if i % 2 == 1 && i > 0 {
+            res.push_str(&name_sep(rng));
+        }
+        res.push_str(&frag.to_lowercase())
+    }
+    res
 }
 
 pub struct DepFileIterator<'r, R> {
