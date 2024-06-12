@@ -15,6 +15,7 @@ where
     matches!(cow, Cow::Owned(_))
 }
 
+#[rustfmt::skip]
 #[cfg(test)]
 pub fn count_escapes(str: impl AsRef<str>) -> u64 {
     let str = str.as_ref();
@@ -23,11 +24,9 @@ pub fn count_escapes(str: impl AsRef<str>) -> u64 {
     let mut count = 0;
     if bytes.len() > 1 {
         while off < bytes.len() - 1 {
-            match bytes[off] {
-                b'\\' if bytes[off + 1] == b'\\' => off += 1,
-                b'\\' => count += 1,
-                #[cfg(not(tarpaulin_include))]
-                _ => {},
+            if bytes[off] == b'\\' {
+                count += 1;
+                if bytes[off + 1] == b'\\' { off += 1; }
             }
             off += 1;
         }
@@ -51,9 +50,10 @@ pub fn count_escaped_strings(str: impl AsRef<str>) -> (u64, u64) {
                     match bytes[off] {
                         #[rustfmt::skip]
                         b'\\' => { // tarpaulin::hint
+                            escaped = true;
                             off += 1;
                             if bytes[off] != b'\\' {
-                                escaped = true;
+                                off += 1;
                             }
                         },
                         #[rustfmt::skip]
