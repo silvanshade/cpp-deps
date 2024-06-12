@@ -640,10 +640,7 @@ pub mod string {
     pub(crate) fn u32_to_utf16(char: char) -> alloc::string::String {
         let mut dst = [0u16; 2];
         char.encode_utf16(&mut dst);
-        let mut out = alloc::string::String::new();
-        out.push_str(&std::format!("{:#06x}", dst[0]).replace("0x", "\\u"));
-        out.push_str(&std::format!("{:#06x}", dst[1]).replace("0x", "\\u"));
-        out
+        alloc::format!("{:#06x}{:#06x}", dst[0], dst[1]).replace("0x", "\\u")
     }
 
     #[cfg(not(tarpaulin_include))]
@@ -960,7 +957,12 @@ mod test {
         proptest! {
             #[cfg_attr(miri, ignore)]
             #[test]
-            fn unescape_utf8(char in proptest::char::range(char::from_u32(0x0000u32).unwrap(), char::from_u32(0xFFFF).unwrap())) {
+            fn unescape_utf8(
+                char in proptest::char::range(
+                    unsafe { char::from_u32_unchecked(0x0000u32) },
+                    unsafe { char::from_u32_unchecked(0xFFFFu32) }
+                )
+            ) {
                 let text = alloc::format!("{:#06x}", u32::from(char)).replace("0x", "\\u");
                 let path = "test.ddi";
                 let input = text.as_bytes().strip_prefix(b"\\").unwrap();
@@ -976,7 +978,12 @@ mod test {
 
             #[cfg_attr(miri, ignore)]
             #[test]
-            fn unescape_utf16(char in proptest::char::range(char::from_u32(0x10000u32).unwrap(), char::from_u32(0x10FFFF).unwrap())) {
+            fn unescape_utf16(
+                char in proptest::char::range(
+                    unsafe { char::from_u32_unchecked(0x010000u32) },
+                    unsafe { char::from_u32_unchecked(0x10FFFFu32) }
+                )
+            ) {
                 let text = self::string::u32_to_utf16(char);
                 let path = "test.ddi";
                 let input = text.as_bytes().strip_prefix(b"\\").unwrap();
