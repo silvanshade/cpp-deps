@@ -202,7 +202,8 @@
     <span class="macro">matches!</span>(cow, Cow::Owned(<span class="kw">_</span>))
 }
 
-<span class="attr">#[cfg(test)]
+<span class="attr">#[rustfmt::skip]
+#[cfg(test)]
 </span><span class="kw">pub fn </span>count_escapes(str: <span class="kw">impl </span>AsRef&lt;str&gt;) -&gt; u64 {
     <span class="kw">let </span>str = str.as_ref();
     <span class="kw">let </span>bytes = str.as_bytes();
@@ -210,11 +211,9 @@
     <span class="kw">let </span><span class="kw-2">mut </span>count = <span class="number">0</span>;
     <span class="kw">if </span>bytes.len() &gt; <span class="number">1 </span>{
         <span class="kw">while </span>off &lt; bytes.len() - <span class="number">1 </span>{
-            <span class="kw">match </span>bytes[off] {
-                <span class="string">b'\\' </span><span class="kw">if </span>bytes[off + <span class="number">1</span>] == <span class="string">b'\\' </span>=&gt; off += <span class="number">1</span>,
-                <span class="string">b'\\' </span>=&gt; count += <span class="number">1</span>,
-                <span class="attr">#[cfg(not(tarpaulin_include))]
-                </span><span class="kw">_ </span>=&gt; {},
+            <span class="kw">if </span>bytes[off] == <span class="string">b'\\' </span>{
+                count += <span class="number">1</span>;
+                <span class="kw">if </span>bytes[off + <span class="number">1</span>] == <span class="string">b'\\' </span>{ off += <span class="number">1</span>; }
             }
             off += <span class="number">1</span>;
         }
@@ -238,9 +237,10 @@
                     <span class="kw">match </span>bytes[off] {
                         <span class="attr">#[rustfmt::skip]
                         </span><span class="string">b'\\' </span>=&gt; { <span class="comment">// tarpaulin::hint
-                            </span>off += <span class="number">1</span>;
+                            </span>escaped = <span class="bool-val">true</span>;
+                            off += <span class="number">1</span>;
                             <span class="kw">if </span>bytes[off] != <span class="string">b'\\' </span>{
-                                escaped = <span class="bool-val">true</span>;
+                                off += <span class="number">1</span>;
                             }
                         },
                         <span class="attr">#[rustfmt::skip]

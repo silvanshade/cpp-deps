@@ -357,6 +357,36 @@
 <a href="#357" id="357">357</a>
 <a href="#358" id="358">358</a>
 <a href="#359" id="359">359</a>
+<a href="#360" id="360">360</a>
+<a href="#361" id="361">361</a>
+<a href="#362" id="362">362</a>
+<a href="#363" id="363">363</a>
+<a href="#364" id="364">364</a>
+<a href="#365" id="365">365</a>
+<a href="#366" id="366">366</a>
+<a href="#367" id="367">367</a>
+<a href="#368" id="368">368</a>
+<a href="#369" id="369">369</a>
+<a href="#370" id="370">370</a>
+<a href="#371" id="371">371</a>
+<a href="#372" id="372">372</a>
+<a href="#373" id="373">373</a>
+<a href="#374" id="374">374</a>
+<a href="#375" id="375">375</a>
+<a href="#376" id="376">376</a>
+<a href="#377" id="377">377</a>
+<a href="#378" id="378">378</a>
+<a href="#379" id="379">379</a>
+<a href="#380" id="380">380</a>
+<a href="#381" id="381">381</a>
+<a href="#382" id="382">382</a>
+<a href="#383" id="383">383</a>
+<a href="#384" id="384">384</a>
+<a href="#385" id="385">385</a>
+<a href="#386" id="386">386</a>
+<a href="#387" id="387">387</a>
+<a href="#388" id="388">388</a>
+<a href="#389" id="389">389</a>
 </pre></div><pre class="rust"><code><span class="attr">#![cfg(not(tarpaulin_include))]
 </span><span class="comment">// TODO:
 // 1. Generate more realistic paths (generate dir hierarchy)
@@ -384,6 +414,32 @@
 <span class="kw">use </span><span class="kw">super</span>::BoxResult;
 <span class="kw">use crate</span>::{r5, vendor::camino::Utf8PathBuf};
 
+<span class="kw">fn </span>name_sep&lt;R&gt;(rng: <span class="kw-2">&amp;mut </span>R) -&gt; String
+<span class="kw">where
+    </span>R: RngCore,
+{
+    <span class="kw">if </span>rng.gen::&lt;bool&gt;() {
+        <span class="kw">let </span><span class="kw-2">mut </span>dst = [<span class="number">0u16</span>; <span class="number">2</span>];
+        <span class="kw">let </span>code = rng.gen_range(<span class="number">0x10000u32 </span>.. <span class="number">0x10ffff</span>);
+        <span class="kw">let </span>char = <span class="kw">unsafe </span>{ char::from_u32_unchecked(code) };
+        char.encode_utf16(<span class="kw-2">&amp;mut </span>dst);
+        <span class="macro">alloc::format!</span>(<span class="string">"{:#06x}{:#06x}"</span>, dst[<span class="number">0</span>], dst[<span class="number">1</span>]).replace(<span class="string">"0x"</span>, <span class="string">"\\u"</span>)
+    } <span class="kw">else </span>{
+        <span class="kw">let </span>code = {
+            <span class="kw">let </span>codes = [<span class="number">0x0020 </span>.. <span class="number">0x007e</span>, <span class="number">0x00a0 </span>.. <span class="number">0xd7ff</span>, <span class="number">0xe000 </span>.. <span class="number">0xffff</span>];
+            <span class="kw">let </span>idx = rng.gen_range(<span class="number">0 </span>.. <span class="number">3</span>);
+            rng.gen_range(codes[idx].clone())
+        };
+        <span class="kw">if </span>rng.gen::&lt;bool&gt;() {
+            <span class="macro">alloc::format!</span>(<span class="string">"{}"</span>, <span class="kw">unsafe </span>{ char::from_u32_unchecked(code) })
+                .replace(<span class="string">"{"</span>, <span class="string">""</span>)
+                .replace(<span class="string">"}"</span>, <span class="string">""</span>)
+        } <span class="kw">else </span>{
+            <span class="macro">alloc::format!</span>(<span class="string">"{code:#06x}"</span>).replace(<span class="string">"0x"</span>, <span class="string">"\\u"</span>)
+        }
+    }
+}
+
 <span class="kw">fn </span>fake_name&lt;R&gt;(rng: <span class="kw-2">&amp;mut </span>R) -&gt; String
 <span class="kw">where
     </span>R: RngCore,
@@ -398,10 +454,14 @@
         <span class="number">6 </span>=&gt; String::dummy_with_rng(<span class="kw-2">&amp;</span>Name(ZH_TW), rng),
         <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(),
     };
-    name.split_whitespace()
-        .map(|frag| frag.to_lowercase())
-        .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
-        .join(<span class="string">"-"</span>)
+    <span class="kw">let </span><span class="kw-2">mut </span>res = String::new();
+    <span class="kw">for </span>(i, frag) <span class="kw">in </span>name.split_whitespace().enumerate() {
+        <span class="kw">if </span>i % <span class="number">2 </span>== <span class="number">1 </span>&amp;&amp; i &gt; <span class="number">0 </span>{
+            res.push_str(<span class="kw-2">&amp;</span>name_sep(rng));
+        }
+        res.push_str(<span class="kw-2">&amp;</span>frag.to_lowercase())
+    }
+    res
 }
 
 <span class="kw">pub struct </span>DepFileIterator&lt;<span class="lifetime">'r</span>, R&gt; {

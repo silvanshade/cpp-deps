@@ -31,7 +31,7 @@
     <span class="kw">let </span>formatter = serde_json::ser::PrettyFormatter::with_indent(<span class="string">b""</span>);
     <span class="kw">let </span><span class="kw-2">mut </span>serializer = serde_json::ser::Serializer::with_formatter(<span class="kw-2">&amp;mut </span>bytes, formatter);
     value.serialize(<span class="kw-2">&amp;mut </span>serializer)<span class="question-mark">?</span>;
-    <span class="kw">let </span>string = <span class="kw">unsafe </span>{ String::from_utf8_unchecked(bytes) };
+    <span class="kw">let </span>string = <span class="kw">unsafe </span>{ String::from_utf8_unchecked(bytes) }.replace(<span class="string">r#"\\"#</span>, <span class="string">r#"\"#</span>);
     <span class="prelude-val">Ok</span>(string)
 }
 </code></pre></div></section></main></body></html>

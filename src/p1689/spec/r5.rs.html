@@ -539,6 +539,30 @@
 <a href="#539" id="539">539</a>
 <a href="#540" id="540">540</a>
 <a href="#541" id="541">541</a>
+<a href="#542" id="542">542</a>
+<a href="#543" id="543">543</a>
+<a href="#544" id="544">544</a>
+<a href="#545" id="545">545</a>
+<a href="#546" id="546">546</a>
+<a href="#547" id="547">547</a>
+<a href="#548" id="548">548</a>
+<a href="#549" id="549">549</a>
+<a href="#550" id="550">550</a>
+<a href="#551" id="551">551</a>
+<a href="#552" id="552">552</a>
+<a href="#553" id="553">553</a>
+<a href="#554" id="554">554</a>
+<a href="#555" id="555">555</a>
+<a href="#556" id="556">556</a>
+<a href="#557" id="557">557</a>
+<a href="#558" id="558">558</a>
+<a href="#559" id="559">559</a>
+<a href="#560" id="560">560</a>
+<a href="#561" id="561">561</a>
+<a href="#562" id="562">562</a>
+<a href="#563" id="563">563</a>
+<a href="#564" id="564">564</a>
+<a href="#565" id="565">565</a>
 </pre></div><pre class="rust"><code><span class="attr">#[cfg(feature = <span class="string">"builders"</span>)]
 </span><span class="kw">pub mod </span>builders;
 <span class="attr">#[cfg(feature = <span class="string">"datagen"</span>)]
@@ -1032,9 +1056,13 @@
     <span class="kw">use </span>alloc::string::String;
 
     <span class="kw">use </span>::proptest::prelude::<span class="kw-2">*</span>;
+    <span class="kw">use </span>rand::prelude::<span class="kw-2">*</span>;
 
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
-    <span class="kw">use </span><span class="kw">crate</span>::vendor::camino::Utf8PathBuf;
+    <span class="kw">use crate</span>::{
+        r5::parsers::{ParseStream, State},
+        vendor::camino::Utf8PathBuf,
+    };
 
     <span class="macro">proptest!</span> {
         <span class="attr">#[cfg_attr(miri, ignore)]
@@ -1077,6 +1105,26 @@
                     <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(view.key), source_path.as_deref().map(|s| s.as_ref()));
                 }
             }
+        }
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>parser_and_serde_agree() {
+        <span class="kw">let </span>rng = <span class="kw-2">&amp;mut </span>rand_chacha::ChaCha8Rng::seed_from_u64(<span class="kw">crate</span>::r5::datagen::CHACHA8RNG_SEED);
+        <span class="kw">let </span>config = <span class="kw">crate</span>::r5::datagen::graph::GraphGeneratorConfig::default().node_count(rng.gen_range(<span class="number">0u8 </span>..= <span class="number">16u8</span>));
+        <span class="kw">let </span>dep_files = <span class="kw">crate</span>::r5::datagen::graph::GraphGenerator::gen_dep_files(rng, config)
+            .flat_map(|result| result.and_then(<span class="kw">crate</span>::r5::datagen::json::pretty_print_unindented));
+        <span class="kw">for </span>text <span class="kw">in </span>dep_files.take(<span class="number">128</span>) {
+            <span class="kw">let </span>from_serde = serde_json::from_str::&lt;<span class="kw">crate</span>::r5::DepFile&gt;(<span class="kw-2">&amp;</span>text).unwrap();
+            <span class="kw">let </span>from_parsers = {
+                <span class="kw">let </span>path = <span class="string">"test.ddi"</span>;
+                <span class="kw">let </span>input = text.as_bytes();
+                <span class="kw">let </span>state = State::default();
+                <span class="kw">let </span><span class="kw-2">mut </span>stream = ParseStream::new(path, input, state);
+                <span class="kw">crate</span>::r5::parsers::dep_file(<span class="kw-2">&amp;mut </span>stream)
+            }
+            .unwrap();
+            <span class="macro">assert_eq!</span>(from_serde, from_parsers);
         }
     }
 }

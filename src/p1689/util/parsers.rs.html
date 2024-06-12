@@ -1179,6 +1179,13 @@
 <a href="#1179" id="1179">1179</a>
 <a href="#1180" id="1180">1180</a>
 <a href="#1181" id="1181">1181</a>
+<a href="#1182" id="1182">1182</a>
+<a href="#1183" id="1183">1183</a>
+<a href="#1184" id="1184">1184</a>
+<a href="#1185" id="1185">1185</a>
+<a href="#1186" id="1186">1186</a>
+<a href="#1187" id="1187">1187</a>
+<a href="#1188" id="1188">1188</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>alloc::{borrow::Cow, string::String};
 
 <span class="kw">pub struct </span>ParseStream&lt;<span class="lifetime">'i</span>, E&gt; {
@@ -1821,10 +1828,7 @@
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>u32_to_utf16(char: char) -&gt; alloc::string::String {
         <span class="kw">let </span><span class="kw-2">mut </span>dst = [<span class="number">0u16</span>; <span class="number">2</span>];
         char.encode_utf16(<span class="kw-2">&amp;mut </span>dst);
-        <span class="kw">let </span><span class="kw-2">mut </span>out = alloc::string::String::new();
-        out.push_str(<span class="kw-2">&amp;</span><span class="macro">std::format!</span>(<span class="string">"{:#06x}"</span>, dst[<span class="number">0</span>]).replace(<span class="string">"0x"</span>, <span class="string">"\\u"</span>));
-        out.push_str(<span class="kw-2">&amp;</span><span class="macro">std::format!</span>(<span class="string">"{:#06x}"</span>, dst[<span class="number">1</span>]).replace(<span class="string">"0x"</span>, <span class="string">"\\u"</span>));
-        out
+        <span class="macro">alloc::format!</span>(<span class="string">"{:#06x}{:#06x}"</span>, dst[<span class="number">0</span>], dst[<span class="number">1</span>]).replace(<span class="string">"0x"</span>, <span class="string">"\\u"</span>)
     }
 
     <span class="attr">#[cfg(not(tarpaulin_include))]
@@ -2141,7 +2145,12 @@
         <span class="macro">proptest!</span> {
             <span class="attr">#[cfg_attr(miri, ignore)]
             #[test]
-            </span><span class="kw">fn </span>unescape_utf8(char <span class="kw">in </span>proptest::char::range(char::from_u32(<span class="number">0x0000u32</span>).unwrap(), char::from_u32(<span class="number">0xFFFF</span>).unwrap())) {
+            </span><span class="kw">fn </span>unescape_utf8(
+                char <span class="kw">in </span>proptest::char::range(
+                    <span class="kw">unsafe </span>{ char::from_u32_unchecked(<span class="number">0x0000u32</span>) },
+                    <span class="kw">unsafe </span>{ char::from_u32_unchecked(<span class="number">0xFFFFu32</span>) }
+                )
+            ) {
                 <span class="kw">let </span>text = <span class="macro">alloc::format!</span>(<span class="string">"{:#06x}"</span>, u32::from(char)).replace(<span class="string">"0x"</span>, <span class="string">"\\u"</span>);
                 <span class="kw">let </span>path = <span class="string">"test.ddi"</span>;
                 <span class="kw">let </span>input = text.as_bytes().strip_prefix(<span class="string">b"\\"</span>).unwrap();
@@ -2157,7 +2166,12 @@
 
             <span class="attr">#[cfg_attr(miri, ignore)]
             #[test]
-            </span><span class="kw">fn </span>unescape_utf16(char <span class="kw">in </span>proptest::char::range(char::from_u32(<span class="number">0x10000u32</span>).unwrap(), char::from_u32(<span class="number">0x10FFFF</span>).unwrap())) {
+            </span><span class="kw">fn </span>unescape_utf16(
+                char <span class="kw">in </span>proptest::char::range(
+                    <span class="kw">unsafe </span>{ char::from_u32_unchecked(<span class="number">0x010000u32</span>) },
+                    <span class="kw">unsafe </span>{ char::from_u32_unchecked(<span class="number">0x10FFFFu32</span>) }
+                )
+            ) {
                 <span class="kw">let </span>text = <span class="self">self</span>::string::u32_to_utf16(char);
                 <span class="kw">let </span>path = <span class="string">"test.ddi"</span>;
                 <span class="kw">let </span>input = text.as_bytes().strip_prefix(<span class="string">b"\\"</span>).unwrap();
