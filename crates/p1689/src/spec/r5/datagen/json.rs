@@ -13,6 +13,6 @@ pub fn pretty_print_unindented(dep_file: r5::DepFile<'_>) -> BoxResult<String> {
     let formatter = serde_json::ser::PrettyFormatter::with_indent(b"");
     let mut serializer = serde_json::ser::Serializer::with_formatter(&mut bytes, formatter);
     value.serialize(&mut serializer)?;
-    let string = unsafe { String::from_utf8_unchecked(bytes) };
+    let string = unsafe { String::from_utf8_unchecked(bytes) }.replace(r#"\\"#, r#"\"#);
     Ok(string)
 }
