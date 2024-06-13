@@ -36,4 +36,6 @@ pub mod r5 {
             util::parsers::{ParseStream, State},
         };
     }
+
+    pub use crate::vendor::camino::{Utf8Path, Utf8PathBuf};
 }
