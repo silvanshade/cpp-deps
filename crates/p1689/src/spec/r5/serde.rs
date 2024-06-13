@@ -1,48 +1,126 @@
 #[cfg(any(feature = "deserialize", feature = "serialize"))]
 use alloc::borrow::Cow;
 
-#[cfg(feature = "deserialize")]
-use serde_with::BorrowCow;
-#[cfg(feature = "deserialize")]
-use serde_with::DeserializeAs;
-#[cfg(feature = "serialize")]
-use serde_with::SerializeAs;
-
 #[cfg(any(feature = "deserialize", feature = "serialize"))]
 use crate::vendor::camino::Utf8Path;
 #[cfg(feature = "deserialize")]
 use crate::vendor::camino::Utf8PathBuf;
 
-// TODO: adjust skip serializations for default values (including bools, etc)
-
-/// Helper to deserialize [`Cow<T>`] as borrowed.
-#[cfg(any(feature = "deserialize", feature = "serialize"))]
-#[derive(Default)]
-#[non_exhaustive]
-pub struct CowUtf8Path;
-
 #[cfg(feature = "deserialize")]
-impl<'de> DeserializeAs<'de, Cow<'de, Utf8Path>> for CowUtf8Path {
-    fn deserialize_as<D>(deserializer: D) -> Result<Cow<'de, Utf8Path>, D::Error>
-    where
-        D: ::serde::Deserializer<'de>,
-    {
-        let cow: Cow<str> = BorrowCow::deserialize_as(deserializer)?;
-        let path = match cow {
-            #[allow(clippy::useless_conversion)]
-            Cow::Borrowed(str) => Cow::Borrowed(str.into()),
-            Cow::Owned(string) => Cow::Owned(Utf8PathBuf::from(string)),
-        };
-        Ok(path)
+pub mod deserialize {
+    use alloc::{borrow::ToOwned, string::String, vec::Vec};
+
+    use serde::Deserialize;
+
+    use super::*;
+
+    struct CowStrVisitor;
+    impl<'de> serde::de::Visitor<'de> for CowStrVisitor {
+        type Value = Cow<'de, str>;
+
+        #[inline]
+        fn expecting(&self, formatter: &mut alloc::fmt::Formatter) -> alloc::fmt::Result {
+            formatter.write_str("a UTF-8 path")
+        }
+
+        #[inline]
+        fn visit_borrowed_str<E>(self, value: &'de str) -> Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            Ok(Cow::Borrowed(value))
+        }
+
+        #[inline]
+        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            Ok(Cow::Owned(value.to_owned()))
+        }
+
+        #[inline]
+        fn visit_string<E>(self, value: String) -> Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            Ok(Cow::Owned(value))
+        }
     }
-}
-#[cfg(feature = "serialize")]
-impl<'a> SerializeAs<Cow<'a, Utf8Path>> for CowUtf8Path {
-    fn serialize_as<S>(source: &Cow<'a, Utf8Path>, serializer: S) -> Result<S::Ok, S::Error>
+
+    struct CowUtf8Path<'a>(Cow<'a, Utf8Path>);
+    impl<'de> serde::Deserialize<'de> for CowUtf8Path<'de> {
+        #[inline]
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: serde::Deserializer<'de>,
+        {
+            let cow = match deserializer.deserialize_str(CowStrVisitor)? {
+                Cow::Borrowed(ptr) => Cow::Borrowed(ptr.into()),
+                Cow::Owned(val) => Cow::Owned(Utf8PathBuf::from(val)),
+            };
+            Ok(CowUtf8Path(cow))
+        }
+    }
+
+    struct VecCowUtf8PathVisitor;
+    impl<'de> serde::de::Visitor<'de> for VecCowUtf8PathVisitor {
+        type Value = Vec<Cow<'de, Utf8Path>>;
+
+        #[inline]
+        fn expecting(&self, formatter: &mut alloc::fmt::Formatter) -> alloc::fmt::Result {
+            formatter.write_str("a sequence of UTF-8 paths")
+        }
+
+        #[inline]
+        fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+        where
+            A: serde::de::SeqAccess<'de>,
+        {
+            let mut vec = Vec::with_capacity(seq.size_hint().unwrap_or_default());
+            while let Some(value) = seq.next_element::<CowUtf8Path>()? {
+                vec.push(value.0);
+            }
+            Ok(vec)
+        }
+    }
+
+    #[inline]
+    pub fn cow_utf8path<'de, D>(deserializer: D) -> Result<Cow<'de, Utf8Path>, D::Error>
     where
-        S: ::serde::Serializer,
+        D: serde::Deserializer<'de>,
     {
-        serializer.serialize_str(source.as_ref().as_ref())
+        let val = match deserializer.deserialize_str(CowStrVisitor)? {
+            Cow::Borrowed(ptr) => Cow::Borrowed(ptr.into()),
+            Cow::Owned(ref val) => Cow::Owned(Utf8PathBuf::from(val)),
+        };
+        Ok(val)
+    }
+
+    #[inline]
+    pub fn logical_name<'de, D>(deserializer: D) -> Result<Cow<'de, str>, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        deserializer.deserialize_str(CowStrVisitor)
+    }
+
+    #[inline]
+    pub fn option_cow_utf8path<'de, D>(deserializer: D) -> Result<Option<Cow<'de, Utf8Path>>, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let option = Option::<CowUtf8Path>::deserialize(deserializer)?;
+        let option = option.map(|wrapper| wrapper.0);
+        Ok(option)
+    }
+
+    #[inline]
+    pub fn vec_cow_utf8path<'de, D>(deserializer: D) -> Result<Vec<Cow<'de, Utf8Path>>, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        deserializer.deserialize_seq(VecCowUtf8PathVisitor)
     }
 }
 

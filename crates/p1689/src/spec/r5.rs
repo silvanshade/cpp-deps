@@ -12,11 +12,6 @@ pub mod serde;
 use alloc::{borrow::Cow, vec::Vec};
 use core::borrow::Borrow;
 
-#[cfg(all(feature = "serde", any(feature = "deserialize", feature = "serialize")))]
-use serde_with::serde_as;
-#[cfg(all(feature = "serde", feature = "serialize"))]
-use serde_with::skip_serializing_none;
-
 use crate::vendor::camino::Utf8Path;
 
 #[cfg(all(feature = "serde", feature = "deserialize"))]
@@ -27,11 +22,8 @@ mod defaults {
     }
 }
 
-#[cfg_attr(feature = "serde", cfg_eval::cfg_eval)]
-#[cfg_attr(all(feature = "serde", feature = "serialize"), skip_serializing_none)]
 #[cfg_attr(
     all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
-    serde_as,
     cfg_attr(feature = "deserialize", derive(::serde::Deserialize)),
     cfg_attr(feature = "serialize", derive(::serde::Serialize)),
     serde(rename_all = "kebab-case")
@@ -46,7 +38,8 @@ pub struct DepFile<'a> {
     pub version: u32,
     #[cfg_attr(
         all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
-        serde(default)
+        serde(default),
+        serde(skip_serializing_if = "Option::is_none")
     )]
     pub revision: Option<u32>,
     #[cfg_attr(
@@ -75,11 +68,8 @@ impl DepFile<'_> {
 }
 
 /// Dependency information for a compilation rule.
-#[cfg_attr(feature = "serde", cfg_eval::cfg_eval)]
-#[cfg_attr(all(feature = "serde", feature = "serialize"), skip_serializing_none)]
 #[cfg_attr(
     all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
-    serde_as,
     cfg_attr(feature = "deserialize", derive(::serde::Deserialize)),
     cfg_attr(feature = "serialize", derive(::serde::Serialize)),
     serde(rename_all = "kebab-case")
@@ -94,22 +84,24 @@ pub struct DepInfo<'a> {
     #[cfg_attr(
         all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
         serde(default, borrow),
-        serde_as(as = "Option<self::serde::CowUtf8Path>")
+        serde(deserialize_with = "self::serde::deserialize::option_cow_utf8path"),
+        serde(skip_serializing_if = "Option::is_none")
     )]
     pub work_directory: Option<Cow<'a, Utf8Path>>,
     /// The primary output for the compilation.
     #[cfg_attr(
         all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
         serde(default, borrow),
-        serde_as(as = "Option<self::serde::CowUtf8Path>")
+        serde(deserialize_with = "self::serde::deserialize::option_cow_utf8path"),
+        serde(skip_serializing_if = "Option::is_some")
     )]
     pub primary_output: Option<Cow<'a, Utf8Path>>,
     /// Other files output by a compiling this source using the same flags.
     #[cfg_attr(
         all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
         serde(default, borrow),
-        serde(skip_serializing_if = "Vec::is_empty"),
-        serde_as(as = "Vec<self::serde::CowUtf8Path>")
+        serde(deserialize_with = "self::serde::deserialize::vec_cow_utf8path"),
+        serde(skip_serializing_if = "Vec::is_empty")
     )]
     pub outputs: Vec<Cow<'a, Utf8Path>>,
     #[cfg_attr(
@@ -183,11 +175,8 @@ impl DepInfo<'_> {
     }
 }
 
-#[cfg_attr(feature = "serde", cfg_eval::cfg_eval)]
-#[cfg_attr(all(feature = "serde", feature = "serialize"), skip_serializing_none)]
 #[cfg_attr(
     all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
-    serde_as,
     cfg_attr(feature = "deserialize", derive(::serde::Deserialize)),
     cfg_attr(feature = "serialize", derive(::serde::Serialize)),
     serde(rename_all = "kebab-case", untagged)
@@ -206,23 +195,30 @@ pub enum ModuleDesc<'a> {
     ByLogicalName {
         #[cfg_attr(
             all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
-            serde_as(as = "serde_with::BorrowCow")
+            serde(borrow),
+            serde(deserialize_with = "self::serde::deserialize::logical_name")
         )]
         logical_name: Cow<'a, str>,
         #[cfg_attr(
             all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
-            serde(default),
-            serde_as(as = "Option<self::serde::CowUtf8Path>")
+            serde(default, borrow),
+            serde(deserialize_with = "self::serde::deserialize::option_cow_utf8path"),
+            serde(skip_serializing_if = "Option::is_none")
         )]
         source_path: Option<Cow<'a, Utf8Path>>,
         #[cfg_attr(
             all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
-            serde(default),
-            serde_as(as = "Option<self::serde::CowUtf8Path>")
+            serde(default, borrow),
+            serde(deserialize_with = "self::serde::deserialize::option_cow_utf8path"),
+            serde(skip_serializing_if = "Option::is_none")
         )]
         compiled_module_path: Option<Cow<'a, Utf8Path>>,
         /// Whether the module name is unique on `logical-name` or `source-path`.
         #[cfg(any(test, feature = "monostate"))]
+        #[cfg_attr(
+            all(feature = "serde", feature = "serialize"),
+            serde(skip_serializing_if = "Option::is_none")
+        )]
         unique_on_source_path: Option<monostate::MustBeBool<false>>,
     },
     #[cfg_attr(
@@ -232,18 +228,21 @@ pub enum ModuleDesc<'a> {
     BySourcePath {
         #[cfg_attr(
             all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
-            serde_as(as = "serde_with::BorrowCow")
+            serde(borrow),
+            serde(deserialize_with = "self::serde::deserialize::logical_name")
         )]
         logical_name: Cow<'a, str>,
         #[cfg_attr(
             all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
-            serde_as(as = "self::serde::CowUtf8Path")
+            serde(borrow),
+            serde(deserialize_with = "self::serde::deserialize::cow_utf8path")
         )]
         source_path: Cow<'a, Utf8Path>,
         #[cfg_attr(
             all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
-            serde(default),
-            serde_as(as = "Option<self::serde::CowUtf8Path>")
+            serde(default, borrow),
+            serde(deserialize_with = "self::serde::deserialize::option_cow_utf8path"),
+            serde(skip_serializing_if = "Option::is_none")
         )]
         compiled_module_path: Option<Cow<'a, Utf8Path>>,
         /// Whether the module name is unique on `logical-name` or `source-path`.
@@ -351,7 +350,6 @@ impl<'a> ModuleDesc<'a> {
 }
 
 /// Borrowed view of the common fields between the unique-by `ModuleDesc` variants.
-#[cfg_attr(feature = "serde", cfg_eval::cfg_eval)]
 #[cfg_attr(feature = "extra_traits", derive(Clone, Copy, Eq, Hash, Ord, PartialEq, PartialOrd))]
 #[cfg_attr(
     any(feature = "debug", feature = "arbitrary", feature = "extra_traits"),
@@ -377,11 +375,8 @@ pub enum UniqueBy {
     SourcePath,
 }
 
-#[cfg_attr(feature = "serde", cfg_eval::cfg_eval)]
-#[cfg_attr(all(feature = "serde", feature = "serialize"), skip_serializing_none)]
 #[cfg_attr(
     all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
-    serde_as,
     cfg_attr(feature = "deserialize", derive(::serde::Deserialize)),
     cfg_attr(feature = "serialize", derive(::serde::Serialize)),
     serde(rename_all = "kebab-case")
@@ -405,11 +400,8 @@ pub struct ProvidedModuleDesc<'a> {
     pub is_interface: bool,
 }
 
-#[cfg_attr(feature = "serde", cfg_eval::cfg_eval)]
-#[cfg_attr(all(feature = "serde", feature = "serialize"), skip_serializing_none)]
 #[cfg_attr(
     all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
-    serde_as,
     cfg_attr(feature = "deserialize", derive(::serde::Deserialize)),
     cfg_attr(feature = "serialize", derive(::serde::Serialize)),
     serde(rename_all = "kebab-case")
@@ -433,10 +425,8 @@ pub struct RequiredModuleDesc<'a> {
     pub lookup_method: RequiredModuleDescLookupMethod,
 }
 
-#[cfg_attr(feature = "serde", cfg_eval::cfg_eval)]
 #[cfg_attr(
     all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
-    serde_as,
     cfg_attr(feature = "deserialize", derive(::serde::Deserialize)),
     cfg_attr(feature = "serialize", derive(::serde::Serialize)),
     serde(rename_all = "kebab-case")
