@@ -51,7 +51,7 @@ where
     }
 }
 
-fn fake_name<R>(rng: &mut R) -> String
+fn fake_name<R>(rng: &mut R, more_escapes: bool) -> String
 where
     R: RngCore,
 {
@@ -68,7 +68,11 @@ where
     let mut res = String::new();
     for (i, frag) in name.split_whitespace().enumerate() {
         if i % 2 == 1 && i > 0 {
-            res.push_str(&name_sep(rng));
+            if more_escapes {
+                res.push_str(&name_sep(rng));
+            } else {
+                res.push('-');
+            }
         }
         res.push_str(&frag.to_lowercase())
     }
@@ -99,6 +103,7 @@ where
 #[derive(Clone, Default)]
 pub struct GraphGeneratorConfig {
     node_count: u8,
+    more_escapes: bool,
 }
 impl GraphGeneratorConfig {
     pub fn build<R>(self, rng: &mut R) -> BoxResult<GraphGenerator<R>>
@@ -110,6 +115,11 @@ impl GraphGeneratorConfig {
 
     pub fn node_count(mut self, node_count: u8) -> Self {
         self.node_count = node_count;
+        self
+    }
+
+    pub fn more_escapes(mut self, more_escapes: bool) -> Self {
+        self.more_escapes = more_escapes;
         self
     }
 }
@@ -156,7 +166,7 @@ where
         let mut info_mem = BTreeMap::default();
         for id in 0 ..= config.node_count {
             let primary_output = {
-                let name = fake_name(rng);
+                let name = fake_name(rng, config.more_escapes);
                 let path = std::format!("{name}.o");
                 let path = Utf8PathBuf::from(path);
                 Some(Cow::Owned(path))
@@ -215,7 +225,7 @@ where
         src: u8,
     ) -> BoxResult<r5::ProvidedModuleDesc<'static>> {
         // let module_name = self.names_edges.next().ok_or("name generation failed")?;
-        let module_name = fake_name(self.rng);
+        let module_name = fake_name(self.rng, self.config.more_escapes);
         let source_path = if u.arbitrary()? {
             None
         } else {
