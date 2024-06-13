@@ -1,14 +1,17 @@
-use alloc::{borrow::Cow, string::String};
+use alloc::{borrow::Cow, string::String, sync::Arc};
+
+use crate::vendor::camino::Utf8PathBuf;
 
 pub struct ParseStream<'i, E> {
-    pub(crate) path: &'i str,
+    pub(crate) path: Arc<Utf8PathBuf>,
     pub(crate) input: &'i [u8],
     pub(crate) bytes: &'i [u8],
     pub(crate) state: State,
     error: core::marker::PhantomData<E>,
 }
 impl<'i, E> ParseStream<'i, E> {
-    pub fn new(path: &'i str, input: &'i [u8], state: State) -> Self {
+    pub fn new(path: impl Into<Utf8PathBuf>, input: &'i [u8], state: State) -> Self {
+        let path = Arc::new(path.into());
         Self {
             path,
             input,
@@ -69,7 +72,7 @@ impl<'i, E> ParseStream<'i, E> {
     }
 
     pub fn error(&self, error: ErrorKind<'i, E>) -> Error<'i, E> {
-        let path = self.path;
+        let path = self.path.clone();
         let input = self.input;
         let bytes = self.bytes;
         Error {
@@ -161,7 +164,7 @@ pub enum ErrorKind<'i, E> {
 #[derive(Debug)]
 #[allow(clippy::error_impl_error, clippy::struct_field_names)]
 pub struct Error<'i, E> {
-    pub path: &'i str,
+    pub path: Arc<Utf8PathBuf>,
     pub input: &'i [u8],
     pub bytes: &'i [u8],
     pub error: ErrorKind<'i, E>,

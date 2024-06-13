@@ -308,6 +308,15 @@ impl<'i> ModuleDesc<'i> {
     }
 
     #[must_use]
+    pub fn logical_name(&self) -> Cow<'a, str> {
+        match *self {
+            ModuleDesc::BySourcePath { ref logical_name, .. } | ModuleDesc::ByLogicalName { ref logical_name, .. } => {
+                logical_name.clone()
+            },
+        }
+    }
+
+    #[must_use]
     pub fn view(&self) -> ModuleDescView {
         match *self {
             #[rustfmt::skip]
