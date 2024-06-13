@@ -1,14 +1,21 @@
-use alloc::{borrow::Cow, string::String};
+use alloc::{borrow::Cow, string::String, sync::Arc};
+use core::marker::PhantomData;
+
+#[cfg(feature = "yoke")]
+use yoke::Yokeable;
+
+use crate::vendor::camino::Utf8PathBuf;
 
 pub struct ParseStream<'i, E> {
-    pub(crate) path: &'i str,
+    pub(crate) path: Arc<Utf8PathBuf>,
     pub(crate) input: &'i [u8],
     pub(crate) bytes: &'i [u8],
     pub(crate) state: State,
     error: core::marker::PhantomData<E>,
 }
 impl<'i, E> ParseStream<'i, E> {
-    pub fn new(path: &'i str, input: &'i [u8], state: State) -> Self {
+    pub fn new(path: impl Into<Utf8PathBuf>, input: &'i [u8], state: State) -> Self {
+        let path = Arc::new(path.into());
         Self {
             path,
             input,
@@ -69,7 +76,7 @@ impl<'i, E> ParseStream<'i, E> {
     }
 
     pub fn error(&self, error: ErrorKind<'i, E>) -> Error<'i, E> {
-        let path = self.path;
+        let path = Arc::clone(&self.path);
         let input = self.input;
         let bytes = self.bytes;
         Error {
@@ -160,14 +167,21 @@ pub enum ErrorKind<'i, E> {
 }
 #[derive(Debug)]
 #[allow(clippy::error_impl_error, clippy::struct_field_names)]
+#[non_exhaustive]
 pub struct Error<'i, E> {
-    pub path: &'i str,
+    pub path: Arc<Utf8PathBuf>,
     pub input: &'i [u8],
     pub bytes: &'i [u8],
     pub error: ErrorKind<'i, E>,
 }
 
 impl<'i, E> Error<'i, E> {
+    /// # Errors
+    ///
+    /// Will error under the following circumstances:
+    ///
+    /// 1. The line length cannot be converted to a `u64`
+    /// 2. An IO error occurred when writing the format string
     #[allow(clippy::arithmetic_side_effects)]
     pub fn context(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let input = String::from_utf8_lossy(self.input);
@@ -180,7 +194,7 @@ impl<'i, E> Error<'i, E> {
             col += 1;
         }
         for line in text.lines() {
-            col = u64::try_from(line.len()).unwrap();
+            col = u64::try_from(line.len()).map_err(|_| core::fmt::Error)?;
             row += 1;
         }
         write!(f, "{}:{}:{}: error: ", self.path, row, col)?;
@@ -284,6 +298,35 @@ where
             },
         }
         Ok(())
+    }
+}
+
+#[cfg(feature = "yoke")]
+unsafe impl<'a, E: 'static> Yokeable<'a> for Error<'static, E> {
+    type Output = Error<'a, E>;
+
+    #[inline]
+    fn transform(&'a self) -> &'a Self::Output {
+        self
+    }
+
+    #[inline]
+    fn transform_owned(self) -> Self::Output {
+        self
+    }
+
+    #[inline]
+    unsafe fn make(from: Self::Output) -> Self {
+        core::mem::transmute(from)
+    }
+
+    #[inline]
+    fn transform_mut<F>(&'a mut self, f: F)
+    where
+        F: 'static + for<'b> FnOnce(&'b mut Self::Output),
+    {
+        let this = unsafe { core::mem::transmute::<&'a mut Self, &'a mut Self::Output>(self) };
+        f(this);
     }
 }
 
@@ -533,7 +576,7 @@ pub mod string {
     // NOTE: Using `memchr` here is only marginally faster in the benchmarks, likely due to the fact
     // that we are parsing few strings overall and they are relatively short.
     //
-    // Most of the gains are probably due to the more efficient API, were we are able to re-use the
+    // Most of the gains are probably due to the more efficient API, where we are able to re-use the
     // finders once initialized.
     //
     // But unlike many of the other dependencies used previously, `memchr` has almost no impact on

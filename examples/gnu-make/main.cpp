@@ -1,3 +1,4 @@
+import foo.baz;
 import bar;
 
 #include <iostream>

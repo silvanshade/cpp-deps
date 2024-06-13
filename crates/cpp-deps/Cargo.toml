@@ -14,11 +14,35 @@ keywords = ["C++", "p1689", "modules", "build", "dependencies"]
 # [lib]
 # crate-type = ["cdylib"]
 
+# [[bench]]
+# name = "bench"
+# harness = false
+
+[features]
+default = ["async", "camino"]
+async = ["futures-core", "futures-sink", "flume/async"]
+camino = ["p1689/camino"]
+memchr = ["dep:memchr", "p1689/memchr"]
+sink = []
+std = []
+verify = []
+
 [dependencies]
-cc = { version = "1.0", features = ["parallel"] }
-dashmap = { version = "5.5", default-features = false }
-memmap2 = "0.9.4"
-winnow = { version = "0.6" }
+cc = { version = "1.0.99", optional = true, default-features = false, features = ["parallel"] }
+flume = { version = "0.11.0", default-features = false, features = ["select"] }
+futures-core = { version = "0.3.30", optional = true, default-features = false }
+futures-sink = { version = "0.3.30", optional = true, default-features = false }
+memchr = { version = "2.7", optional = true, default-features = false }
+memmap2 = { version = "0.9", default-features = false }
+p1689 = { path = "../p1689", default-features = false, features = ["extra_traits", "parsing", "std", "yoke"] }
+qcell = { version = "0.5.4", default-features = false, features = ["exclusion-set"] }
+yoke = "0.7"
 
 [dev-dependencies]
+cargo_metadata = "0.18.1"
+criterion = { version = "0.5", features = ["html_reports"] }
+futures-executor = "0.3.30"
+futures-util = { version = "0.3.30", features = ["sink"] }
+itertools = "0.13.0"
 proptest = "1.4.0"
+tempdir = "0.3.7"

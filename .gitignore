@@ -1,3 +1,4 @@
+examples/gnu-make/build
 cobertura.xml
 examples/**/main
 tarpaulin-report.html

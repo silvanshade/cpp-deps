@@ -62,10 +62,17 @@ pub mod r5 {
     #[cfg(feature = "parsing")]
     pub mod parsers {
         pub use crate::{
-            spec::r5::parsers::dep_file,
-            util::parsers::{ParseStream, State},
+            spec::r5::parsers::{dep_file, ErrorKind},
+            util::parsers::{Error, ParseStream, State},
         };
     }
 
     pub use crate::vendor::camino::{Utf8Path, Utf8PathBuf};
+
+    #[cfg(feature = "yoke")]
+    pub mod yoke {
+        pub use crate::spec::r5::yoke::{DepFileCart, DepFileYokeExt, DepInfoYokeExt};
+        #[allow(clippy::module_name_repetitions)]
+        pub use crate::spec::r5::yoke::{DepFileYoke, DepInfoNameYoke, DepInfoYoke};
+    }
 }
