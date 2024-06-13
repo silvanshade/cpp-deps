@@ -119,6 +119,7 @@ pub struct DepInfo<'a> {
 }
 #[cfg(test)]
 impl DepInfo<'_> {
+    #[must_use]
     pub fn count_copies(&self) -> u64 {
         u64::from(
             self.work_directory
@@ -147,6 +148,7 @@ impl DepInfo<'_> {
                 .sum::<u64>()
     }
 
+    #[must_use]
     pub fn count_escapes(&self) -> u64 {
         self.work_directory
             .as_deref()
@@ -253,6 +255,7 @@ pub enum ModuleDesc<'a> {
 impl<'a> ModuleDesc<'a> {
     #[cfg(test)]
     #[cfg(not(tarpaulin_include))]
+    #[must_use]
     pub fn count_copies(&self) -> u64 {
         match *self {
             Self::ByLogicalName {
@@ -290,6 +293,7 @@ impl<'a> ModuleDesc<'a> {
 
     #[cfg(test)]
     #[cfg(not(tarpaulin_include))]
+    #[must_use]
     pub fn count_escapes(&self) -> u64 {
         match *self {
             Self::ByLogicalName {
