@@ -250,7 +250,6 @@ pub enum ModuleDesc<'a> {
         unique_on_source_path: monostate::MustBeBool<true>,
     },
 }
-
 impl<'a> ModuleDesc<'a> {
     #[cfg(test)]
     #[cfg(not(tarpaulin_include))]
