@@ -14,13 +14,13 @@ impl<'i, E> ParseStream<'i, E> {
             input,
             bytes: input,
             state,
-            error: Default::default(),
+            error: PhantomData,
         }
     }
 
     #[rustfmt::skip]
     #[inline(always)]
-    pub fn next_byte(&mut self) -> Result<u8, Error<'i, E>> { // tarpaulin::hint
+    pub(crate) fn next_byte(&mut self) -> Result<u8, Error<'i, E>> { // tarpaulin::hint
         let head = self.peek_byte()?;
         self.bytes = &self.bytes[1 ..];
         Ok(head)
@@ -28,7 +28,7 @@ impl<'i, E> ParseStream<'i, E> {
 
     #[rustfmt::skip]
     #[inline(always)]
-    pub fn peek_byte(&mut self) -> Result<u8, Error<'i, E>> { // tarpaulin::hint
+    pub(crate) fn peek_byte(&mut self) -> Result<u8, Error<'i, E>> { // tarpaulin::hint
         if self.bytes.is_empty() {
             let error = ErrorKind::NextByte;
             return Err(self.error(error));
@@ -39,7 +39,7 @@ impl<'i, E> ParseStream<'i, E> {
 
     #[rustfmt::skip]
     #[inline(always)]
-    pub fn match_byte(&mut self, expected: u8) -> Result<(), Error<'i, E>> { // tarpaulin::hint
+    pub(crate) fn match_byte(&mut self, expected: u8) -> Result<(), Error<'i, E>> { // tarpaulin::hint
         if self.next_byte()? != expected {
             let error = ErrorKind::ByteMismatch { expected };
             return Err(self.error(error));
@@ -49,7 +49,7 @@ impl<'i, E> ParseStream<'i, E> {
 
     #[rustfmt::skip]
     #[inline(always)]
-    pub fn next_slice(&mut self, offset: usize) -> Result<&'i [u8], Error<'i, E>> { // tarpaulin::hint
+    pub(crate) fn next_slice(&mut self, offset: usize) -> Result<&'i [u8], Error<'i, E>> { // tarpaulin::hint
         let (slice, next) = self.bytes.split_at_checked(offset).ok_or_else(|| {
             let error = ErrorKind::NextSlice { offset };
             self.error(error)
@@ -60,7 +60,7 @@ impl<'i, E> ParseStream<'i, E> {
 
     #[rustfmt::skip]
     #[inline(always)]
-    pub fn match_slice(&mut self, expected: &'i [u8]) -> Result<(), Error<'i, E>> { // tarpaulin::hint
+    pub(crate) fn match_slice(&mut self, expected: &'i [u8]) -> Result<(), Error<'i, E>> { // tarpaulin::hint
         if self.next_slice(expected.len())? != expected {
             let error = ErrorKind::SliceMismatch { expected };
             return Err(self.error(error));
@@ -111,6 +111,7 @@ pub struct State {
     utf8_encode_buffer: [u8; 4],
 }
 impl State {
+    #[allow(clippy::arithmetic_side_effects)]
     fn encode_utf8<'i>(&mut self, dst: &mut Cow<'i, [u8]>, src: &'i [u8], esc: char) {
         let cow = self::string::to_mut_with_reserve(dst, src.len() + esc.len_utf8());
         let esc = esc.encode_utf8(self.utf8_encode_buffer.as_mut()).as_bytes();
@@ -158,6 +159,7 @@ pub enum ErrorKind<'i, E> {
     Other { error: E },
 }
 #[derive(Debug)]
+#[allow(clippy::error_impl_error, clippy::struct_field_names)]
 pub struct Error<'i, E> {
     pub path: &'i str,
     pub input: &'i [u8],
@@ -166,6 +168,7 @@ pub struct Error<'i, E> {
 }
 
 impl<'i, E> Error<'i, E> {
+    #[allow(clippy::arithmetic_side_effects)]
     pub fn context(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let input = String::from_utf8_lossy(self.input);
         let bytes = String::from_utf8_lossy(self.bytes);
@@ -195,7 +198,7 @@ where
     #[rustfmt::skip]
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         self.context(f)?;
-        match &self.error {
+        match self.error {
             ErrorKind::CharFromUnicodeFailed { unicode } => {
                 writeln!(f, "Conversion of unicode u32 to char failed: u32 value: {unicode:#06x}")?;
             },
@@ -232,7 +235,7 @@ where
             ErrorKind::InvalidUnicodeLowerSurrogate { lo } => {
                 writeln!(f, "Invalid unicode lower surrogate: {lo:#04x}")?;
             }
-            &ErrorKind::MissingField { field } => {
+            ErrorKind::MissingField { field } => {
                 writeln!(f, "Missing field: `{field}`")?;
             },
             ErrorKind::MissingUnicodeLowerSurrogate { hi } => { // tarpaulin::hint
@@ -241,6 +244,7 @@ where
             ErrorKind::NextByte => { // tarpaulin::hint
                 writeln!(f, "No remaining bytes")?;
             },
+            #[allow(clippy::arithmetic_side_effects)]
             ErrorKind::ByteMismatch { expected } => {
                 writeln!(
                     f, // tarpaulin::hint
@@ -256,7 +260,8 @@ where
                     self.bytes.len()
                 )?;
             },
-            &ErrorKind::SliceMismatch { expected } => {
+            #[allow(clippy::arithmetic_side_effects)]
+            ErrorKind::SliceMismatch { expected } => {
                 let snd = self.input.len() - self.bytes.len();
                 let fst = snd - expected.len();
                 writeln!(
@@ -270,11 +275,11 @@ where
                 writeln!(f, "UTF-8 validation failed:")?;
                 writeln!(f, "{err}")?;
             },
-            ErrorKind::Utf8ValidationFailedVal { err } => {
+            ErrorKind::Utf8ValidationFailedVal { ref err } => {
                 writeln!(f, "UTF-8 validation failed:")?;
                 writeln!(f, "{err}")?;
             },
-            ErrorKind::Other { error } => {
+            ErrorKind::Other { ref error } => {
                 core::fmt::Display::fmt(error, f)?;
             },
         }
@@ -287,6 +292,7 @@ pub mod ascii {
 
     #[rustfmt::skip]
     #[inline(always)]
+    #[allow(clippy::unnecessary_wraps)]
     // TODO: http://0x80.pl/notesen/2019-01-05-avx512vbmi-remove-spaces.html
     pub fn multispace0<'i, E>(stream: &mut crate::util::parsers::ParseStream<'i, E>) -> Result<&'i [u8], Error<'i, E>> { // tarpaulin::hint
         let mut slice: &[u8] = &[];
@@ -368,7 +374,9 @@ pub mod json {
             stream.match_byte(b'[')?;
             let mut vec = Vec::default();
             multispace0.parse(stream)?;
-            if b']' != stream.peek_byte()? {
+            if b']' == stream.peek_byte()? {
+                stream.match_byte(b']')?;
+            } else {
                 loop {
                     // tarpaulin::hint
                     vec.push(val.parse(stream)?);
@@ -381,8 +389,6 @@ pub mod json {
                         _ => return Err(stream.error(ErrorKind::FailedParsingJsonArray)),
                     }
                 }
-            } else {
-                stream.match_byte(b']')?;
             }
             Ok(vec)
         }
@@ -390,15 +396,16 @@ pub mod json {
 }
 
 pub mod number {
-    use super::*;
+    use super::{number, Error, ErrorKind, ParseStream};
 
+    #[allow(clippy::as_conversions)]
     const HEX_LUT: [u32; 0x10000] = {
         #[allow(clippy::identity_op)]
         const fn dec_to_hex(num: u8) -> [u8; 2] {
             let lut = b"0123456789abcdef";
             let mut hex = [0u8; 2];
-            hex[0] = lut[(num as usize & 0xf0) >> 4];
-            hex[1] = lut[(num as usize & 0x0f) >> 0];
+            hex[0] = lut[(num as usize & 0xf0) >> 4_i32];
+            hex[1] = lut[(num as usize & 0x0f) >> 0_i32];
             hex
         }
         let mut lut = [u32::MAX; 0x10000];
@@ -420,7 +427,8 @@ pub mod number {
         lut
     };
 
-    pub fn from_radix_10(text: &[u8]) -> (u32, usize) {
+    #[allow(clippy::arithmetic_side_effects)]
+    pub const fn from_radix_10(text: &[u8]) -> (u32, usize) {
         let mut idx = 0;
         let mut num = 0;
         while idx != text.len() {
@@ -435,15 +443,16 @@ pub mod number {
         (num, idx)
     }
 
+    #[allow(clippy::large_stack_frames)]
     pub fn from_radix_16(bytes: [u8; 4]) -> Option<u32> {
-        let fst = HEX_LUT[u16::from_ne_bytes([bytes[0], bytes[1]]) as usize];
-        let snd = HEX_LUT[u16::from_ne_bytes([bytes[2], bytes[3]]) as usize];
-        let val = fst << 8 | snd;
+        let fst = HEX_LUT[usize::from(u16::from_ne_bytes([bytes[0], bytes[1]]))];
+        let snd = HEX_LUT[usize::from(u16::from_ne_bytes([bytes[2], bytes[3]]))];
+        let val = fst << 8_i32 | snd;
         (val != u32::MAX).then_some(val)
     }
 
     #[cfg(feature = "parsing")]
-    pub fn ascii_to_decimal_digit(character: u8) -> Option<u32> {
+    pub const fn ascii_to_decimal_digit(character: u8) -> Option<u32> {
         match character {
             b'0' => Some(0),
             b'1' => Some(1),
@@ -477,8 +486,9 @@ pub mod string {
     use super::{number, Error, ErrorKind, ParseStream, Parser};
     use crate::vendor::camino::{Utf8Path, Utf8PathBuf};
 
+    #[allow(clippy::arithmetic_side_effects)]
     pub(super) fn to_mut_with_reserve<'i>(cow: &'i mut Cow<[u8]>, off: usize) -> &'i mut Vec<u8> {
-        match cow {
+        match *cow {
             Cow::Borrowed(slice) => {
                 let mut buf = Vec::with_capacity(slice.len() + off);
                 buf.extend_from_slice(slice);
@@ -491,6 +501,7 @@ pub mod string {
         cow.to_mut()
     }
 
+    #[allow(clippy::arithmetic_side_effects)]
     fn extend_bytes<'i>(text: &mut Cow<'i, [u8]>, data: &'i [u8], char: u8) {
         let lhs = to_mut_with_reserve(text, data.len() + 1);
         lhs.extend_from_slice(data);
@@ -531,6 +542,7 @@ pub mod string {
     // And for some pathological cases (very large dependency file with very long paths), it could
     // still make a significant difference.
     #[cfg(feature = "memchr")]
+    #[allow(clippy::arithmetic_side_effects)]
     #[rustfmt::skip]
     pub(crate) fn json_string<'i, E>(stream: &mut ParseStream<'i, E>) -> Result<Cow<'i, str>, Error<'i, E>> {
         stream.match_byte(b'"')?;
@@ -546,7 +558,7 @@ pub mod string {
                     let trim = &data[.. data.len() - 1];
                     #[allow(clippy::useless_conversion)] // tarpaulin::hint
                     if text.is_empty() {
-                        text = Cow::Borrowed(trim.into()) // tarpaulin::hint
+                        text = Cow::Borrowed(trim.into()); // tarpaulin::hint
                     } else {
                         text.to_mut().extend_from_slice(trim);
                     };
@@ -570,7 +582,8 @@ pub mod string {
     #[cfg(any(test, not(feature = "memchr")))]
     #[rustfmt::skip]
     #[inline(always)]
-    pub(crate) fn json_string_sans_memchr<'i, E>(stream: &mut ParseStream<'i, E>) -> Result<Cow<'i, str>, Error<'i, E>> { let _ = ();
+    #[allow(clippy::arithmetic_side_effects)]
+    pub(crate) fn json_string_sans_memchr<'i, E>(stream: &mut ParseStream<'i, E>) -> Result<Cow<'i, str>, Error<'i, E>> { let () = ();
         stream.match_byte(b'"')?;
         let mut text = Cow::Borrowed(b"".as_slice());
         let mut off = 0;
@@ -579,7 +592,7 @@ pub mod string {
                 let error = ErrorKind::EndOfStringNotFound;
                 return Err(stream.error(error));
             };
-            match byte {
+            match *byte {
                 b'"' => { // tarpaulin::hint
                     let data = stream.next_slice(off + 1)?;
                     let trim = &data[.. data.len() - 1];
@@ -587,7 +600,7 @@ pub mod string {
                     if text.is_empty() {
                         #[cfg(not(tarpaulin_include))]
                         {
-                            text = Cow::Borrowed(trim.into())
+                            text = Cow::Borrowed(trim.into());
                         }
                     } else {
                         text.to_mut().extend_from_slice(trim);
@@ -617,6 +630,7 @@ pub mod string {
         Ok(path)
     }
 
+    #[allow(clippy::arithmetic_side_effects)]
     pub(crate) fn unescape<'i, 'r, E>(dst: &'r mut Cow<'i, [u8]>, src: &'i [u8]) -> impl Parser<'i, (), E> + 'r {
         |stream: &mut ParseStream<'i, E>| {
             let src = &src[.. src.len() - 1];
@@ -665,6 +679,7 @@ pub mod string {
     }
 
     #[rustfmt::skip]
+    #[allow(clippy::arithmetic_side_effects)]
     pub(crate) fn unescape_unicode<'i, 'r, E>(
         dst: &'r mut Cow<'i, [u8]>,
         src: &'i [u8],
@@ -690,7 +705,7 @@ pub mod string {
                 }
                 code // tarpaulin::hint
             };
-            let code = ((hi - 0xd800) << 10) + (lo - 0xdc00) + 0x10000;
+            let code = ((hi - 0xd800) << 10_i32) + (lo - 0xdc00) + 0x10000;
             stream.state.encode_utf8(dst, src, code_to_char(code, stream)?);
             Ok(())
         }
@@ -980,8 +995,8 @@ mod test {
             #[test]
             fn unescape_utf16(
                 char in proptest::char::range(
-                    unsafe { char::from_u32_unchecked(0x010000u32) },
-                    unsafe { char::from_u32_unchecked(0x10FFFFu32) }
+                    unsafe { char::from_u32_unchecked(0x0001_0000_u32) },
+                    unsafe { char::from_u32_unchecked(0x0010_FFFF_u32) }
                 )
             ) {
                 let text = self::string::u32_to_utf16(char);

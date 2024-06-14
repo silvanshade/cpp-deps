@@ -8,15 +8,16 @@ use alloc::borrow::{Cow, ToOwned};
 
 #[cfg(test)]
 #[allow(clippy::ptr_arg)]
-pub fn cow_is_owned<B>(cow: &Cow<B>) -> bool
+pub const fn cow_is_owned<B>(cow: &Cow<B>) -> bool
 where
     B: ToOwned + ?Sized,
 {
-    matches!(cow, Cow::Owned(_))
+    matches!(cow, &Cow::Owned(_))
 }
 
 #[rustfmt::skip]
 #[cfg(test)]
+#[allow(clippy::arithmetic_side_effects)]
 pub fn count_escapes(str: impl AsRef<str>) -> u64 {
     let str = str.as_ref();
     let bytes = str.as_bytes();
@@ -35,6 +36,7 @@ pub fn count_escapes(str: impl AsRef<str>) -> u64 {
 }
 
 #[cfg(test)]
+#[allow(clippy::arithmetic_side_effects)]
 pub fn count_escaped_strings(str: impl AsRef<str>) -> (u64, u64) {
     let str = str.as_ref();
     let bytes = str.as_bytes();
@@ -130,18 +132,18 @@ mod test {
 
     #[test]
     fn count_escaped_strings_zero_quoted() {
-        let str = r#"
+        let str = r"
             foo
-        "#;
+        ";
         assert_eq!(0, count_escapes(str));
         assert_eq!((0, 0), count_escaped_strings(str));
     }
 
     #[test]
     fn count_escaped_strings_zero_quoted_one_escape() {
-        let str = r#"
+        let str = r"
             foo\nbar
-        "#;
+        ";
         assert_eq!(1, count_escapes(str));
         assert_eq!((0, 0), count_escaped_strings(str));
     }

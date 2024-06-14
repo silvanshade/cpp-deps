@@ -36,7 +36,7 @@ mod test {
         #[test]
         fn ws_around_works(text in ws_around(Just("val"))) {
             let res = text.split_whitespace().collect::<Vec<&str>>();
-            assert_eq!(res, ["val"])
+            assert_eq!(res, ["val"]);
         }
     }
 }

@@ -35,7 +35,7 @@ mod test {
         #[test]
         fn field_works(text in field("key", Just("val"), Just("term"))) {
             let res = text.split_whitespace().collect::<Vec<&str>>();
-            assert_eq!(res, ["key", ":", "val", "term"])
+            assert_eq!(res, ["key", ":", "val", "term"]);
         }
     }
 }

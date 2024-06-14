@@ -17,33 +17,33 @@ pub enum ErrorKind {
 }
 impl core::fmt::Display for ErrorKind {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        match &self {
-            ErrorKind::DepFile => {
+        match *self {
+            Self::DepFile => {
                 writeln!(f, "Failed parsing DepFile fields:")?;
                 writeln!(f, "expected one of: {{ \"revision\", \"rules\", \"version\" }}")?;
             },
-            ErrorKind::DepInfo => {
+            Self::DepInfo => {
                 writeln!(f, "Failed parsing DepInfo fields:")?;
                 writeln!(
                     f,
                     "expected one of: {{ \"outputs\", \"primary-output\", \"provides\", \"requires\", \"work-directory\" }}"
                 )?;
             },
-            ErrorKind::LookupMethod => {
+            Self::LookupMethod => {
                 writeln!(f, "Failed parsing `LookupMethod`:")?;
                 writeln!(
                     f,
                     "expected one of: {{ \"by-name\", \"include-angle\", \"include-quote\" }}"
                 )?;
             },
-            ErrorKind::ProvidedModuleDesc => {
+            Self::ProvidedModuleDesc => {
                 writeln!(f, "Failed parsing object fields:")?;
                 writeln!(
                     f,
                     "expected one of: {{ \"compiled-module-path\", \"is-interface\", \"logical-name\", \"source-path\", \"unique-on-source-path\" }}"
                 )?;
             },
-            ErrorKind::RequiredModuleDesc => {
+            Self::RequiredModuleDesc => {
                 writeln!(f, "Failed parsing object fields:")?;
                 writeln!(
                     f,
@@ -56,7 +56,7 @@ impl core::fmt::Display for ErrorKind {
 }
 
 impl ErrorKind {
-    fn error<'i>(self, stream: &mut ParseStream<'i>) -> crate::util::parsers::Error<'i, Self> {
+    fn error<'i>(self, stream: &ParseStream<'i>) -> crate::util::parsers::Error<'i, Self> {
         let error = crate::util::parsers::ErrorKind::Other { error: self };
         stream.error(error)
     }
@@ -542,9 +542,11 @@ mod test {
                 ErrorKind::ProvidedModuleDesc,
                 ErrorKind::RequiredModuleDesc,
             ] {
-                match e.error(stream).error {
-                    crate::util::parsers::ErrorKind::Other { error } => assert_eq!(e, &error),
-                    _ => panic!(),
+                #[allow(clippy::wildcard_enum_match_arm)]
+                if let crate::util::parsers::ErrorKind::Other { error } = e.error(stream).error {
+                    assert_eq!(e, &error);
+                } else {
+                    panic!()
                 }
             }
         }

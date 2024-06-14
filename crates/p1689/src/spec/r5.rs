@@ -50,20 +50,13 @@ pub struct DepFile<'a> {
 }
 #[cfg(test)]
 impl DepFile<'_> {
+    #[must_use]
     pub fn count_copies(&self) -> u64 {
-        self.rules
-            .as_slice()
-            .iter()
-            .map(|dep_info| dep_info.count_copies())
-            .sum()
+        self.rules.as_slice().iter().map(DepInfo::count_copies).sum()
     }
 
     pub fn count_escapes_total(&self) -> u64 {
-        self.rules
-            .as_slice()
-            .iter()
-            .map(|dep_info| dep_info.count_escapes())
-            .sum()
+        self.rules.as_slice().iter().map(DepInfo::count_escapes).sum()
     }
 }
 
@@ -120,22 +113,15 @@ pub struct DepInfo<'a> {
 #[cfg(test)]
 impl DepInfo<'_> {
     #[must_use]
+    #[allow(clippy::arithmetic_side_effects)]
     pub fn count_copies(&self) -> u64 {
-        u64::from(
-            self.work_directory
-                .as_ref()
-                .map(crate::util::cow_is_owned)
-                .unwrap_or_default(),
-        ) + u64::from(
-            self.primary_output
-                .as_ref()
-                .map(crate::util::cow_is_owned)
-                .unwrap_or_default(),
-        ) + self
-            .outputs
-            .iter()
-            .map(|output| u64::from(crate::util::cow_is_owned(output)))
-            .sum::<u64>()
+        u64::from(self.work_directory.as_ref().is_some_and(crate::util::cow_is_owned))
+            + u64::from(self.primary_output.as_ref().is_some_and(crate::util::cow_is_owned))
+            + self
+                .outputs
+                .iter()
+                .map(|output| u64::from(crate::util::cow_is_owned(output)))
+                .sum::<u64>()
             + self
                 .provides
                 .iter()
@@ -149,6 +135,7 @@ impl DepInfo<'_> {
     }
 
     #[must_use]
+    #[allow(clippy::arithmetic_side_effects)]
     pub fn count_escapes(&self) -> u64 {
         self.work_directory
             .as_deref()
@@ -256,6 +243,7 @@ impl<'a> ModuleDesc<'a> {
     #[cfg(test)]
     #[cfg(not(tarpaulin_include))]
     #[must_use]
+    #[allow(clippy::arithmetic_side_effects)]
     pub fn count_copies(&self) -> u64 {
         match *self {
             Self::ByLogicalName {
@@ -265,13 +253,8 @@ impl<'a> ModuleDesc<'a> {
                 ..
             } => {
                 u64::from(crate::util::cow_is_owned(logical_name))
-                    + u64::from(source_path.as_ref().map(crate::util::cow_is_owned).unwrap_or_default())
-                    + u64::from(
-                        compiled_module_path
-                            .as_ref()
-                            .map(crate::util::cow_is_owned)
-                            .unwrap_or_default(),
-                    )
+                    + u64::from(source_path.as_ref().is_some_and(crate::util::cow_is_owned))
+                    + u64::from(compiled_module_path.as_ref().is_some_and(crate::util::cow_is_owned))
             },
             Self::BySourcePath {
                 ref logical_name,
@@ -281,12 +264,7 @@ impl<'a> ModuleDesc<'a> {
             } => {
                 u64::from(crate::util::cow_is_owned(logical_name))
                     + u64::from(crate::util::cow_is_owned(source_path))
-                    + u64::from(
-                        compiled_module_path
-                            .as_ref()
-                            .map(crate::util::cow_is_owned)
-                            .unwrap_or_default(),
-                    )
+                    + u64::from(compiled_module_path.as_ref().is_some_and(crate::util::cow_is_owned))
             },
         }
     }
@@ -294,6 +272,7 @@ impl<'a> ModuleDesc<'a> {
     #[cfg(test)]
     #[cfg(not(tarpaulin_include))]
     #[must_use]
+    #[allow(clippy::arithmetic_side_effects)]
     pub fn count_escapes(&self) -> u64 {
         match *self {
             Self::ByLogicalName {
@@ -526,7 +505,7 @@ mod test {
                 #[allow(clippy::useless_asref)]
                 ModuleDesc::BySourcePath { .. } => {
                     assert!(matches!(view.unique_by, UniqueBy::SourcePath));
-                    assert_eq!(Some(view.key), source_path.as_deref().map(|s| s.as_ref()));
+                    assert_eq!(Some(view.key), source_path.as_deref().map(AsRef::as_ref));
                 }
             }
         }
