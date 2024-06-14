@@ -363,7 +363,7 @@ mod test {
                 for (src, dst, weight) in graph.edges(key) {
                     let name_src = info_mem.get(&src).unwrap().primary_output.as_deref().unwrap();
                     let name_dst = info_mem.get(&dst).unwrap().primary_output.as_deref().unwrap();
-                    std::println!("{name_src}::{src} -[ {weight} ]-> {name_dst}::{dst}");
+                    // std::println!("{name_src}::{src} -[ {weight} ]-> {name_dst}::{dst}");
                 }
             }
 
@@ -379,7 +379,7 @@ mod test {
             };
 
             let str = serde_json::to_string_pretty(&dep_file).unwrap();
-            std::println!("{str}");
+            // std::println!("{str}");
 
             Ok(())
         }
@@ -392,7 +392,7 @@ mod test {
             let dep_files = GraphGenerator::gen_dep_files(rng, config)
                 .flat_map(|result| result.and_then(r5::datagen::json::pretty_print_unindented));
             for file in dep_files.take(1) {
-                std::println!("{file}\n");
+                // std::println!("{file}\n");
             }
         }
     }

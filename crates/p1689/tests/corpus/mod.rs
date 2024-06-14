@@ -26,7 +26,6 @@ where
             if path_str.to_lowercase().ends_with(".ddi") {
                 let dep_file = std::fs::read_to_string(dir_entry.path())?;
                 let dep_file = preprocess(&dep_file)?;
-                println!("{}", dep_file);
                 match f(&path_str, &dep_file) {
                     Err(err) => {
                         for name in expected_failures {
@@ -36,9 +35,7 @@ where
                         }
                         panic!("{err}");
                     },
-                    Ok(_val) => {
-                        // println!("{val:#?}");
-                    },
+                    Ok(_val) => {},
                 };
             }
         }
