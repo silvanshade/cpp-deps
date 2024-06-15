@@ -8,7 +8,7 @@ fn json_parsing(c: &mut Criterion) {
     let rng = &mut rand_chacha::ChaCha8Rng::seed_from_u64(r5::datagen::CHACHA8RNG_SEED);
     let config = r5::datagen::graph::GraphGeneratorConfig::default().node_count(rng.gen_range(0u8 ..= 16u8));
     let mut dep_files = r5::datagen::graph::GraphGenerator::gen_dep_files(rng, config)
-        .flat_map(|result| result.and_then(r5::datagen::json::pretty_print_unindented));
+        .flat_map(|result| result.and_then(|dep_file| r5::datagen::json::pretty_print_unindented(&dep_file)));
     let dep_file = dep_files.next().unwrap();
 
     let mut group = c.benchmark_group("parsing");
@@ -62,7 +62,7 @@ fn json_parsing_with_more_escapes(c: &mut Criterion) {
         .node_count(rng.gen_range(0u8 ..= 16u8))
         .more_escapes(true);
     let mut dep_files = r5::datagen::graph::GraphGenerator::gen_dep_files(rng, config)
-        .flat_map(|result| result.and_then(r5::datagen::json::pretty_print_unindented));
+        .flat_map(|result| result.and_then(|dep_file| r5::datagen::json::pretty_print_unindented(&dep_file)));
     let dep_file = dep_files.next().unwrap();
 
     let mut group = c.benchmark_group("parsing-with-more-escapes");

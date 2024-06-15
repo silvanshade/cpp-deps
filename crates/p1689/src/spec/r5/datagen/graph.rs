@@ -18,6 +18,7 @@ use alloc::{
     vec::Vec,
 };
 
+#[allow(clippy::wildcard_imports)]
 use fake::{faker::name::raw::*, locales::*, Dummy};
 use petgraph::graphmap::GraphMap;
 use rand::prelude::*;
@@ -31,7 +32,7 @@ where
 {
     if rng.gen::<bool>() {
         let mut dst = [0u16; 2];
-        let code = rng.gen_range(0x10000u32 .. 0x10ffff);
+        let code = rng.gen_range(0x10000u32 .. 0x0010_ffff);
         let char = unsafe { char::from_u32_unchecked(code) };
         char.encode_utf16(&mut dst);
         alloc::format!("{:#06x}{:#06x}", dst[0], dst[1]).replace("0x", "\\u")
@@ -43,8 +44,8 @@ where
         };
         if rng.gen::<bool>() {
             alloc::format!("{}", unsafe { char::from_u32_unchecked(code) })
-                .replace("{", "")
-                .replace("}", "")
+                .replace('{', "")
+                .replace('}', "")
         } else {
             alloc::format!("{code:#06x}").replace("0x", "\\u")
         }
@@ -55,14 +56,14 @@ fn fake_name<R>(rng: &mut R, more_escapes: bool) -> String
 where
     R: RngCore,
 {
-    let name = match rng.gen_range(0 .. 7) {
-        0 => String::dummy_with_rng(&Name(AR_SA), rng),
-        1 => String::dummy_with_rng(&Name(EN), rng),
-        2 => String::dummy_with_rng(&Name(FR_FR), rng),
-        3 => String::dummy_with_rng(&Name(JA_JP), rng),
-        4 => String::dummy_with_rng(&Name(PT_BR), rng),
-        5 => String::dummy_with_rng(&Name(ZH_CN), rng),
-        6 => String::dummy_with_rng(&Name(ZH_TW), rng),
+    let name = match rng.gen_range(0_i32 .. 7_i32) {
+        0_i32 => String::dummy_with_rng(&Name(AR_SA), rng),
+        1_i32 => String::dummy_with_rng(&Name(EN), rng),
+        2_i32 => String::dummy_with_rng(&Name(FR_FR), rng),
+        3_i32 => String::dummy_with_rng(&Name(JA_JP), rng),
+        4_i32 => String::dummy_with_rng(&Name(PT_BR), rng),
+        5_i32 => String::dummy_with_rng(&Name(ZH_CN), rng),
+        6_i32 => String::dummy_with_rng(&Name(ZH_TW), rng),
         _ => unreachable!(),
     };
     let mut res = String::new();
@@ -74,7 +75,7 @@ where
                 res.push('-');
             }
         }
-        res.push_str(&frag.to_lowercase())
+        res.push_str(&frag.to_lowercase());
     }
     res
 }
@@ -100,29 +101,33 @@ where
     }
 }
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Clone, Default)]
 pub struct GraphGeneratorConfig {
     node_count: u8,
     more_escapes: bool,
 }
 impl GraphGeneratorConfig {
-    pub fn build<R>(self, rng: &mut R) -> BoxResult<GraphGenerator<R>>
+    pub fn build<R>(self, rng: &mut R) -> GraphGenerator<R>
     where
         R: RngCore,
     {
         GraphGenerator::new(rng, self)
     }
 
-    pub fn node_count(mut self, node_count: u8) -> Self {
+    #[must_use]
+    pub const fn node_count(mut self, node_count: u8) -> Self {
         self.node_count = node_count;
         self
     }
 
-    pub fn more_escapes(mut self, more_escapes: bool) -> Self {
+    #[must_use]
+    pub const fn more_escapes(mut self, more_escapes: bool) -> Self {
         self.more_escapes = more_escapes;
         self
     }
 }
+#[allow(clippy::module_name_repetitions)]
 #[derive(Default)]
 pub struct GraphGeneratorState {
     info_mem: BTreeMap<u8, r5::DepInfo<'static>>,
@@ -131,6 +136,7 @@ pub struct GraphGeneratorState {
     known_consumers: BTreeSet<u8>,
 }
 
+#[allow(clippy::module_name_repetitions)]
 pub struct GraphGenerator<'r, R> {
     rng: &'r mut R,
     config: GraphGeneratorConfig,
@@ -148,7 +154,7 @@ where
         let mut bytes = alloc::vec![0u8; 8192];
         rng.fill_bytes(&mut bytes);
         let mut u = arbitrary::Unstructured::new(&bytes);
-        let gen = Self::new(rng, config)?;
+        let gen = Self::new(rng, config);
         let (info_mem, _graph) = gen.run(&mut u)?;
         let select = u.ratio(1u8, 4u8)?;
         let rules = info_mem
@@ -162,7 +168,7 @@ where
         })
     }
 
-    fn new(rng: &'r mut R, config: GraphGeneratorConfig) -> BoxResult<Self> {
+    fn new(rng: &'r mut R, config: GraphGeneratorConfig) -> Self {
         let mut info_mem = BTreeMap::default();
         for id in 0 ..= config.node_count {
             let primary_output = {
@@ -186,7 +192,7 @@ where
             known_producers: BTreeSet::default(),
             known_consumers: BTreeSet::default(),
         };
-        Ok(Self { rng, config, state })
+        Self { rng, config, state }
     }
 
     fn gen_dst(&self, u: &mut arbitrary::Unstructured) -> BoxResult<u8> {
@@ -356,10 +362,11 @@ mod test {
 
             let config = GraphGeneratorConfig::default().node_count(rng.gen_range(0u8 ..= 16u8));
 
-            let generator = GraphGenerator::new(rng, config)?;
+            let generator = GraphGenerator::new(rng, config);
             let (info_mem, graph) = generator.run(&mut u)?;
 
             for key in info_mem.keys().copied() {
+                #[allow(unused)]
                 for (src, dst, weight) in graph.edges(key) {
                     let name_src = info_mem.get(&src).unwrap().primary_output.as_deref().unwrap();
                     let name_dst = info_mem.get(&dst).unwrap().primary_output.as_deref().unwrap();
@@ -378,6 +385,7 @@ mod test {
                 rules,
             };
 
+            #[allow(unused)]
             let str = serde_json::to_string_pretty(&dep_file).unwrap();
             // std::println!("{str}");
 
@@ -390,7 +398,8 @@ mod test {
             let rng = &mut rand_chacha::ChaCha8Rng::seed_from_u64(crate::r5::datagen::CHACHA8RNG_SEED);
             let config = GraphGeneratorConfig::default().node_count(rng.gen_range(0u8 ..= 16u8));
             let dep_files = GraphGenerator::gen_dep_files(rng, config)
-                .flat_map(|result| result.and_then(r5::datagen::json::pretty_print_unindented));
+                .flat_map(|result| result.and_then(|dep_file| r5::datagen::json::pretty_print_unindented(&dep_file)));
+            #[allow(unused)]
             for file in dep_files.take(1) {
                 // std::println!("{file}\n");
             }

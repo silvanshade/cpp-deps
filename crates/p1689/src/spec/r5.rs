@@ -535,8 +535,9 @@ mod test {
 
         let rng = &mut rand_chacha::ChaCha8Rng::seed_from_u64(crate::r5::datagen::CHACHA8RNG_SEED);
         let config = crate::r5::datagen::graph::GraphGeneratorConfig::default().node_count(rng.gen_range(0u8 ..= 16u8));
-        let dep_files = crate::r5::datagen::graph::GraphGenerator::gen_dep_files(rng, config)
-            .flat_map(|result| result.and_then(crate::r5::datagen::json::pretty_print_unindented));
+        let dep_files = crate::r5::datagen::graph::GraphGenerator::gen_dep_files(rng, config).flat_map(|result| {
+            result.and_then(|dep_file| crate::r5::datagen::json::pretty_print_unindented(&dep_file))
+        });
         for text in dep_files.take(128) {
             let from_serde = serde_json::from_str::<crate::r5::DepFile>(&text).unwrap();
             let from_parsers = {

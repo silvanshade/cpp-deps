@@ -1,4 +1,5 @@
 use alloc::{borrow::Cow, string::String, sync::Arc};
+use core::marker::PhantomData;
 
 use crate::vendor::camino::Utf8PathBuf;
 
@@ -72,7 +73,7 @@ impl<'i, E> ParseStream<'i, E> {
     }
 
     pub fn error(&self, error: ErrorKind<'i, E>) -> Error<'i, E> {
-        let path = self.path.clone();
+        let path = Arc::clone(&self.path);
         let input = self.input;
         let bytes = self.bytes;
         Error {

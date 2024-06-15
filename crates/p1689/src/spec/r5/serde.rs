@@ -12,14 +12,14 @@ pub mod deserialize {
 
     use serde::Deserialize;
 
-    use super::*;
+    use super::{Cow, Utf8Path, Utf8PathBuf};
 
     struct CowStrVisitor;
     impl<'de> serde::de::Visitor<'de> for CowStrVisitor {
         type Value = Cow<'de, str>;
 
         #[inline]
-        fn expecting(&self, formatter: &mut alloc::fmt::Formatter) -> alloc::fmt::Result {
+        fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
             formatter.write_str("a UTF-8 path")
         }
 
@@ -68,7 +68,7 @@ pub mod deserialize {
         type Value = Vec<Cow<'de, Utf8Path>>;
 
         #[inline]
-        fn expecting(&self, formatter: &mut alloc::fmt::Formatter) -> alloc::fmt::Result {
+        fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
             formatter.write_str("a sequence of UTF-8 paths")
         }
 
@@ -157,8 +157,10 @@ mod test {
                 let rng = &mut rand_chacha::ChaCha8Rng::seed_from_u64(crate::r5::datagen::CHACHA8RNG_SEED);
                 let config =
                     r5::datagen::graph::GraphGeneratorConfig::default().node_count(rng.gen_range(0u8 ..= 16u8));
-                let mut dep_file_texts = r5::datagen::graph::GraphGenerator::gen_dep_files(rng, config)
-                    .flat_map(|result| result.and_then(r5::datagen::json::pretty_print_unindented));
+                let mut dep_file_texts =
+                    r5::datagen::graph::GraphGenerator::gen_dep_files(rng, config).flat_map(|result| {
+                        result.and_then(|dep_file| r5::datagen::json::pretty_print_unindented(&dep_file))
+                    });
                 let mut num_files_with_escaped_strings = 0;
                 // NOTE: Keep iterating until at least 16 files with escapes have been checked
                 while num_files_with_escaped_strings < 16 {

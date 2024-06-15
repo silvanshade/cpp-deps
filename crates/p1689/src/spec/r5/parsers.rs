@@ -566,8 +566,10 @@ mod test {
                 let rng = &mut rand_chacha::ChaCha8Rng::seed_from_u64(crate::r5::datagen::CHACHA8RNG_SEED);
                 let config =
                     r5::datagen::graph::GraphGeneratorConfig::default().node_count(rng.gen_range(0u8 ..= 16u8));
-                let mut dep_file_texts = r5::datagen::graph::GraphGenerator::gen_dep_files(rng, config)
-                    .flat_map(|result| result.and_then(r5::datagen::json::pretty_print_unindented));
+                let mut dep_file_texts =
+                    r5::datagen::graph::GraphGenerator::gen_dep_files(rng, config).flat_map(|result| {
+                        result.and_then(|dep_file| r5::datagen::json::pretty_print_unindented(&dep_file))
+                    });
                 let mut num_files_with_escaped_strings = 0;
                 // NOTE: Keep iterating until at least 16 files with escapes have been checked
                 while num_files_with_escaped_strings < 16 {
