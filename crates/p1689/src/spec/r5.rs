@@ -34,7 +34,7 @@ mod defaults {
     derive(Debug)
 )]
 #[non_exhaustive]
-pub struct DepFile<'a> {
+pub struct DepFile<'i> {
     pub version: u32,
     #[cfg_attr(
         all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
@@ -46,7 +46,7 @@ pub struct DepFile<'a> {
         all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
         serde(borrow)
     )]
-    pub rules: Vec<DepInfo<'a>>,
+    pub rules: Vec<DepInfo<'i>>,
 }
 #[cfg(test)]
 impl DepFile<'_> {
@@ -73,14 +73,14 @@ impl DepFile<'_> {
     derive(Debug)
 )]
 #[non_exhaustive]
-pub struct DepInfo<'a> {
+pub struct DepInfo<'i> {
     #[cfg_attr(
         all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
         serde(default, borrow),
         serde(deserialize_with = "self::serde::deserialize::option_cow_utf8path"),
         serde(skip_serializing_if = "Option::is_none")
     )]
-    pub work_directory: Option<Cow<'a, Utf8Path>>,
+    pub work_directory: Option<Cow<'i, Utf8Path>>,
     /// The primary output for the compilation.
     #[cfg_attr(
         all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
@@ -88,7 +88,7 @@ pub struct DepInfo<'a> {
         serde(deserialize_with = "self::serde::deserialize::option_cow_utf8path"),
         serde(skip_serializing_if = "Option::is_some")
     )]
-    pub primary_output: Option<Cow<'a, Utf8Path>>,
+    pub primary_output: Option<Cow<'i, Utf8Path>>,
     /// Other files output by a compiling this source using the same flags.
     #[cfg_attr(
         all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
@@ -96,19 +96,19 @@ pub struct DepInfo<'a> {
         serde(deserialize_with = "self::serde::deserialize::vec_cow_utf8path"),
         serde(skip_serializing_if = "Vec::is_empty")
     )]
-    pub outputs: Vec<Cow<'a, Utf8Path>>,
+    pub outputs: Vec<Cow<'i, Utf8Path>>,
     #[cfg_attr(
         all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
         serde(default, borrow),
         serde(skip_serializing_if = "Vec::is_empty")
     )]
-    pub provides: Vec<ProvidedModuleDesc<'a>>,
+    pub provides: Vec<ProvidedModuleDesc<'i>>,
     #[cfg_attr(
         all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
         serde(default, borrow),
         serde(skip_serializing_if = "Vec::is_empty")
     )]
-    pub requires: Vec<RequiredModuleDesc<'a>>,
+    pub requires: Vec<RequiredModuleDesc<'i>>,
 }
 #[cfg(test)]
 impl DepInfo<'_> {
@@ -176,7 +176,7 @@ impl DepInfo<'_> {
     derive(Debug)
 )]
 #[non_exhaustive]
-pub enum ModuleDesc<'a> {
+pub enum ModuleDesc<'i> {
     #[cfg_attr(
         all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
         serde(rename_all = "kebab-case")
@@ -187,21 +187,21 @@ pub enum ModuleDesc<'a> {
             serde(borrow),
             serde(deserialize_with = "self::serde::deserialize::logical_name")
         )]
-        logical_name: Cow<'a, str>,
+        logical_name: Cow<'i, str>,
         #[cfg_attr(
             all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
             serde(default, borrow),
             serde(deserialize_with = "self::serde::deserialize::option_cow_utf8path"),
             serde(skip_serializing_if = "Option::is_none")
         )]
-        source_path: Option<Cow<'a, Utf8Path>>,
+        source_path: Option<Cow<'i, Utf8Path>>,
         #[cfg_attr(
             all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
             serde(default, borrow),
             serde(deserialize_with = "self::serde::deserialize::option_cow_utf8path"),
             serde(skip_serializing_if = "Option::is_none")
         )]
-        compiled_module_path: Option<Cow<'a, Utf8Path>>,
+        compiled_module_path: Option<Cow<'i, Utf8Path>>,
         /// Whether the module name is unique on `logical-name` or `source-path`.
         #[cfg(any(test, feature = "monostate"))]
         #[cfg_attr(
@@ -220,26 +220,26 @@ pub enum ModuleDesc<'a> {
             serde(borrow),
             serde(deserialize_with = "self::serde::deserialize::logical_name")
         )]
-        logical_name: Cow<'a, str>,
+        logical_name: Cow<'i, str>,
         #[cfg_attr(
             all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
             serde(borrow),
             serde(deserialize_with = "self::serde::deserialize::cow_utf8path")
         )]
-        source_path: Cow<'a, Utf8Path>,
+        source_path: Cow<'i, Utf8Path>,
         #[cfg_attr(
             all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
             serde(default, borrow),
             serde(deserialize_with = "self::serde::deserialize::option_cow_utf8path"),
             serde(skip_serializing_if = "Option::is_none")
         )]
-        compiled_module_path: Option<Cow<'a, Utf8Path>>,
+        compiled_module_path: Option<Cow<'i, Utf8Path>>,
         /// Whether the module name is unique on `logical-name` or `source-path`.
         #[cfg(any(test, feature = "monostate"))]
         unique_on_source_path: monostate::MustBeBool<true>,
     },
 }
-impl<'a> ModuleDesc<'a> {
+impl<'i> ModuleDesc<'i> {
     #[cfg(test)]
     #[cfg(not(tarpaulin_include))]
     #[must_use]
@@ -338,12 +338,12 @@ impl<'a> ModuleDesc<'a> {
     derive(Debug)
 )]
 #[non_exhaustive]
-pub struct ModuleDescView<'a> {
-    pub key: &'a str,
+pub struct ModuleDescView<'i> {
+    pub key: &'i str,
     pub unique_by: UniqueBy,
-    pub logical_name: &'a str,
-    pub source_path: Option<&'a Utf8Path>,
-    pub compiled_module_path: Option<&'a Utf8Path>,
+    pub logical_name: &'i str,
+    pub source_path: Option<&'i Utf8Path>,
+    pub compiled_module_path: Option<&'i Utf8Path>,
 }
 
 #[cfg_attr(feature = "extra_traits", derive(Clone, Copy, Eq, Hash, Ord, PartialEq, PartialOrd))]
@@ -369,12 +369,12 @@ pub enum UniqueBy {
     derive(Debug)
 )]
 #[non_exhaustive]
-pub struct ProvidedModuleDesc<'a> {
+pub struct ProvidedModuleDesc<'i> {
     #[cfg_attr(
         all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
         serde(borrow, flatten)
     )]
-    pub desc: ModuleDesc<'a>,
+    pub desc: ModuleDesc<'i>,
     #[cfg_attr(
         all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
         serde(default = "defaults::bool::<true>")
@@ -394,12 +394,12 @@ pub struct ProvidedModuleDesc<'a> {
     derive(Debug)
 )]
 #[non_exhaustive]
-pub struct RequiredModuleDesc<'a> {
+pub struct RequiredModuleDesc<'i> {
     #[cfg_attr(
         all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
         serde(borrow, flatten)
     )]
-    pub desc: ModuleDesc<'a>,
+    pub desc: ModuleDesc<'i>,
     #[cfg_attr(
         all(feature = "serde", any(feature = "deserialize", feature = "serialize")),
         serde(default)
@@ -445,8 +445,8 @@ impl core::fmt::Display for RequiredModuleDescLookupMethod {
     }
 }
 #[cfg(feature = "arbitrary")]
-impl<'a> ::arbitrary::Arbitrary<'a> for RequiredModuleDescLookupMethod {
-    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+impl<'i> ::arbitrary::Arbitrary<'i> for RequiredModuleDescLookupMethod {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'i>) -> arbitrary::Result<Self> {
         #[allow(clippy::same_functions_in_if_condition)]
         Ok(if u.arbitrary::<bool>()? {
             Self::ByName
