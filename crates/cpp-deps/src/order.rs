@@ -60,7 +60,7 @@ impl std::error::Error for OrderError<'_> {}
 
 pub struct Order<'i, I> {
     nodes: I,
-    graph: FxHashMap<Cow<'i, str>, Graph<'i>>,
+    graph: &'i mut FxHashMap<Cow<'i, str>, Graph<'i>>,
     stack: Vec<r5::DepInfo<'i>>,
     solve: usize,
     order: Vec<Cow<'i, r5::Utf8Path>>,
@@ -71,13 +71,13 @@ pub struct Order<'i, I> {
 }
 impl<'i, I> Order<'i, I> {
     #[inline]
-    pub fn new<T>(nodes: T) -> Self
+    pub fn new<T>(nodes: T, graph: &'i mut FxHashMap<Cow<'i, str>, Graph<'i>>) -> Self
     where
         T: IntoIterator<Item = r5::DepInfo<'i>, IntoIter = I>,
     {
         Self {
             nodes: nodes.into_iter(),
-            graph: FxHashMap::default(),
+            graph,
             stack: Vec::new(),
             solve: 0,
             order: Vec::new(),
@@ -363,7 +363,8 @@ mod test {
             }
             nodes_rx
         };
-        let order = match Order::new(nodes).collect::<Result<Vec<_>, _>>() {
+        let mut graph = FxHashMap::default();
+        let order = match Order::new(nodes, &mut graph).collect::<Result<Vec<_>, _>>() {
             Ok(order) => order,
             Err(err) => {
                 panic!("{err}");
@@ -402,7 +403,8 @@ mod test {
                 nodes.push(info);
             }
         }
-        let order = match Order::new(nodes.clone()).collect::<Result<Vec<_>, _>>() {
+        let mut graph = FxHashMap::default();
+        let order = match Order::new(nodes.clone(), &mut graph).collect::<Result<Vec<_>, _>>() {
             Ok(order) => order,
             Err(err) => {
                 panic!("{err}");
@@ -412,7 +414,11 @@ mod test {
             order,
             ["bar.o", "foo-part1.o", "foo-part2.o", "foo.o", "main.o"].map(Into::<&r5::Utf8Path>::into)
         );
-        match Order::new(nodes).trace(order).collect::<Result<Vec<_>, _>>() {
+        let mut graph = FxHashMap::default();
+        match Order::new(nodes, &mut graph)
+            .trace(order)
+            .collect::<Result<Vec<_>, _>>()
+        {
             Ok(order) => order,
             Err(err) => {
                 panic!("{err}");
@@ -447,7 +453,8 @@ mod test {
                 nodes.push(info);
             }
         }
-        let order = match Order::new(nodes.clone()).collect::<Result<Vec<_>, _>>() {
+        let mut graph = FxHashMap::default();
+        let order = match Order::new(nodes.clone(), &mut graph).collect::<Result<Vec<_>, _>>() {
             Ok(order) => order,
             Err(err) => {
                 panic!("{err}");
@@ -457,7 +464,11 @@ mod test {
             order,
             ["bar.o", "foo-part1.o", "foo-part2.o", "foo.o", "main.o"].map(Into::<&r5::Utf8Path>::into)
         );
-        match Order::new(nodes).trace(order).collect::<Result<Vec<_>, _>>() {
+        let mut graph = FxHashMap::default();
+        match Order::new(nodes, &mut graph)
+            .trace(order)
+            .collect::<Result<Vec<_>, _>>()
+        {
             Ok(order) => order,
             Err(err) => {
                 panic!("{err}");
@@ -486,7 +497,8 @@ mod test {
                 nodes.push(info);
             }
         }
-        let order = match Order::new(nodes).collect::<Result<Vec<_>, _>>() {
+        let mut graph = FxHashMap::default();
+        let order = match Order::new(nodes, &mut graph).collect::<Result<Vec<_>, _>>() {
             Ok(order) => order,
             Err(err) => {
                 panic!("{err}");
@@ -518,7 +530,8 @@ mod test {
                 nodes.push(info);
             }
         }
-        let order = match Order::new(nodes).collect::<Result<Vec<_>, _>>() {
+        let mut graph = FxHashMap::default();
+        let order = match Order::new(nodes, &mut graph).collect::<Result<Vec<_>, _>>() {
             Ok(order) => order,
             Err(err) => {
                 panic!("{err}");

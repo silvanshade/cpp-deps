@@ -52,7 +52,8 @@ fn single(c: &mut Criterion) {
                     }
                     infos_rx
                 };
-                let order = Order::new(infos);
+                let mut graph = FxHashMap::default();
+                let order = Order::new(infos, &mut graph);
                 let start = std::time::Instant::now();
                 for item in order {
                     let _ = item;
@@ -91,7 +92,8 @@ fn single(c: &mut Criterion) {
                         infos.push(dep_info);
                     }
                 }
-                let order = Order::new(infos);
+                let mut graph = FxHashMap::default();
+                let order = Order::new(infos, &mut graph);
                 let start = std::time::Instant::now();
                 for item in order {
                     let _ = item;
@@ -130,7 +132,8 @@ fn single(c: &mut Criterion) {
                         infos.push(dep_info);
                     }
                 }
-                let order = Order::new(infos.into_iter());
+                let mut graph = FxHashMap::default();
+                let order = Order::new(infos.into_iter(), &mut graph);
                 let start = std::time::Instant::now();
                 for item in order {
                     let _ = item;
