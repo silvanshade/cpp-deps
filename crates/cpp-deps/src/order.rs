@@ -57,6 +57,20 @@ impl<'i, I> Order<'i, I> {
             unresolved,
         }
     }
+
+    fn resolve(&mut self, dep_info: r5::DepInfo<'i>) -> Option<BoxResult<Cow<'i, r5::Utf8Path>>> {
+        for provide in &dep_info.provides {
+            let key = provide.desc.logical_name();
+            if let Some(Graph::Awaiting { requires }) = self.graph.insert(key, Graph::Finished) {
+                for dep_info in requires.into_iter().filter_map(Rc::into_inner) {
+                    self.stack.push(dep_info);
+                    self.unresolved -= 1;
+                }
+            }
+        }
+        self.order.extend(dep_info.outputs);
+        dep_info.primary_output.map(Ok)
+    }
 }
 
 impl<'i, I> Iterator for Order<'i, I>
@@ -72,17 +86,7 @@ where
         }
 
         if let Some(dep_info) = self.stack.pop() {
-            for provide in &dep_info.provides {
-                let key = provide.desc.logical_name();
-                if let Some(Graph::Awaiting { requires }) = self.graph.insert(key, Graph::Finished) {
-                    for dep_info in requires.into_iter().filter_map(Rc::into_inner) {
-                        self.stack.push(dep_info);
-                        self.unresolved -= 1;
-                    }
-                }
-            }
-            self.order.extend(dep_info.outputs);
-            return dep_info.primary_output.map(Ok);
+            return self.resolve(dep_info);
         }
 
         for dep_info in self.infos.by_ref() {
@@ -97,17 +101,7 @@ where
                 self.unresolved += 1;
                 continue;
             };
-            for provide in &dep_info.provides {
-                let key = provide.desc.logical_name();
-                if let Some(Graph::Awaiting { requires }) = self.graph.insert(key, Graph::Finished) {
-                    for dep_info in requires.into_iter().filter_map(Rc::into_inner) {
-                        self.stack.push(dep_info);
-                        self.unresolved -= 1;
-                    }
-                }
-            }
-            self.order.extend(dep_info.outputs);
-            return dep_info.primary_output.map(Ok);
+            return self.resolve(dep_info);
         }
 
         if self.unresolved > 0 {
