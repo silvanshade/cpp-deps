@@ -1,3 +1,4 @@
+use core::marker::PhantomData;
 use std::{borrow::Cow, rc::Rc};
 
 // TODO:
@@ -18,6 +19,7 @@ impl Default for Graph<'_> {
         Graph::Deps { deps }
     }
 }
+#[cfg(test)]
 impl<'i> core::fmt::Debug for Graph<'i> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -33,7 +35,32 @@ impl<'i> core::fmt::Debug for Graph<'i> {
     }
 }
 
-pub struct OrderError {}
+#[derive(Clone)]
+pub struct OrderError<'i> {
+    phantom: PhantomData<r5::DepInfo<'i>>,
+}
+impl<'i> OrderError<'i> {
+    fn new() -> Self {
+        Self {
+            phantom: PhantomData::default(),
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl core::fmt::Debug for OrderError<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OrderError").finish_non_exhaustive()
+    }
+}
+#[cfg(feature = "std")]
+impl core::fmt::Display for OrderError<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        core::fmt::Debug::fmt(self, f)
+    }
+}
+#[cfg(feature = "std")]
+impl std::error::Error for OrderError<'_> {}
 
 pub struct Order<'i, I> {
     nodes: I,
@@ -76,7 +103,10 @@ impl<'i, I> Order<'i, I> {
     }
 
     #[inline(always)]
-    fn verify(&mut self, output: Option<Cow<'i, r5::Utf8Path>>) -> Option<BoxResult<Cow<'i, r5::Utf8Path>>> {
+    fn verify(
+        &mut self,
+        output: Option<Cow<'i, r5::Utf8Path>>,
+    ) -> Option<Result<Cow<'i, r5::Utf8Path>, OrderError<'i>>> {
         #[cfg(all(test, feature = "verify"))]
         if self.check {
             debug_assert_eq!(output, self.other.pop());
@@ -84,7 +114,7 @@ impl<'i, I> Order<'i, I> {
         output.map(Ok)
     }
 
-    fn resolve(&mut self, node: r5::DepInfo<'i>) -> Option<BoxResult<Cow<'i, r5::Utf8Path>>> {
+    fn resolve(&mut self, node: r5::DepInfo<'i>) -> Option<Result<Cow<'i, r5::Utf8Path>, OrderError<'i>>> {
         for provide in &node.provides {
             let key = provide.desc.logical_name();
             if let Some(Graph::Deps { deps }) = self.graph.insert(key, Graph::Done) {
@@ -99,9 +129,8 @@ impl<'i, I> Order<'i, I> {
     }
 
     #[cold]
-    fn error(&self) -> Option<BoxResult<Cow<'i, r5::Utf8Path>>> {
-        println!("graph: {:#?}", self.graph);
-        Some(Err("Cycle or incomplete build graph detected".into()))
+    fn error(&self) -> Option<Result<Cow<'i, r5::Utf8Path>, OrderError<'i>>> {
+        Some(Err(OrderError::new()))
     }
 }
 
@@ -109,7 +138,7 @@ impl<'i, I> Iterator for Order<'i, I>
 where
     I: Iterator<Item = r5::DepInfo<'i>>,
 {
-    type Item = BoxResult<Cow<'i, r5::Utf8Path>>;
+    type Item = Result<Cow<'i, r5::Utf8Path>, OrderError<'i>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(output) = self.order.pop() {
@@ -338,7 +367,7 @@ mod test {
             }
             nodes_rx
         };
-        let order = match Order::new(nodes).collect::<BoxResult<Vec<_>>>() {
+        let order = match Order::new(nodes).collect::<Result<Vec<_>, _>>() {
             Ok(order) => order,
             Err(err) => {
                 panic!("{err}");
@@ -377,7 +406,7 @@ mod test {
                 nodes.push(info);
             }
         }
-        let order = match Order::new(nodes.clone()).collect::<BoxResult<Vec<_>>>() {
+        let order = match Order::new(nodes.clone()).collect::<Result<Vec<_>, _>>() {
             Ok(order) => order,
             Err(err) => {
                 panic!("{err}");
@@ -387,7 +416,7 @@ mod test {
             order,
             ["bar.o", "foo-part1.o", "foo-part2.o", "foo.o", "main.o"].map(Into::<&r5::Utf8Path>::into)
         );
-        match Order::new(nodes).trace(order).collect::<BoxResult<Vec<_>>>() {
+        match Order::new(nodes).trace(order).collect::<Result<Vec<_>, _>>() {
             Ok(order) => order,
             Err(err) => {
                 panic!("{err}");
@@ -422,7 +451,7 @@ mod test {
                 nodes.push(info);
             }
         }
-        let order = match Order::new(nodes.clone()).collect::<BoxResult<Vec<_>>>() {
+        let order = match Order::new(nodes.clone()).collect::<Result<Vec<_>, _>>() {
             Ok(order) => order,
             Err(err) => {
                 panic!("{err}");
@@ -432,7 +461,7 @@ mod test {
             order,
             ["bar.o", "foo-part1.o", "foo-part2.o", "foo.o", "main.o"].map(Into::<&r5::Utf8Path>::into)
         );
-        match Order::new(nodes).trace(order).collect::<BoxResult<Vec<_>>>() {
+        match Order::new(nodes).trace(order).collect::<Result<Vec<_>, _>>() {
             Ok(order) => order,
             Err(err) => {
                 panic!("{err}");
@@ -461,7 +490,7 @@ mod test {
                 nodes.push(info);
             }
         }
-        let order = match Order::new(nodes).collect::<BoxResult<Vec<_>>>() {
+        let order = match Order::new(nodes).collect::<Result<Vec<_>, _>>() {
             Ok(order) => order,
             Err(err) => {
                 panic!("{err}");
@@ -493,7 +522,7 @@ mod test {
                 nodes.push(info);
             }
         }
-        let order = match Order::new(nodes).collect::<BoxResult<Vec<_>>>() {
+        let order = match Order::new(nodes).collect::<Result<Vec<_>, _>>() {
             Ok(order) => order,
             Err(err) => {
                 panic!("{err}");

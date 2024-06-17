@@ -24,6 +24,7 @@ camino = ["p1689/camino"]
 dashmap = ["dep:dashmap"]
 memchr = ["p1689/memchr"]
 oneshot = ["dep:oneshot"]
+std = []
 verify = []
 
 [dependencies]
