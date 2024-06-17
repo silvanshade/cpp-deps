@@ -85,7 +85,7 @@ where
             return dep_info.primary_output.map(Ok);
         }
 
-        while let Some(dep_info) = self.infos.next() {
+        for dep_info in self.infos.by_ref() {
             let dep_info = Rc::new(dep_info);
             for require in &dep_info.requires {
                 let key = require.desc.logical_name();
