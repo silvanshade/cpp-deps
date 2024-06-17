@@ -24,6 +24,7 @@ camino = ["p1689/camino"]
 dashmap = ["dep:dashmap"]
 memchr = ["p1689/memchr"]
 oneshot = ["dep:oneshot"]
+verify = []
 
 [dependencies]
 dashmap = { version = "5.5", optional = true, default-features = false }

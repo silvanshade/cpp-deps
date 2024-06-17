@@ -35,8 +35,12 @@ pub struct Order<'i, I> {
     infos: I,
     graph: FxHashMap<Cow<'i, str>, Graph<'i>>,
     stack: Vec<r5::DepInfo<'i>>,
-    order: Vec<Cow<'i, r5::Utf8Path>>,
     solve: usize,
+    order: Vec<Cow<'i, r5::Utf8Path>>,
+    #[cfg(all(test, feature = "verify"))]
+    check: bool,
+    #[cfg(all(test, feature = "verify"))]
+    other: Vec<Cow<'i, r5::Utf8Path>>,
 }
 impl<'i, I> Order<'i, I> {
     #[inline]
@@ -44,18 +48,36 @@ impl<'i, I> Order<'i, I> {
     where
         T: IntoIterator<Item = r5::DepInfo<'i>, IntoIter = I>,
     {
-        let infos = infos.into_iter();
-        let graph = FxHashMap::default();
-        let stack = Vec::new();
-        let order = Vec::new();
-        let solve = 0;
         Self {
-            infos,
-            graph,
-            stack,
-            order,
-            solve,
+            infos: infos.into_iter(),
+            graph: FxHashMap::default(),
+            stack: Vec::new(),
+            solve: 0,
+            order: Vec::new(),
+            #[cfg(all(test, feature = "verify"))]
+            check: false,
+            #[cfg(all(test, feature = "verify"))]
+            other: Vec::new(),
         }
+    }
+
+    #[cfg(all(test, feature = "verify"))]
+    fn trace(mut self, mut other: Vec<Cow<'i, r5::Utf8Path>>) -> Self {
+        self.check = true;
+        self.other = {
+            other.reverse();
+            other
+        };
+        self
+    }
+
+    #[inline(always)]
+    fn verify(&mut self, output: Option<Cow<'i, r5::Utf8Path>>) -> Option<BoxResult<Cow<'i, r5::Utf8Path>>> {
+        #[cfg(all(test, feature = "verify"))]
+        if self.check {
+            debug_assert_eq!(output, self.other.pop());
+        }
+        output.map(Ok)
     }
 
     fn resolve(&mut self, dep_info: r5::DepInfo<'i>) -> Option<BoxResult<Cow<'i, r5::Utf8Path>>> {
@@ -69,7 +91,7 @@ impl<'i, I> Order<'i, I> {
             }
         }
         self.order.extend(dep_info.outputs);
-        dep_info.primary_output.map(Ok)
+        self.verify(dep_info.primary_output)
     }
 }
 
@@ -79,10 +101,9 @@ where
 {
     type Item = BoxResult<Cow<'i, r5::Utf8Path>>;
 
-    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(next) = self.order.pop() {
-            return Some(Ok(next));
+        if let Some(output) = self.order.pop() {
+            return self.verify(Some(output));
         }
 
         if let Some(dep_info) = self.stack.pop() {
@@ -317,10 +338,11 @@ mod test {
         };
         assert_eq!(
             order,
-            ["bar.o", "foo-part1.o", "foo-part2.o", "foo.o", "main.o"].map(r5::Utf8Path::new)
+            ["bar.o", "foo-part1.o", "foo-part2.o", "foo.o", "main.o"].map(Into::<&r5::Utf8Path>::into)
         );
     }
 
+    #[cfg(feature = "verify")]
     #[test]
     fn test_vec() {
         #[allow(clippy::useless_conversion)]
@@ -347,7 +369,7 @@ mod test {
                 infos.push(dep_info);
             }
         }
-        let order = match Order::new(infos).collect::<BoxResult<Vec<_>>>() {
+        let order = match Order::new(infos.clone()).collect::<BoxResult<Vec<_>>>() {
             Ok(order) => order,
             Err(err) => {
                 panic!("{err}");
@@ -355,10 +377,17 @@ mod test {
         };
         assert_eq!(
             order,
-            ["bar.o", "foo-part1.o", "foo-part2.o", "foo.o", "main.o"].map(r5::Utf8Path::new)
+            ["bar.o", "foo-part1.o", "foo-part2.o", "foo.o", "main.o"].map(Into::<&r5::Utf8Path>::into)
         );
+        match Order::new(infos).trace(order).collect::<BoxResult<Vec<_>>>() {
+            Ok(order) => order,
+            Err(err) => {
+                panic!("{err}");
+            },
+        };
     }
 
+    #[cfg(feature = "verify")]
     #[test]
     fn test_vec_out_of_order() {
         #[allow(clippy::useless_conversion)]
@@ -385,7 +414,7 @@ mod test {
                 infos.push(dep_info);
             }
         }
-        let order = match Order::new(infos).collect::<BoxResult<Vec<_>>>() {
+        let order = match Order::new(infos.clone()).collect::<BoxResult<Vec<_>>>() {
             Ok(order) => order,
             Err(err) => {
                 panic!("{err}");
@@ -393,8 +422,14 @@ mod test {
         };
         assert_eq!(
             order,
-            ["bar.o", "foo-part1.o", "foo-part2.o", "foo.o", "main.o"].map(r5::Utf8Path::new)
+            ["bar.o", "foo-part1.o", "foo-part2.o", "foo.o", "main.o"].map(Into::<&r5::Utf8Path>::into)
         );
+        match Order::new(infos).trace(order).collect::<BoxResult<Vec<_>>>() {
+            Ok(order) => order,
+            Err(err) => {
+                panic!("{err}");
+            },
+        };
     }
 
     #[test]
