@@ -7,8 +7,6 @@ use std::{borrow::Cow, rc::Rc};
 use p1689::r5::{self};
 use rustc_hash::FxHashMap;
 
-use crate::BoxResult;
-
 pub enum Graph<'i> {
     Deps { deps: Vec<Rc<r5::DepInfo<'i>>> },
     Done,
@@ -41,9 +39,7 @@ pub struct OrderError<'i> {
 }
 impl<'i> OrderError<'i> {
     fn new() -> Self {
-        Self {
-            phantom: PhantomData::default(),
-        }
+        Self { phantom: PhantomData }
     }
 }
 
