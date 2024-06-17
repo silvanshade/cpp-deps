@@ -103,6 +103,7 @@ where
             self.unresolved += 1;
         }
 
+        // FIXME: proper error
         if self.unresolved > 0 {
             println!("graph: {:#?}", self.graph);
             return Some(Err("Cycle or incomplete build graph detected".into()));
@@ -111,6 +112,10 @@ where
         None
     }
 }
+
+// TODO:
+// - test permutations
+// - benchmark permutations
 
 #[cfg(test)]
 mod test {
