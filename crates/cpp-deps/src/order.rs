@@ -36,7 +36,6 @@ pub struct Order<'i, I> {
     graph: FxHashMap<Cow<'i, str>, Graph<'i>>,
     stack: Vec<r5::DepInfo<'i>>,
     order: Vec<Cow<'i, r5::Utf8Path>>,
-    ended: bool,
     unresolved: usize,
 }
 impl<'i, I> Order<'i, I> {
@@ -49,14 +48,12 @@ impl<'i, I> Order<'i, I> {
         let graph = FxHashMap::default();
         let stack = Vec::new();
         let order = Vec::new();
-        let ended = false;
         let unresolved = 0;
         Self {
             infos,
             graph,
             stack,
             order,
-            ended,
             unresolved,
         }
     }
@@ -70,46 +67,55 @@ where
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        while !self.ended && self.order.is_empty() {
-            if let Some(dep_info) = self.stack.pop() {
-                for provide in &dep_info.provides {
-                    let key = provide.desc.logical_name();
-                    if let Some(Graph::Awaiting { requires }) = self.graph.insert(key, Graph::Finished) {
-                        for dep_info in requires.into_iter().filter_map(Rc::into_inner) {
-                            self.stack.push(dep_info);
-                            self.unresolved -= 1;
-                        }
-                    }
-                }
-                let outputs = dep_info.primary_output.iter().chain(&dep_info.outputs).cloned();
-                self.order.extend(outputs);
-                continue;
-            }
-
-            if let Some(dep_info) = self.infos.next() {
-                let dep_info = Rc::new(dep_info);
-                for require in &dep_info.requires {
-                    let key = require.desc.logical_name();
-                    if let Graph::Awaiting { ref mut requires } = self.graph.entry(key).or_default() {
-                        requires.push(dep_info.clone());
-                    }
-                }
-                if let Some(dep_info) = Rc::into_inner(dep_info) {
-                    self.stack.push(dep_info);
-                } else {
-                    self.unresolved += 1;
-                }
-                continue;
-            }
-
-            self.ended = true;
-            if self.unresolved > 0 {
-                println!("graph: {:#?}", self.graph);
-                return Some(Err("Cycle or incomplete build graph detected".into()));
-            }
-            break;
+        if let Some(next) = self.order.pop() {
+            return Some(Ok(next));
         }
-        self.order.pop().map(Ok)
+
+        if let Some(dep_info) = self.stack.pop() {
+            for provide in &dep_info.provides {
+                let key = provide.desc.logical_name();
+                if let Some(Graph::Awaiting { requires }) = self.graph.insert(key, Graph::Finished) {
+                    for dep_info in requires.into_iter().filter_map(Rc::into_inner) {
+                        self.stack.push(dep_info);
+                        self.unresolved -= 1;
+                    }
+                }
+            }
+            self.order.extend(dep_info.outputs);
+            return dep_info.primary_output.map(Ok);
+        }
+
+        while let Some(dep_info) = self.infos.next() {
+            let dep_info = Rc::new(dep_info);
+            for require in &dep_info.requires {
+                let key = require.desc.logical_name();
+                if let Graph::Awaiting { ref mut requires } = self.graph.entry(key).or_default() {
+                    requires.push(dep_info.clone());
+                }
+            }
+            let Some(dep_info) = Rc::into_inner(dep_info) else {
+                self.unresolved += 1;
+                continue;
+            };
+            for provide in &dep_info.provides {
+                let key = provide.desc.logical_name();
+                if let Some(Graph::Awaiting { requires }) = self.graph.insert(key, Graph::Finished) {
+                    for dep_info in requires.into_iter().filter_map(Rc::into_inner) {
+                        self.stack.push(dep_info);
+                        self.unresolved -= 1;
+                    }
+                }
+            }
+            self.order.extend(dep_info.outputs);
+            return dep_info.primary_output.map(Ok);
+        }
+
+        if self.unresolved > 0 {
+            println!("graph: {:#?}", self.graph);
+            return Some(Err("Cycle or incomplete build graph detected".into()));
+        }
+
+        None
     }
 }
 
