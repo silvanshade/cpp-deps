@@ -36,7 +36,7 @@ pub struct Order<'i, I> {
     graph: FxHashMap<Cow<'i, str>, Graph<'i>>,
     stack: Vec<r5::DepInfo<'i>>,
     order: Vec<Cow<'i, r5::Utf8Path>>,
-    unresolved: usize,
+    solve: usize,
 }
 impl<'i, I> Order<'i, I> {
     #[inline]
@@ -48,13 +48,13 @@ impl<'i, I> Order<'i, I> {
         let graph = FxHashMap::default();
         let stack = Vec::new();
         let order = Vec::new();
-        let unresolved = 0;
+        let solve = 0;
         Self {
             infos,
             graph,
             stack,
             order,
-            unresolved,
+            solve,
         }
     }
 
@@ -64,7 +64,7 @@ impl<'i, I> Order<'i, I> {
             if let Some(Graph::Awaiting { requires }) = self.graph.insert(key, Graph::Finished) {
                 for dep_info in requires.into_iter().filter_map(Rc::into_inner) {
                     self.stack.push(dep_info);
-                    self.unresolved -= 1;
+                    self.solve -= 1;
                 }
             }
         }
@@ -100,11 +100,11 @@ where
             if let Some(dep_info) = Rc::into_inner(dep_info) {
                 return self.resolve(dep_info);
             };
-            self.unresolved += 1;
+            self.solve += 1;
         }
 
         // FIXME: proper error
-        if self.unresolved > 0 {
+        if self.solve > 0 {
             println!("graph: {:#?}", self.graph);
             return Some(Err("Cycle or incomplete build graph detected".into()));
         }
