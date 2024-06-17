@@ -52,7 +52,7 @@ fn single(c: &mut Criterion) {
                     }
                     infos_rx
                 };
-                let order = Order::new(infos.into_iter());
+                let order = Order::new(infos);
                 let start = std::time::Instant::now();
                 for item in order {
                     let _ = item;
@@ -91,7 +91,7 @@ fn single(c: &mut Criterion) {
                         infos.push(dep_info);
                     }
                 }
-                let order = Order::new(infos.into_iter());
+                let order = Order::new(infos);
                 let start = std::time::Instant::now();
                 for item in order {
                     let _ = item;

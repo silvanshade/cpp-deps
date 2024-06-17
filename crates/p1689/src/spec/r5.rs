@@ -308,7 +308,7 @@ impl<'i> ModuleDesc<'i> {
     }
 
     #[must_use]
-    pub fn logical_name(&self) -> Cow<'a, str> {
+    pub fn logical_name(&self) -> Cow<'i, str> {
         match *self {
             ModuleDesc::BySourcePath { ref logical_name, .. } | ModuleDesc::ByLogicalName { ref logical_name, .. } => {
                 logical_name.clone()
