@@ -1,5 +1,6 @@
 use std::{borrow::Cow, rc::Rc};
 
+// TODO: detect duplicate nodes in input
 use p1689::r5::{self};
 use rustc_hash::FxHashMap;
 
@@ -13,6 +14,20 @@ impl Default for Graph<'_> {
     fn default() -> Self {
         let requires = vec![];
         Graph::Awaiting { requires }
+    }
+}
+impl<'i> core::fmt::Debug for Graph<'i> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Awaiting { requires } => {
+                let requires = requires
+                    .iter()
+                    .map(|elem| elem.primary_output.clone().unwrap_or_default())
+                    .collect::<Vec<_>>();
+                f.debug_tuple("Awaiting").field(&requires).finish()
+            },
+            Self::Finished => write!(f, "Finished"),
+        }
     }
 }
 
@@ -56,6 +71,7 @@ where
             let Some(dep_info) = self.infos.next() else {
                 self.ended = true;
                 if self.unresolved > 0 {
+                    println!("graph: {:#?}", self.graph);
                     return Some(Err("Cycle or incomplete build graph detected".into()));
                 }
                 break;
@@ -69,10 +85,9 @@ where
             }
             if Rc::strong_count(&dep_info) != 1 {
                 self.unresolved += 1;
+                println!("unresolved: {:#?}", dep_info.primary_output);
                 continue;
             }
-            let outputs = dep_info.primary_output.iter().chain(&dep_info.outputs).cloned();
-            self.order.extend(outputs);
             for provide in &dep_info.provides {
                 let key = provide.desc.logical_name();
                 if let Some(Graph::Awaiting { requires }) = self.graph.insert(key, Graph::Finished) {
@@ -80,9 +95,13 @@ where
                         let outputs = dep_info.primary_output.iter().chain(&dep_info.outputs).cloned();
                         self.order.extend(outputs);
                         self.unresolved -= 1;
+                        println!("resolved: {:#?}", dep_info.primary_output);
                     }
                 }
             }
+            let outputs = dep_info.primary_output.iter().chain(&dep_info.outputs).cloned();
+            self.order.extend(outputs);
+            println!("resolved: {:#?}", dep_info.primary_output);
         }
         self.order.pop().map(Ok)
     }
@@ -192,6 +211,9 @@ mod test {
         "primary-output": "main.o",
         "requires": [
         {
+        "logical-name": "foo"
+        },
+        {
         "logical-name": "bar"
         }
         ]
@@ -283,13 +305,52 @@ mod test {
                 panic!("{err}");
             },
         };
-        for item in order {
-            std::println!("{}", item);
-        }
+        assert_eq!(
+            order,
+            ["bar.o", "foo-part1.o", "foo-part2.o", "foo.o", "main.o"].map(r5::Utf8Path::new)
+        );
     }
 
     #[test]
     fn test_vec() {
+        #[allow(clippy::useless_conversion)]
+        let entries: [(&r5::Utf8Path, &str); 5] = [
+            ("bar.ddi".into(), BAR),
+            ("foo-part1.ddi".into(), FOO_PART1),
+            ("foo-part2.ddi".into(), FOO_PART2),
+            ("foo.ddi".into(), FOO),
+            ("main.ddi".into(), MAIN),
+        ];
+        let mut paths = vec![];
+        let mut mmaps = FxHashMap::default();
+        let mut infos = vec![];
+        for (key, val) in entries {
+            mmaps.insert(key, val);
+            paths.push(key);
+        }
+        for path in paths {
+            let mmap = mmaps.get(path).unwrap();
+            let state = r5::parsers::State::default();
+            let mut stream = ParseStream::new(path, mmap.as_ref(), state);
+            let dep_file = r5::parsers::dep_file(&mut stream).unwrap();
+            for dep_info in dep_file.rules {
+                infos.push(dep_info);
+            }
+        }
+        let order = match Order::new(infos).collect::<BoxResult<Vec<_>>>() {
+            Ok(order) => order,
+            Err(err) => {
+                panic!("{err}");
+            },
+        };
+        assert_eq!(
+            order,
+            ["bar.o", "foo-part1.o", "foo-part2.o", "foo.o", "main.o"].map(r5::Utf8Path::new)
+        );
+    }
+
+    #[test]
+    fn test_vec_out_of_order() {
         #[allow(clippy::useless_conversion)]
         let entries: [(&r5::Utf8Path, &str); 5] = [
             ("main.ddi".into(), MAIN),
@@ -314,15 +375,22 @@ mod test {
                 infos.push(dep_info);
             }
         }
-        let order = match Order::new(infos).collect::<BoxResult<Vec<_>>>() {
-            Ok(order) => order,
-            Err(err) => {
-                panic!("{err}");
-            },
-        };
-        for item in order {
-            std::println!("{}", item);
+        for item in Order::new(infos) {
+            std::println!("{}", item.unwrap());
         }
+        // let order = match Order::new(infos).collect::<BoxResult<Vec<_>>>() {
+        //     Ok(order) => order,
+        //     Err(err) => {
+        //         panic!("{err}");
+        //     },
+        // };
+        // for item in order {
+        //     std::println!("{}", item);
+        // }
+        // assert_eq!(
+        //     order,
+        //     ["bar.o", "foo-part1.o", "foo-part2.o", "foo.o", "main.o"].map(r5::Utf8Path::new)
+        // );
     }
 
     #[test]
