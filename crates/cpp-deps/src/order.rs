@@ -91,17 +91,16 @@ where
 
         for dep_info in self.infos.by_ref() {
             let dep_info = Rc::new(dep_info);
-            for require in &dep_info.requires {
+            for require in dep_info.requires.iter() {
                 let key = require.desc.logical_name();
                 if let Graph::Awaiting { ref mut requires } = self.graph.entry(key).or_default() {
                     requires.push(dep_info.clone());
                 }
             }
-            let Some(dep_info) = Rc::into_inner(dep_info) else {
-                self.unresolved += 1;
-                continue;
+            if let Some(dep_info) = Rc::into_inner(dep_info) {
+                return self.resolve(dep_info);
             };
-            return self.resolve(dep_info);
+            self.unresolved += 1;
         }
 
         if self.unresolved > 0 {
