@@ -1,30 +1,62 @@
 use core::marker::PhantomData;
-use std::{borrow::Cow, rc::Rc};
+use std::{borrow::Cow, collections::HashMap, rc::Rc};
 
-// TODO:
-// - detect duplicate nodes in input
-// - bisimulation
-use p1689::r5::{self};
-use rustc_hash::FxHashMap;
+use p1689::r5;
+use yoke::{Yoke, Yokeable};
 
-pub enum Graph<'i> {
-    Deps { deps: Vec<Rc<r5::DepInfo<'i>>> },
+use crate::{DepInfoCart, DepInfoYoke};
+
+#[derive(Clone)]
+#[repr(transparent)]
+pub struct DepInfoNameYoke {
+    yoke: Yoke<Cow<'static, str>, DepInfoCart>,
+}
+impl core::fmt::Debug for DepInfoNameYoke {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        core::fmt::Debug::fmt(self.yoke.get(), f)
+    }
+}
+impl PartialEq for DepInfoNameYoke {
+    #[inline]
+    fn eq(&self, other: &Self) -> bool {
+        self.yoke.get().eq(other.yoke.get())
+    }
+}
+impl Eq for DepInfoNameYoke {}
+impl core::hash::Hash for DepInfoNameYoke {
+    #[inline]
+    fn hash<H>(&self, state: &mut H)
+    where
+        H: std::hash::Hasher,
+    {
+        self.yoke.get().hash(state);
+    }
+}
+
+#[derive(Clone)]
+pub enum Graph {
+    Deps { deps: Vec<Rc<DepInfoYoke>> },
     Done,
 }
-impl Default for Graph<'_> {
+impl Default for Graph {
     fn default() -> Self {
         let deps = vec![];
         Graph::Deps { deps }
     }
 }
-#[cfg(test)]
-impl<'i> core::fmt::Debug for Graph<'i> {
+impl core::fmt::Debug for Graph {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Deps { deps } => {
+                #[allow(clippy::useless_conversion)]
                 let requires = deps
                     .iter()
-                    .map(|elem| elem.primary_output.clone().unwrap_or_default())
+                    .map(|elem| {
+                        elem.get()
+                            .primary_output
+                            .clone()
+                            .unwrap_or(Cow::Borrowed("<unknown>".into()))
+                    })
                     .collect::<Vec<_>>();
                 f.debug_tuple("Deps").field(&requires).finish()
             },
@@ -33,86 +65,96 @@ impl<'i> core::fmt::Debug for Graph<'i> {
     }
 }
 
+#[non_exhaustive]
 #[derive(Clone)]
-pub struct OrderError<'i> {
-    phantom: PhantomData<r5::DepInfo<'i>>,
-}
-impl<'i> OrderError<'i> {
-    fn new() -> Self {
-        Self { phantom: PhantomData }
-    }
+pub enum OrderError<E> {
+    CycleOrIncomplete { graph: HashMap<DepInfoNameYoke, Graph> },
+    External(E),
 }
 
-#[cfg(feature = "std")]
-impl core::fmt::Debug for OrderError<'_> {
+impl<E> core::fmt::Debug for OrderError<E>
+where
+    E: core::fmt::Debug,
+{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("OrderError").finish_non_exhaustive()
+        match self {
+            OrderError::CycleOrIncomplete { graph } => {
+                f.debug_struct("CycleOrIncomplete").field("graph", &graph).finish()
+            },
+            OrderError::External(error) => core::fmt::Debug::fmt(&error, f),
+        }
+    }
+}
+impl<E> core::fmt::Display for OrderError<E>
+where
+    E: core::fmt::Display,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            OrderError::CycleOrIncomplete { graph } => {
+                f.debug_struct("CycleOrIncomplete").field("graph", &graph).finish()
+            },
+            OrderError::External(error) => core::fmt::Display::fmt(&error, f),
+        }
     }
 }
 #[cfg(feature = "std")]
-impl core::fmt::Display for OrderError<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        core::fmt::Debug::fmt(self, f)
-    }
-}
-#[cfg(feature = "std")]
-impl std::error::Error for OrderError<'_> {}
+impl<E> std::error::Error for OrderError<E> where E: std::error::Error {}
 
-pub struct Order<'i, I> {
+pub struct Order<E, I> {
     nodes: I,
-    graph: &'i mut FxHashMap<Cow<'i, str>, Graph<'i>>,
-    stack: Vec<r5::DepInfo<'i>>,
+    graph: HashMap<DepInfoNameYoke, Graph>,
+    stack: Vec<DepInfoYoke>,
     solve: usize,
-    order: Vec<Cow<'i, r5::Utf8Path>>,
     #[cfg(all(test, feature = "verify"))]
     check: bool,
     #[cfg(all(test, feature = "verify"))]
-    other: Vec<Cow<'i, r5::Utf8Path>>,
+    other: Vec<Result<DepInfoYoke, OrderError<E>>>,
+    e: PhantomData<E>,
 }
-impl<'i, I> Order<'i, I> {
+impl<E, I> Order<E, I> {
     #[inline]
-    pub fn new<T>(nodes: T, graph: &'i mut FxHashMap<Cow<'i, str>, Graph<'i>>) -> Self
+    pub fn new<T>(nodes: T) -> Self
     where
-        T: IntoIterator<Item = r5::DepInfo<'i>, IntoIter = I>,
+        T: IntoIterator<Item = Result<DepInfoYoke, E>, IntoIter = I>,
     {
         Self {
             nodes: nodes.into_iter(),
-            graph,
+            graph: HashMap::default(),
             stack: Vec::new(),
             solve: 0,
-            order: Vec::new(),
             #[cfg(all(test, feature = "verify"))]
             check: false,
             #[cfg(all(test, feature = "verify"))]
             other: Vec::new(),
+            e: PhantomData,
         }
     }
 
-    #[cfg(all(test, feature = "verify"))]
-    fn trace(mut self, mut other: Vec<Cow<'i, r5::Utf8Path>>) -> Self {
-        self.check = true;
-        self.other = {
-            other.reverse();
-            other
-        };
-        self
+    #[cold]
+    fn error(&self) -> Option<Result<DepInfoYoke, OrderError<E>>> {
+        let graph = self.graph.clone();
+        let error = OrderError::CycleOrIncomplete { graph };
+        Some(Err(error))
     }
 
-    #[inline(always)]
-    fn verify(
-        &mut self,
-        output: Option<Cow<'i, r5::Utf8Path>>,
-    ) -> Option<Result<Cow<'i, r5::Utf8Path>, OrderError<'i>>> {
-        #[cfg(all(test, feature = "verify"))]
-        if self.check {
-            debug_assert_eq!(output, self.other.pop());
+    pub fn outputs(self) -> OrderOutputs<E, I>
+    where
+        I: Iterator<Item = Result<DepInfoYoke, E>>,
+    {
+        OrderOutputs::<E, I> {
+            iter: self,
+            node: Option::default(),
         }
-        output.map(Ok)
     }
 
-    fn resolve(&mut self, node: r5::DepInfo<'i>) -> Option<Result<Cow<'i, r5::Utf8Path>, OrderError<'i>>> {
-        for provide in &node.provides {
-            let key = provide.desc.logical_name();
+    fn resolve(&mut self, node: DepInfoYoke) -> Option<Result<DepInfoYoke, OrderError<E>>> {
+        for provide in &node.get().provides {
+            let key = DepInfoNameYoke {
+                yoke: Yoke::attach_to_cart(node.backing_cart().clone(), |_| unsafe {
+                    Yokeable::make(provide.desc.logical_name())
+                }),
+            };
             if let Some(Graph::Deps { deps }) = self.graph.insert(key, Graph::Done) {
                 for node in deps.into_iter().filter_map(Rc::into_inner) {
                     self.stack.push(node);
@@ -120,43 +162,67 @@ impl<'i, I> Order<'i, I> {
                 }
             }
         }
-        self.order.extend(node.outputs);
-        self.verify(node.primary_output)
+        self.verify(node)
     }
 
-    #[cold]
-    fn error(&self) -> Option<Result<Cow<'i, r5::Utf8Path>, OrderError<'i>>> {
-        Some(Err(OrderError::new()))
+    #[cfg(all(test, feature = "verify"))]
+    pub fn trace<Os>(mut self, other: Os) -> Self
+    where
+        Os: IntoIterator<Item = Result<DepInfoYoke, OrderError<E>>>,
+        Os::IntoIter: DoubleEndedIterator,
+    {
+        self.check = true;
+        self.other = other.into_iter().rev().collect();
+        self
+    }
+
+    #[inline(always)]
+    fn verify(&mut self, yoke: DepInfoYoke) -> Option<Result<DepInfoYoke, OrderError<E>>> {
+        #[cfg(all(test, feature = "verify"))]
+        if self.check {
+            debug_assert_eq!(
+                Some(yoke.get()),
+                self.other
+                    .pop()
+                    .as_ref()
+                    .and_then(|res| res.as_ref().map(Yoke::get).ok())
+            );
+        }
+        Some(Ok(yoke))
     }
 }
-
-impl<'i, I> Iterator for Order<'i, I>
+impl<E, I> Iterator for Order<E, I>
 where
-    I: Iterator<Item = r5::DepInfo<'i>>,
+    I: Iterator<Item = Result<DepInfoYoke, E>>,
 {
-    type Item = Result<Cow<'i, r5::Utf8Path>, OrderError<'i>>;
+    type Item = Result<DepInfoYoke, OrderError<E>>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(output) = self.order.pop() {
-            return self.verify(Some(output));
-        }
-
         if let Some(node) = self.stack.pop() {
             return self.resolve(node);
         }
 
-        for node in self.nodes.by_ref() {
-            let node = Rc::new(node);
-            for require in node.requires.iter() {
-                let key = require.desc.logical_name();
-                if let Graph::Deps { ref mut deps } = self.graph.entry(key).or_default() {
-                    deps.push(node.clone());
-                }
+        for result in self.nodes.by_ref() {
+            match result {
+                Err(err) => return Some(Err(OrderError::External(err))),
+                Ok(node) => {
+                    let node = Rc::new(node);
+                    for require in node.get().requires.iter() {
+                        let key = DepInfoNameYoke {
+                            yoke: Yoke::attach_to_cart(node.backing_cart().clone(), |_| unsafe {
+                                Yokeable::make(require.desc.logical_name())
+                            }),
+                        };
+                        if let Graph::Deps { ref mut deps } = self.graph.entry(key).or_default() {
+                            deps.push(node.clone());
+                        }
+                    }
+                    if let Some(node) = Rc::into_inner(node) {
+                        return self.resolve(node);
+                    };
+                    self.solve += 1;
+                },
             }
-            if let Some(node) = Rc::into_inner(node) {
-                return self.resolve(node);
-            };
-            self.solve += 1;
         }
 
         if self.solve > 0 {
@@ -167,15 +233,48 @@ where
     }
 }
 
-// TODO:
-// - test permutations
-// - benchmark permutations
+pub struct OrderOutputs<E, I> {
+    iter: Order<E, I>,
+    node: Option<(DepInfoCart, <Vec<Cow<'static, r5::Utf8Path>> as IntoIterator>::IntoIter)>,
+}
+impl<E, I> Iterator for OrderOutputs<E, I>
+where
+    I: Iterator<Item = Result<DepInfoYoke, E>>,
+{
+    type Item = Result<Yoke<Cow<'static, r5::Utf8Path>, DepInfoCart>, OrderError<E>>;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some((cart, outputs)) = &mut self.node {
+            if let Some(output) = outputs.next() {
+                let yoke = Yoke::attach_to_cart(cart.clone(), |_| output);
+                return Some(Ok(yoke));
+            }
+        }
+        match self.iter.next() {
+            Some(Ok(yoke)) => {
+                let cart = yoke.backing_cart().clone();
+                let info = unsafe { yoke.replace_cart(|_| ()) }.into_yokeable().transform_owned();
+                self.node = Some((cart.clone(), info.outputs.into_iter()));
+                info.primary_output
+                    .map(|output| Yoke::attach_to_cart(cart, |_| output))
+                    .map(Ok)
+            },
+            Some(Err(err)) => Some(Err(err)),
+            None => None,
+        }
+    }
+}
 
 #[cfg(test)]
 mod test {
+    use core::convert::Infallible;
+    use std::sync::Arc;
+
     use r5::parsers::ParseStream;
 
     use super::*;
+    use crate::CppDeps;
 
     const BAR: &str = r#"
         {
@@ -335,7 +434,7 @@ mod test {
     "#;
 
     #[test]
-    fn test_channel() {
+    fn channel() {
         #[allow(clippy::useless_conversion)]
         let entries: [(&r5::Utf8Path, &str); 5] = [
             ("bar.ddi".into(), BAR),
@@ -344,41 +443,34 @@ mod test {
             ("foo.ddi".into(), FOO),
             ("main.ddi".into(), MAIN),
         ];
-        let mut paths = vec![];
-        let mut mmaps = FxHashMap::default();
         let nodes = {
             let (nodes_tx, nodes_rx) = std::sync::mpsc::channel();
-            for (key, val) in entries {
-                mmaps.insert(key, val);
-                paths.push(key);
-            }
-            for path in paths {
-                let mmap = mmaps.get(path).unwrap();
+            for (path, data) in entries {
                 let state = r5::parsers::State::default();
-                let mut stream = ParseStream::new(path, mmap.as_ref(), state);
+                let mut stream = ParseStream::new(path, data.as_ref(), state);
                 let file = r5::parsers::dep_file(&mut stream).unwrap();
                 for info in file.rules {
-                    nodes_tx.send(info).unwrap();
+                    let cart = Arc::new(data) as DepInfoCart;
+                    let node = Yoke::attach_to_cart(cart, |_| info);
+                    nodes_tx.send(Ok(node)).unwrap();
                 }
             }
             nodes_rx
         };
-        let mut graph = FxHashMap::default();
-        let order = match Order::new(nodes, &mut graph).collect::<Result<Vec<_>, _>>() {
-            Ok(order) => order,
-            Err(err) => {
-                panic!("{err}");
-            },
-        };
-        assert_eq!(
-            order,
-            ["bar.o", "foo-part1.o", "foo-part2.o", "foo.o", "main.o"].map(Into::<&r5::Utf8Path>::into)
-        );
+        let mut order = Order::<Infallible, _>::new(nodes).outputs();
+        for expect in ["bar.o", "foo-part1.o", "foo-part2.o", "foo.o", "main.o"] {
+            let Some(result) = order.next() else {
+                panic!("Output ended unexpectedly");
+            };
+            match result {
+                Err(err) => panic!("{err}"),
+                Ok(yoke) => assert_eq!(yoke.get().as_str(), expect),
+            }
+        }
     }
 
-    #[cfg(feature = "verify")]
     #[test]
-    fn test_vec() {
+    fn vec() {
         #[allow(clippy::useless_conversion)]
         let entries: [(&r5::Utf8Path, &str); 5] = [
             ("bar.ddi".into(), BAR),
@@ -387,48 +479,31 @@ mod test {
             ("foo.ddi".into(), FOO),
             ("main.ddi".into(), MAIN),
         ];
-        let mut paths = vec![];
-        let mut mmaps = FxHashMap::default();
         let mut nodes = vec![];
-        for (key, val) in entries {
-            mmaps.insert(key, val);
-            paths.push(key);
-        }
-        for path in paths {
-            let mmap = mmaps.get(path).unwrap();
+        for (path, data) in entries {
             let state = r5::parsers::State::default();
-            let mut stream = ParseStream::new(path, mmap.as_ref(), state);
+            let mut stream = ParseStream::new(path, data.as_ref(), state);
             let file = r5::parsers::dep_file(&mut stream).unwrap();
             for info in file.rules {
-                nodes.push(info);
+                let cart = Arc::new(data) as DepInfoCart;
+                let node = Yoke::attach_to_cart(cart, |_| info);
+                nodes.push(Ok(node));
             }
         }
-        let mut graph = FxHashMap::default();
-        let order = match Order::new(nodes.clone(), &mut graph).collect::<Result<Vec<_>, _>>() {
-            Ok(order) => order,
-            Err(err) => {
-                panic!("{err}");
-            },
-        };
-        assert_eq!(
-            order,
-            ["bar.o", "foo-part1.o", "foo-part2.o", "foo.o", "main.o"].map(Into::<&r5::Utf8Path>::into)
-        );
-        let mut graph = FxHashMap::default();
-        match Order::new(nodes, &mut graph)
-            .trace(order)
-            .collect::<Result<Vec<_>, _>>()
-        {
-            Ok(order) => order,
-            Err(err) => {
-                panic!("{err}");
-            },
-        };
+        let mut order = Order::<Infallible, _>::new(nodes).outputs();
+        for expect in ["bar.o", "foo-part1.o", "foo-part2.o", "foo.o", "main.o"] {
+            let Some(result) = order.next() else {
+                panic!("Output ended unexpectedly");
+            };
+            match result {
+                Err(err) => panic!("{err}"),
+                Ok(yoke) => assert_eq!(yoke.get().as_str(), expect),
+            }
+        }
     }
 
-    #[cfg(feature = "verify")]
     #[test]
-    fn test_vec_out_of_order() {
+    fn vec_out_of_order() {
         #[allow(clippy::useless_conversion)]
         let entries: [(&r5::Utf8Path, &str); 5] = [
             ("main.ddi".into(), MAIN),
@@ -437,108 +512,215 @@ mod test {
             ("foo-part1.ddi".into(), FOO_PART1),
             ("foo-part2.ddi".into(), FOO_PART2),
         ];
-        let mut paths = vec![];
-        let mut mmaps = FxHashMap::default();
         let mut nodes = vec![];
-        for (key, val) in entries {
-            mmaps.insert(key, val);
-            paths.push(key);
-        }
-        for path in paths {
-            let mmap = mmaps.get(path).unwrap();
+        for (path, data) in entries {
             let state = r5::parsers::State::default();
-            let mut stream = ParseStream::new(path, mmap.as_ref(), state);
+            let mut stream = ParseStream::new(path, data.as_ref(), state);
             let file = r5::parsers::dep_file(&mut stream).unwrap();
             for info in file.rules {
-                nodes.push(info);
+                let cart = Arc::new(data) as DepInfoCart;
+                let node = Yoke::attach_to_cart(cart, |_| info);
+                nodes.push(Ok(node));
             }
         }
-        let mut graph = FxHashMap::default();
-        let order = match Order::new(nodes.clone(), &mut graph).collect::<Result<Vec<_>, _>>() {
-            Ok(order) => order,
-            Err(err) => {
-                panic!("{err}");
-            },
-        };
-        assert_eq!(
-            order,
-            ["bar.o", "foo-part1.o", "foo-part2.o", "foo.o", "main.o"].map(Into::<&r5::Utf8Path>::into)
-        );
-        let mut graph = FxHashMap::default();
-        match Order::new(nodes, &mut graph)
-            .trace(order)
-            .collect::<Result<Vec<_>, _>>()
-        {
-            Ok(order) => order,
-            Err(err) => {
-                panic!("{err}");
-            },
-        };
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_vec_cycle() {
-        #[allow(clippy::useless_conversion)]
-        let entries: [(&r5::Utf8Path, &str); 2] = [("foo.ddi".into(), FOO_CYCLE), ("bar.ddi".into(), BAR_CYCLE)];
-        let mut paths = vec![];
-        let mut mmaps = FxHashMap::default();
-        let mut nodes = vec![];
-        for (key, val) in entries {
-            mmaps.insert(key, val);
-            paths.push(key);
-        }
-        for path in paths {
-            let mmap = mmaps.get(path).unwrap();
-            let state = r5::parsers::State::default();
-            let mut stream = ParseStream::new(path, mmap.as_ref(), state);
-            let file = r5::parsers::dep_file(&mut stream).unwrap();
-            for info in file.rules {
-                nodes.push(info);
+        let mut order = Order::<Infallible, _>::new(nodes).outputs();
+        for expect in ["bar.o", "foo-part1.o", "foo-part2.o", "foo.o", "main.o"] {
+            let Some(result) = order.next() else {
+                panic!("Output ended unexpectedly");
+            };
+            match result {
+                Err(err) => panic!("{err}"),
+                Ok(yoke) => assert_eq!(yoke.get().as_str(), expect),
             }
-        }
-        let mut graph = FxHashMap::default();
-        let order = match Order::new(nodes, &mut graph).collect::<Result<Vec<_>, _>>() {
-            Ok(order) => order,
-            Err(err) => {
-                panic!("{err}");
-            },
-        };
-        for item in order {
-            std::println!("{}", item);
         }
     }
 
     #[test]
     #[should_panic]
-    fn test_vec_incomplete() {
+    fn vec_cycle() {
         #[allow(clippy::useless_conversion)]
         let entries: [(&r5::Utf8Path, &str); 2] = [("foo.ddi".into(), FOO_CYCLE), ("bar.ddi".into(), BAR_CYCLE)];
-        let mut paths = vec![];
-        let mut mmaps = FxHashMap::default();
         let mut nodes = vec![];
-        for (key, val) in entries {
-            mmaps.insert(key, val);
-            paths.push(key);
-        }
-        for path in paths {
-            let mmap = mmaps.get(path).unwrap();
+        for (path, data) in entries {
             let state = r5::parsers::State::default();
-            let mut stream = ParseStream::new(path, mmap.as_ref(), state);
+            let mut stream = ParseStream::new(path, data.as_ref(), state);
             let file = r5::parsers::dep_file(&mut stream).unwrap();
             for info in file.rules {
-                nodes.push(info);
+                let cart = Arc::new(data) as DepInfoCart;
+                let node = Yoke::attach_to_cart(cart, |_| info);
+                nodes.push(Ok(node));
             }
         }
-        let mut graph = FxHashMap::default();
-        let order = match Order::new(nodes, &mut graph).collect::<Result<Vec<_>, _>>() {
-            Ok(order) => order,
-            Err(err) => {
-                panic!("{err}");
-            },
+        for result in Order::<Infallible, _>::new(nodes) {
+            match result {
+                Err(err) => {
+                    panic!("{err}");
+                },
+                Ok(yoke) => {
+                    let Some(output) = yoke.get().primary_output.as_ref() else {
+                        continue;
+                    };
+                    std::println!("{output}");
+                },
+            }
+        }
+    }
+
+    #[test]
+    #[should_panic]
+    fn vec_incomplete() {
+        #[allow(clippy::useless_conversion)]
+        let entries: [(&r5::Utf8Path, &str); 2] = [("foo.ddi".into(), FOO_CYCLE), ("bar.ddi".into(), BAR_CYCLE)];
+        let mut nodes = vec![];
+        for (path, data) in entries {
+            let state = r5::parsers::State::default();
+            let mut stream = ParseStream::new(path, data.as_ref(), state);
+            let file = r5::parsers::dep_file(&mut stream).unwrap();
+            for info in file.rules {
+                let cart = Arc::new(data) as DepInfoCart;
+                let node = Yoke::attach_to_cart(cart, |_| info);
+                nodes.push(Ok(node));
+            }
+        }
+        for result in Order::<Infallible, _>::new(nodes) {
+            match result {
+                Err(err) => {
+                    panic!("{err}");
+                },
+                Ok(yoke) => {
+                    let Some(output) = yoke.get().primary_output.as_ref() else {
+                        continue;
+                    };
+                    std::println!("{output}");
+                },
+            }
+        }
+    }
+
+    #[test]
+    fn trace() {
+        #[allow(clippy::useless_conversion)]
+        let entries: [(&r5::Utf8Path, &str); 5] = [
+            ("bar.ddi".into(), BAR),
+            ("foo-part1.ddi".into(), FOO_PART1),
+            ("foo-part2.ddi".into(), FOO_PART2),
+            ("foo.ddi".into(), FOO),
+            ("main.ddi".into(), MAIN),
+        ];
+        let nodes = {
+            let mut nodes = vec![];
+            for (path, data) in entries {
+                let state = r5::parsers::State::default();
+                let mut stream = ParseStream::new(path, data.as_ref(), state);
+                let file = r5::parsers::dep_file(&mut stream).unwrap();
+                for info in file.rules {
+                    let cart = Arc::new(data) as DepInfoCart;
+                    let node = Yoke::attach_to_cart(cart, |_| info);
+                    nodes.push(Ok(node));
+                }
+            }
+            nodes
         };
-        for item in order {
-            std::println!("{}", item);
+        let other = Order::<Infallible, _>::new(nodes);
+        let entries: [(&r5::Utf8Path, &str); 5] = [
+            ("main.ddi".into(), MAIN),
+            ("foo.ddi".into(), FOO),
+            ("bar.ddi".into(), BAR),
+            ("foo-part1.ddi".into(), FOO_PART1),
+            ("foo-part2.ddi".into(), FOO_PART2),
+        ];
+        let nodes = {
+            let mut nodes = vec![];
+            for (path, data) in entries {
+                let state = r5::parsers::State::default();
+                let mut stream = ParseStream::new(path, data.as_ref(), state);
+                let file = r5::parsers::dep_file(&mut stream).unwrap();
+                for info in file.rules {
+                    let cart = Arc::new(data) as DepInfoCart;
+                    let node = Yoke::attach_to_cart(cart, |_| info);
+                    nodes.push(Ok(node));
+                }
+            }
+            nodes
+        };
+        let other = other.collect::<Vec<_>>();
+        let order = Order::new(nodes).trace(other);
+        for result in order {
+            match result {
+                Err(err) => {
+                    panic!("{err}");
+                },
+                Ok(yoke) => {
+                    let Some(output) = yoke.get().primary_output.as_ref() else {
+                        continue;
+                    };
+                    std::println!("{output}");
+                },
+            }
+        }
+    }
+
+    #[test]
+    fn cpp_deps() {
+        std::env::set_var("OPT_LEVEL", "3");
+        std::env::set_var("TARGET", "x86_64-unknown-linux-gnu");
+        std::env::set_var("HOST", "x86_64-unknown-linux-gnu");
+        #[allow(clippy::useless_conversion)]
+        let entries: [(&r5::Utf8Path, &str); 5] = [
+            ("bar.ddi".into(), BAR),
+            ("foo-part1.ddi".into(), FOO_PART1),
+            ("foo-part2.ddi".into(), FOO_PART2),
+            ("foo.ddi".into(), FOO),
+            ("main.ddi".into(), MAIN),
+        ];
+        let cc = cc::Build::default();
+        let cpp_deps = CppDeps::new(&cc).unwrap();
+        let cpp_deps = cpp_deps.add_dep_bytes(entries);
+        for result in Order::new(cpp_deps.items()) {
+            match result {
+                Err(_err) => {
+                    panic!();
+                },
+                Ok(yoke) => {
+                    let Some(output) = yoke.get().primary_output.as_ref() else {
+                        continue;
+                    };
+                    std::println!("{output}");
+                },
+            }
+        }
+    }
+
+    #[test]
+    fn cpp_deps_with_sink() {
+        std::env::set_var("OPT_LEVEL", "3");
+        std::env::set_var("TARGET", "x86_64-unknown-linux-gnu");
+        std::env::set_var("HOST", "x86_64-unknown-linux-gnu");
+        #[allow(clippy::useless_conversion)]
+        let entries: [(&r5::Utf8Path, &str); 5] = [
+            ("bar.ddi".into(), BAR),
+            ("foo-part1.ddi".into(), FOO_PART1),
+            ("foo-part2.ddi".into(), FOO_PART2),
+            ("foo.ddi".into(), FOO),
+            ("main.ddi".into(), MAIN),
+        ];
+        let cc = cc::Build::default();
+        let cpp_deps = CppDeps::new(&cc).unwrap();
+        let cpp_deps = cpp_deps.add_dep_bytes(entries);
+        let cpp_deps = cpp_deps.items();
+        let sink = cpp_deps.sink();
+        for result in Order::new(cpp_deps) {
+            match result {
+                Err(_err) => {
+                    panic!();
+                },
+                Ok(yoke) => {
+                    let Some(output) = yoke.get().primary_output.as_ref() else {
+                        continue;
+                    };
+                    std::println!("{output}");
+                },
+            }
         }
     }
 }

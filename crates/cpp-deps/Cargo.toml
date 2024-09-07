@@ -14,24 +14,26 @@ keywords = ["C++", "p1689", "modules", "build", "dependencies"]
 # [lib]
 # crate-type = ["cdylib"]
 
-[[bench]]
-name = "bench"
-harness = false
+# [[bench]]
+# name = "bench"
+# harness = false
 
 [features]
-default = []
+default = ["async", "camino"]
+async = ["futures-core", "futures-sink", "flume/async"]
 camino = ["p1689/camino"]
-dashmap = ["dep:dashmap"]
 memchr = ["p1689/memchr"]
-oneshot = ["dep:oneshot"]
 std = []
 verify = []
 
 [dependencies]
-dashmap = { version = "5.5", optional = true, default-features = false }
-oneshot = { version = "0.1", optional = true, default-features = false, features = ["std"] }
-p1689 = { path = "../p1689", default-features = false, features = ["parsing", "std", "extra_traits"] }
-rustc-hash = "1.1.0"
+cc = { version = "1.0.99", optional = true, default-features = false, features = ["parallel"] }
+flume = { version = "0.11.0", default-features = false }
+futures-core = { version = "0.3.30", optional = true, default-features = false }
+futures-sink = { version = "0.3.30", optional = true, default-features = false }
+memmap2 = { version = "0.9", default-features = false }
+p1689 = { path = "../p1689", default-features = false, features = ["extra_traits", "parsing", "std", "yoke"] }
+yoke = "0.7"
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }

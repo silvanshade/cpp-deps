@@ -8,6 +8,8 @@ pub mod parsers;
 pub mod proptest;
 #[cfg(feature = "serde")]
 pub mod serde;
+#[cfg(feature = "yoke")]
+pub mod yoke;
 
 use alloc::{borrow::Cow, vec::Vec};
 use core::borrow::Borrow;

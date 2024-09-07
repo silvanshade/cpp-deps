@@ -62,8 +62,8 @@ pub mod r5 {
     #[cfg(feature = "parsing")]
     pub mod parsers {
         pub use crate::{
-            spec::r5::parsers::dep_file,
-            util::parsers::{ParseStream, State},
+            spec::r5::parsers::{dep_file, ErrorKind},
+            util::parsers::{Error, ParseStream, State},
         };
     }
 

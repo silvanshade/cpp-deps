@@ -8,6 +8,7 @@ use crate::{
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 #[derive(Clone, Copy, Debug)]
+#[non_exhaustive]
 pub enum ErrorKind {
     DepFile,
     DepInfo,
