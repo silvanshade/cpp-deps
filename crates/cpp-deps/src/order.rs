@@ -678,6 +678,7 @@ mod test {
         ];
         let cpp_deps = CppDepsBuilder::new().unwrap();
         let cpp_deps = cpp_deps.dep_bytes(entries);
+        let cpp_deps = cpp_deps.build();
         for result in Order::new(cpp_deps) {
             match result {
                 Err(_err) => {

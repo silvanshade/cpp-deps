@@ -30,7 +30,6 @@ impl Compiler {
         Ok(Self { tool, family, out_dir })
     }
 
-    #[inline]
     pub fn dep_file_ext(&self) -> &str {
         match self.family {
             CompilerFamily::Clang => "ddi",
@@ -39,7 +38,6 @@ impl Compiler {
         }
     }
 
-    #[inline]
     pub fn obj_file_ext(&self) -> &str {
         match self.family {
             CompilerFamily::Clang => "o",

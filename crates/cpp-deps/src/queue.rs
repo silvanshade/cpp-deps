@@ -11,13 +11,13 @@ use p1689::r5;
 use crate::{
     order::{Order, OrderError},
     worker::{CppDepsWorker, WorkerError},
-    CppDepsBuilder,
+    CppDeps,
     CppDepsItem,
     DepInfoYoke,
     ThreadError,
 };
 
-impl<P, B, I> CppDepsBuilder<P, B, I>
+impl<P, B, I> CppDeps<P, B, I>
 where
     P: AsRef<r5::Utf8Path> + Send + 'static,
     B: AsRef<[u8]> + Send + Sync + 'static,
@@ -29,7 +29,7 @@ where
     }
 }
 
-impl<P, B, I> IntoIterator for CppDepsBuilder<P, B, I>
+impl<P, B, I> IntoIterator for CppDeps<P, B, I>
 where
     P: AsRef<r5::Utf8Path> + Send + 'static,
     B: AsRef<[u8]> + Send + Sync + 'static,
@@ -119,7 +119,7 @@ impl CppDepsIter {
 }
 
 #[repr(transparent)]
-pub struct CppDepsIterSink<P, B>(flume::r#async::SendSink<'static, CppDepsItem<P, B>>)
+pub struct CppDepsIterSink<P, B>(pub(crate) flume::r#async::SendSink<'static, CppDepsItem<P, B>>)
 where
     P: 'static,
     B: 'static;

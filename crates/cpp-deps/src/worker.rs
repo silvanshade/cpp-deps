@@ -133,7 +133,6 @@ where
         Ok(())
     }
 
-    #[inline]
     fn send(&self, node: Result<DepInfoYoke, WorkerError>) -> Result<(), ThreadError> {
         self.info_tx.send(node).map_err(|_| ThreadError::SendError)
     }
