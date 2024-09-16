@@ -187,6 +187,7 @@ where
             for item in iter {
                 item_tx.send(item).map_err(|_| ThreadError::SendError)?;
             }
+            panic!("oops");
             Ok(())
         }
     }

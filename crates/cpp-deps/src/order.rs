@@ -662,9 +662,12 @@ mod test {
 
     #[test]
     fn cpp_deps() {
+        let out_dir = tempdir::TempDir::new("cpp_deps::order::test::cpp_deps").unwrap();
+        let out_dir = out_dir.path().as_os_str().to_str().unwrap();
         std::env::set_var("OPT_LEVEL", "3");
         std::env::set_var("TARGET", "x86_64-unknown-linux-gnu");
         std::env::set_var("HOST", "x86_64-unknown-linux-gnu");
+        std::env::set_var("OUT_DIR", out_dir);
         #[allow(clippy::useless_conversion)]
         let entries: [(&r5::Utf8Path, &str); 5] = [
             ("bar.ddi".into(), BAR),
@@ -691,11 +694,16 @@ mod test {
         }
     }
 
+    #[cfg(feature = "async")]
     #[test]
     fn cpp_deps_with_sink() {
+        use futures_util::sink::SinkExt;
+        let out_dir = tempdir::TempDir::new("cpp_deps::order::test::cpp_deps_with_sink").unwrap();
+        let out_dir = out_dir.path().as_os_str().to_str().unwrap();
         std::env::set_var("OPT_LEVEL", "3");
         std::env::set_var("TARGET", "x86_64-unknown-linux-gnu");
         std::env::set_var("HOST", "x86_64-unknown-linux-gnu");
+        std::env::set_var("OUT_DIR", out_dir);
         #[allow(clippy::useless_conversion)]
         let entries: [(&r5::Utf8Path, &str); 5] = [
             ("bar.ddi".into(), BAR),
@@ -708,7 +716,14 @@ mod test {
         let cpp_deps = CppDeps::new(&cc).unwrap();
         let cpp_deps = cpp_deps.add_dep_bytes(entries);
         let cpp_deps = cpp_deps.items();
-        let sink = cpp_deps.sink();
+        let mut sink = cpp_deps.sink().unwrap();
+        let handle = std::thread::spawn(|| {
+            futures_executor::block_on(async move {
+                let item = crate::CppDepsItem::DepData(("main.ddi".into(), MAIN));
+                sink.feed(item).await
+            })
+            .unwrap()
+        });
         for result in Order::new(cpp_deps) {
             match result {
                 Err(_err) => {
@@ -722,5 +737,6 @@ mod test {
                 },
             }
         }
+        handle.join().unwrap()
     }
 }

@@ -37,5 +37,8 @@ yoke = "0.7"
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
+futures-executor = "0.3.30"
+futures-util = { version = "0.3.30", features = ["sink"] }
 itertools = "0.13.0"
 proptest = "1.4.0"
+tempdir = "0.3.7"
