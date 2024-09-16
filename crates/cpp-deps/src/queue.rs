@@ -11,19 +11,34 @@ use p1689::r5;
 use crate::{
     order::{Order, OrderError},
     worker::{CppDepsWorker, WorkerError},
-    CppDeps,
+    CppDepsBuilder,
     CppDepsItem,
     DepInfoYoke,
     ThreadError,
 };
 
-impl<P, B, I> CppDeps<P, B, I>
+impl<P, B, I> CppDepsBuilder<P, B, I>
 where
     P: AsRef<r5::Utf8Path> + Send + 'static,
     B: AsRef<[u8]> + Send + Sync + 'static,
     I: Iterator<Item = CppDepsItem<P, B>> + Send + 'static,
 {
-    pub fn items(self) -> CppDepsIter<P, B> {
+    #[inline]
+    pub fn toposort(self) -> impl Iterator<Item = Result<DepInfoYoke, OrderError<CppDepsIterError>>> {
+        Order::new(self)
+    }
+}
+
+impl<P, B, I> IntoIterator for CppDepsBuilder<P, B, I>
+where
+    P: AsRef<r5::Utf8Path> + Send + 'static,
+    B: AsRef<[u8]> + Send + Sync + 'static,
+    I: Iterator<Item = CppDepsItem<P, B>> + Send + 'static,
+{
+    type IntoIter = CppDepsIter;
+    type Item = <CppDepsIter as Iterator>::Item;
+
+    fn into_iter(self) -> Self::IntoIter {
         let par = std::thread::available_parallelism()
             .map(NonZeroUsize::get)
             .unwrap_or(1)
@@ -44,16 +59,7 @@ where
                 &item_tx, self.iter,
             ))))
             .collect();
-        CppDepsIter {
-            item_tx: Some(item_tx),
-            info_rx,
-            threads,
-        }
-    }
-
-    #[inline]
-    pub fn toposort(self) -> impl Iterator<Item = Result<DepInfoYoke, OrderError<CppDepsIterError>>> {
-        Order::new(self.items())
+        CppDepsIter { info_rx, threads }
     }
 }
 
@@ -63,13 +69,12 @@ pub enum CppDepsIterError {
     WorkerError(WorkerError),
 }
 
-pub struct CppDepsIter<P, B> {
-    item_tx: Option<flume::Sender<CppDepsItem<P, B>>>,
+pub struct CppDepsIter {
     info_rx: flume::Receiver<Result<DepInfoYoke, WorkerError>>,
     threads: Vec<std::thread::JoinHandle<Result<(), ThreadError>>>,
 }
-impl<P, B> CppDepsIter<P, B> {}
-impl<P, B> Iterator for CppDepsIter<P, B> {
+impl CppDepsIter {}
+impl Iterator for CppDepsIter {
     type Item = Result<DepInfoYoke, CppDepsIterError>;
 
     #[inline]
@@ -82,7 +87,6 @@ impl<P, B> Iterator for CppDepsIter<P, B> {
             },
             // All items processed so try joining thread handles
             None => {
-                self.item_tx.take();
                 while let Some(thread) = self.threads.pop() {
                     if thread.join().is_err() {
                         return Some(Err(CppDepsIterError::ThreadJoinError));
@@ -93,17 +97,17 @@ impl<P, B> Iterator for CppDepsIter<P, B> {
         }
     }
 }
-impl<P, B> CppDepsIter<P, B> {
-    pub fn sink(&self) -> Option<CppDepsIterSink<P, B>>
-    where
-        P: 'static,
-        B: 'static,
-    {
-        self.item_tx
-            .upgrade()
-            .map(flume::Sender::into_sink)
-            .map(CppDepsIterSink)
-    }
+impl CppDepsIter {
+    // pub fn sink(&self) -> Option<CppDepsIterSink<P, B>>
+    // where
+    //     P: 'static,
+    //     B: 'static,
+    // {
+    //     self.item_tx
+    //         .upgrade()
+    //         .map(flume::Sender::into_sink)
+    //         .map(CppDepsIterSink)
+    // }
 
     pub fn into_stream(self) -> impl Stream<Item = Result<DepInfoYoke, WorkerError>> {
         self.info_rx.into_stream()

@@ -67,7 +67,7 @@ impl core::fmt::Display for CppDepsError {
 }
 impl std::error::Error for CppDepsError {}
 
-pub struct CppDeps<P = r5::Utf8PathBuf, B = Vec<u8>, I = core::iter::Empty<CppDepsItem<P, B>>> {
+pub struct CppDepsBuilder<P = r5::Utf8PathBuf, B = Vec<u8>, I = core::iter::Empty<CppDepsItem<P, B>>> {
     iter: I,
     size_hint: usize,
     #[cfg(feature = "cc")]
@@ -75,23 +75,23 @@ pub struct CppDeps<P = r5::Utf8PathBuf, B = Vec<u8>, I = core::iter::Empty<CppDe
     p: PhantomData<P>,
     b: PhantomData<B>,
 }
-impl<P, B> CppDeps<P, B> {
-    pub fn new(
-        #[cfg(feature = "cc")] cc: &crate::vendor::cc::Build,
-    ) -> Result<CppDeps<P, B, impl Iterator<Item = CppDepsItem<P, B>>>, CppDepsError> {
-        #[cfg(feature = "cc")]
-        let compiler = Arc::from(Compiler::new(cc)?);
+impl<P, B> CppDepsBuilder<P, B> {
+    pub fn new() -> Result<CppDepsBuilder<P, B, impl Iterator<Item = CppDepsItem<P, B>>>, CppDepsError> {
         Ok(Self {
             iter: core::iter::empty(),
             size_hint: 0,
             #[cfg(feature = "cc")]
-            compiler,
+            compiler: {
+                let build = cc::Build::default();
+                let compiler = Compiler::new(&build)?;
+                Arc::from(compiler)
+            },
             p: PhantomData,
             b: PhantomData,
         })
     }
 }
-impl<P, B, I> CppDeps<P, B, I>
+impl<P, B, I> CppDepsBuilder<P, B, I>
 where
     P: AsRef<r5::Utf8Path> + Send + 'static,
     B: AsRef<[u8]> + Send + Sync + 'static,
@@ -99,14 +99,22 @@ where
 {
     #[cfg(feature = "cc")]
     #[inline]
-    pub fn add_cpp_paths<Ps>(self, paths: Ps) -> CppDeps<P, B, impl Iterator<Item = CppDepsItem<P, B>>>
+    pub fn compiler(mut self, build: &crate::vendor::cc::Build) -> Result<Self, CppDepsError> {
+        let compiler = self::Compiler::new(build)?;
+        self.compiler = Arc::from(compiler);
+        Ok(self)
+    }
+
+    #[cfg(feature = "cc")]
+    #[inline]
+    pub fn cpp_paths<Ps>(self, paths: Ps) -> CppDepsBuilder<P, B, impl Iterator<Item = CppDepsItem<P, B>>>
     where
         Ps: IntoIterator<Item = P>,
     {
         let cpp_paths = paths.into_iter().map(CppDepsItem::CppPath);
         let (size_min, size_max) = cpp_paths.size_hint();
         let size_hint = size_max.unwrap_or(size_min);
-        CppDeps {
+        CppDepsBuilder {
             iter: self.iter.chain(cpp_paths),
             size_hint,
             #[cfg(feature = "cc")]
@@ -117,14 +125,14 @@ where
     }
 
     #[inline]
-    pub fn add_dep_paths<Ps>(self, paths: Ps) -> CppDeps<P, B, impl Iterator<Item = CppDepsItem<P, B>>>
+    pub fn dep_paths<Ps>(self, paths: Ps) -> CppDepsBuilder<P, B, impl Iterator<Item = CppDepsItem<P, B>>>
     where
         Ps: IntoIterator<Item = P>,
     {
         let dep_paths = paths.into_iter().map(CppDepsItem::DepPath);
         let (size_min, size_max) = dep_paths.size_hint();
         let size_hint = size_max.unwrap_or(size_min);
-        CppDeps {
+        CppDepsBuilder {
             iter: self.iter.chain(dep_paths),
             size_hint,
             #[cfg(feature = "cc")]
@@ -135,7 +143,7 @@ where
     }
 
     #[inline]
-    pub fn add_dep_bytes<Bs>(self, bytes: Bs) -> CppDeps<P, B, impl Iterator<Item = CppDepsItem<P, B>>>
+    pub fn dep_bytes<Bs>(self, bytes: Bs) -> CppDepsBuilder<P, B, impl Iterator<Item = CppDepsItem<P, B>>>
     where
         Bs: IntoIterator<Item = (P, B)>,
     {
@@ -143,7 +151,7 @@ where
         // FIXME: remove size
         let (size_min, size_max) = dep_bytes.size_hint();
         let size_hint = size_max.unwrap_or(size_min);
-        CppDeps {
+        CppDepsBuilder {
             iter: self.iter.chain(dep_bytes),
             size_hint,
             #[cfg(feature = "cc")]
@@ -154,7 +162,7 @@ where
     }
 
     #[inline]
-    pub fn add_dep_nodes<Is>(self, infos: Is) -> CppDeps<P, B, impl Iterator<Item = CppDepsItem<P, B>>>
+    pub fn dep_nodes<Is>(self, infos: Is) -> CppDepsBuilder<P, B, impl Iterator<Item = CppDepsItem<P, B>>>
     where
         Is: IntoIterator<Item = DepInfoYoke>,
     {
@@ -162,7 +170,7 @@ where
         // FIXME: remove size
         let (size_min, size_max) = dep_infos.size_hint();
         let size_hint = size_max.unwrap_or(size_min);
-        CppDeps {
+        CppDepsBuilder {
             iter: self.iter.chain(dep_infos),
             size_hint,
             #[cfg(feature = "cc")]
@@ -172,7 +180,7 @@ where
         }
     }
 }
-impl<P, B, I> CppDeps<P, B, I>
+impl<P, B, I> CppDepsBuilder<P, B, I>
 where
     P: AsRef<r5::Utf8Path> + Send + 'static,
     B: AsRef<[u8]> + Send + Sync + 'static,
