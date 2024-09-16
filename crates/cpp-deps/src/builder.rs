@@ -44,13 +44,15 @@ where
     I: Iterator<Item = CppDepsItem<P, B>> + Send + 'static,
 {
     pub fn build(self) -> CppDeps<P, B, impl Iterator<Item = CppDepsItem<P, B>>> {
-        let parallelism = self.parallelism.get();
-        let (item_tx, item_rx) = flume::bounded(parallelism);
+        let capacity = self.parallelism.get();
+        let (item_tx, item_rx) = flume::bounded(capacity);
         CppDeps {
             iter: self.iter,
             size_hint: self.size_hint,
             item_tx,
             item_rx,
+            capacity,
+            #[cfg(feature = "cc")]
             compiler: self.compiler,
             p: PhantomData,
             b: PhantomData,

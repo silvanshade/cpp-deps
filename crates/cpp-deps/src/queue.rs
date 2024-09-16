@@ -39,16 +39,12 @@ where
     type Item = <CppDepsIter as Iterator>::Item;
 
     fn into_iter(self) -> Self::IntoIter {
-        let par = std::thread::available_parallelism()
-            .map(NonZeroUsize::get)
-            .unwrap_or(1)
-            .min(self.size_hint);
-        let (item_tx, item_rx) = flume::bounded(par);
+        let capacity = self.capacity;
         let (info_tx, info_rx) = flume::unbounded();
-        let threads = (0 .. par)
+        let threads = (0 .. capacity)
             .map(|_| {
                 let worker = CppDepsWorker::new(
-                    &item_rx,
+                    &self.item_rx,
                     &info_tx,
                     #[cfg(feature = "cc")]
                     self.compiler.clone(),
@@ -56,17 +52,24 @@ where
                 std::thread::spawn(worker.run())
             })
             .chain(core::iter::once(std::thread::spawn(Self::feed_loop(
-                &item_tx, self.iter,
+                &self.item_tx,
+                self.iter,
             ))))
             .collect();
         CppDepsIter { info_rx, threads }
     }
 }
 
+#[derive(Debug)]
 #[non_exhaustive]
 pub enum CppDepsIterError {
     ThreadJoinError,
     WorkerError(WorkerError),
+}
+impl core::fmt::Display for CppDepsIterError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        core::fmt::Debug::fmt(self, f)
+    }
 }
 
 pub struct CppDepsIter {
@@ -98,17 +101,6 @@ impl Iterator for CppDepsIter {
     }
 }
 impl CppDepsIter {
-    // pub fn sink(&self) -> Option<CppDepsIterSink<P, B>>
-    // where
-    //     P: 'static,
-    //     B: 'static,
-    // {
-    //     self.item_tx
-    //         .upgrade()
-    //         .map(flume::Sender::into_sink)
-    //         .map(CppDepsIterSink)
-    // }
-
     pub fn into_stream(self) -> impl Stream<Item = Result<DepInfoYoke, WorkerError>> {
         self.info_rx.into_stream()
     }
@@ -118,6 +110,7 @@ impl CppDepsIter {
     }
 }
 
+#[derive(Clone)]
 #[repr(transparent)]
 pub struct CppDepsIterSink<P, B>(pub(crate) flume::r#async::SendSink<'static, CppDepsItem<P, B>>)
 where

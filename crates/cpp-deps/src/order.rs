@@ -669,7 +669,7 @@ mod test {
         std::env::set_var("HOST", "x86_64-unknown-linux-gnu");
         std::env::set_var("OUT_DIR", out_dir);
         #[allow(clippy::useless_conversion)]
-        let entries: [(&r5::Utf8Path, &str); 5] = [
+        let entries: Vec<(&r5::Utf8Path, &str)> = vec![
             ("bar.ddi".into(), BAR),
             ("foo-part1.ddi".into(), FOO_PART1),
             ("foo-part2.ddi".into(), FOO_PART2),
@@ -678,11 +678,12 @@ mod test {
         ];
         let cpp_deps = CppDepsBuilder::new().unwrap();
         let cpp_deps = cpp_deps.dep_bytes(entries);
+        let cpp_deps = cpp_deps.parallelism(1).unwrap();
         let cpp_deps = cpp_deps.build();
         for result in Order::new(cpp_deps) {
             match result {
-                Err(_err) => {
-                    panic!();
+                Err(err) => {
+                    panic!("{err}");
                 },
                 Ok(yoke) => {
                     let Some(output) = yoke.get().primary_output.as_ref() else {
@@ -694,49 +695,63 @@ mod test {
         }
     }
 
-    // #[cfg(feature = "async")]
-    // #[test]
-    // fn cpp_deps_with_sink() {
-    //     use futures_util::sink::SinkExt;
-    //     let out_dir = tempdir::TempDir::new("cpp_deps::order::test::cpp_deps_with_sink").unwrap();
-    //     let out_dir = out_dir.path().as_os_str().to_str().unwrap();
-    //     std::env::set_var("OPT_LEVEL", "3");
-    //     std::env::set_var("TARGET", "x86_64-unknown-linux-gnu");
-    //     std::env::set_var("HOST", "x86_64-unknown-linux-gnu");
-    //     std::env::set_var("OUT_DIR", out_dir);
-    //     #[allow(clippy::useless_conversion)]
-    //     let entries: [(&r5::Utf8Path, &str); 5] = [
-    //         ("bar.ddi".into(), BAR),
-    //         ("foo-part1.ddi".into(), FOO_PART1),
-    //         ("foo-part2.ddi".into(), FOO_PART2),
-    //         ("foo.ddi".into(), FOO),
-    //         ("main.ddi".into(), MAIN),
-    //     ];
-    //     let cc = cc::Build::default();
-    //     let cpp_deps = CppDeps::new(&cc).unwrap();
-    //     let cpp_deps = cpp_deps.add_dep_bytes(entries);
-    //     let cpp_deps = cpp_deps.items();
-    //     let mut sink = cpp_deps.sink().unwrap();
-    //     let handle = std::thread::spawn(|| {
-    //         futures_executor::block_on(async move {
-    //             let item = crate::CppDepsItem::DepData(("main.ddi".into(), MAIN));
-    //             sink.feed(item).await
-    //         })
-    //         .unwrap()
-    //     });
-    //     for result in Order::new(cpp_deps) {
-    //         match result {
-    //             Err(_err) => {
-    //                 panic!();
-    //             },
-    //             Ok(yoke) => {
-    //                 let Some(output) = yoke.get().primary_output.as_ref() else {
-    //                     continue;
-    //                 };
-    //                 std::println!("{output}");
-    //             },
-    //         }
-    //     }
-    //     handle.join().unwrap()
-    // }
+    #[cfg(feature = "async")]
+    #[test]
+    fn cpp_deps_with_sink() {
+        use futures_util::sink::SinkExt;
+        let out_dir = tempdir::TempDir::new("cpp_deps::order::test::cpp_deps_with_sink").unwrap();
+        let out_dir = out_dir.path().as_os_str().to_str().unwrap();
+        std::env::set_var("OPT_LEVEL", "3");
+        std::env::set_var("TARGET", "x86_64-unknown-linux-gnu");
+        std::env::set_var("HOST", "x86_64-unknown-linux-gnu");
+        std::env::set_var("OUT_DIR", out_dir);
+        #[allow(clippy::useless_conversion)]
+        let entries: Vec<(&r5::Utf8Path, &str)> = vec![("main.ddi".into(), MAIN)];
+        let cpp_deps = CppDepsBuilder::new().unwrap();
+        let cpp_deps = cpp_deps.dep_bytes(entries);
+        let cpp_deps = cpp_deps.build();
+        let handle0 = std::thread::spawn({
+            let mut sink = cpp_deps.sink();
+            move || {
+                futures_executor::block_on(async move {
+                    let entries: Vec<(&r5::Utf8Path, &str)> =
+                        vec![("foo-part2.ddi".into(), FOO_PART2), ("foo.ddi".into(), FOO)];
+                    for entry in entries {
+                        let item = crate::CppDepsItem::DepData(entry);
+                        sink.send(item).await.unwrap();
+                    }
+                    sink.flush().await.unwrap()
+                })
+            }
+        });
+        let handle1 = std::thread::spawn({
+            let mut sink = cpp_deps.sink();
+            move || {
+                futures_executor::block_on(async move {
+                    let entries: Vec<(&r5::Utf8Path, &str)> =
+                        vec![("bar.ddi".into(), BAR), ("foo-part1.ddi".into(), FOO_PART1)];
+                    for entry in entries {
+                        let item = crate::CppDepsItem::DepData(entry);
+                        sink.send(item).await.unwrap();
+                    }
+                    sink.flush().await.unwrap()
+                })
+            }
+        });
+        for result in Order::new(cpp_deps) {
+            match result {
+                Err(err) => {
+                    panic!("{err}");
+                },
+                Ok(yoke) => {
+                    let Some(output) = yoke.get().primary_output.as_ref() else {
+                        continue;
+                    };
+                    std::println!("{output}");
+                },
+            }
+        }
+        handle0.join().unwrap();
+        handle1.join().unwrap();
+    }
 }

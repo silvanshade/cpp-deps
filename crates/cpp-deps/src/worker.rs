@@ -23,6 +23,26 @@ pub enum WorkerError {
     },
     ParseError(ParseErrorYoke),
 }
+impl core::fmt::Debug for WorkerError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::CompileError { path, error } => f
+                .debug_struct("CompileError")
+                .field("path", path)
+                .field("error", error)
+                .finish(),
+            Self::ParseError(yoke) => {
+                let err = yoke.get();
+                f.debug_tuple("ParseError").field(err).finish()
+            },
+        }
+    }
+}
+impl core::fmt::Display for WorkerError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        core::fmt::Debug::fmt(self, f)
+    }
+}
 
 pub struct CppDepsWorker<P, B> {
     item_rx: flume::Receiver<CppDepsItem<P, B>>,

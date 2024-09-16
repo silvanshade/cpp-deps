@@ -20,7 +20,7 @@ use yoke::Yoke;
 type DepInfoCart = Arc<dyn AsRef<[u8]> + Send + Sync + 'static>;
 type DepInfoYoke = Yoke<r5::DepInfo<'static>, DepInfoCart>;
 
-use core::marker::PhantomData;
+use core::{marker::PhantomData, num::NonZeroUsize};
 
 use crate::compiler::Compiler;
 pub use crate::{
@@ -87,6 +87,7 @@ pub struct CppDeps<P = r5::Utf8PathBuf, B = Vec<u8>, I = core::iter::Empty<CppDe
     size_hint: usize,
     item_tx: flume::Sender<CppDepsItem<P, B>>,
     item_rx: flume::Receiver<CppDepsItem<P, B>>,
+    capacity: usize,
     #[cfg(feature = "cc")]
     compiler: Arc<Compiler>,
     p: PhantomData<P>,
@@ -107,7 +108,6 @@ where
             for item in iter {
                 item_tx.send(item).map_err(|_| ThreadError::SendError)?;
             }
-            panic!("oops");
             Ok(())
         }
     }
