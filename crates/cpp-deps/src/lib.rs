@@ -20,7 +20,7 @@ use yoke::Yoke;
 type DepInfoCart = Arc<dyn AsRef<[u8]> + Send + Sync + 'static>;
 type DepInfoYoke = Yoke<r5::DepInfo<'static>, DepInfoCart>;
 
-use core::{marker::PhantomData, num::NonZeroUsize};
+use core::marker::PhantomData;
 
 use crate::compiler::Compiler;
 pub use crate::{
