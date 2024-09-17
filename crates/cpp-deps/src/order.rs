@@ -517,12 +517,8 @@ mod test {
     #[test]
     fn cpp_deps() {
         let out_dir = tempdir::TempDir::new("cpp_deps::order::test::cpp_deps").unwrap();
-        let out_dir = out_dir.path().as_os_str().to_str().unwrap();
-        std::env::set_var("OPT_LEVEL", "3");
-        std::env::set_var("TARGET", "x86_64-unknown-linux-gnu");
-        std::env::set_var("HOST", "x86_64-unknown-linux-gnu");
-        std::env::set_var("OUT_DIR", out_dir);
-        #[allow(clippy::useless_conversion)]
+        let out_dir = out_dir.path();
+        crate::testing::setup::build_script_env(out_dir).unwrap();
         let entries = [
             crate::testing::corpus::entry::bar(),
             crate::testing::corpus::entry::foo_part1(),
@@ -561,8 +557,7 @@ mod test {
         std::env::set_var("TARGET", "x86_64-unknown-linux-gnu");
         std::env::set_var("HOST", "x86_64-unknown-linux-gnu");
         std::env::set_var("OUT_DIR", out_dir);
-        #[allow(clippy::useless_conversion)]
-        let entries = vec![crate::testing::corpus::entry::main()]
+        let entries = [crate::testing::corpus::entry::main()]
             .into_iter()
             .map(|entry| (entry.path, entry.json));
         let cpp_deps = CppDepsBuilder::new().unwrap();
@@ -572,13 +567,13 @@ mod test {
             let mut sink = cpp_deps.sink();
             move || {
                 futures_executor::block_on(async move {
-                    let entries = [
+                    for entry in [
                         crate::testing::corpus::entry::foo_part2(),
                         crate::testing::corpus::entry::foo(),
                     ]
                     .into_iter()
-                    .map(|entry| (entry.path, entry.json));
-                    for entry in entries {
+                    .map(|entry| (entry.path, entry.json))
+                    {
                         let item = crate::CppDepsItem::DepData(entry);
                         sink.send(item).await.unwrap();
                     }
@@ -590,13 +585,13 @@ mod test {
             let mut sink = cpp_deps.sink();
             move || {
                 futures_executor::block_on(async move {
-                    let entries = [
+                    for entry in [
                         crate::testing::corpus::entry::bar(),
                         crate::testing::corpus::entry::foo_part1(),
                     ]
                     .into_iter()
-                    .map(|entry| (entry.path, entry.json));
-                    for entry in entries {
+                    .map(|entry| (entry.path, entry.json))
+                    {
                         let item = crate::CppDepsItem::DepData(entry);
                         sink.send(item).await.unwrap();
                     }

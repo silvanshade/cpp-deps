@@ -194,3 +194,16 @@ pub mod corpus {
         }
     }
 }
+
+pub mod setup {
+    use std::path::Path;
+
+    pub fn build_script_env(out_dir: &Path) -> Option<()> {
+        let out_dir = out_dir.as_os_str().to_str()?;
+        std::env::set_var("OPT_LEVEL", "3");
+        std::env::set_var("TARGET", "x86_64-unknown-linux-gnu");
+        std::env::set_var("HOST", "x86_64-unknown-linux-gnu");
+        std::env::set_var("OUT_DIR", out_dir);
+        Some(())
+    }
+}
