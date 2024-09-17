@@ -13,6 +13,9 @@ mod queue;
 mod vendor;
 mod worker;
 
+#[cfg(test)]
+mod testing;
+
 use std::sync::Arc;
 
 use p1689::r5;

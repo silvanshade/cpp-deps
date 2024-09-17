@@ -276,172 +276,15 @@ mod test {
     use super::*;
     use crate::CppDepsBuilder;
 
-    const BAR: &str = r#"
-        {
-        "rules": [
-        {
-        "primary-output": "bar.o",
-        "provides": [
-        {
-        "logical-name": "bar",
-        "is-interface": true
-        }
-        ],
-        "requires": [
-        ]
-        }
-        ],
-        "version": 0,
-        "revision": 0
-        }
-    "#;
-
-    const FOO_PART1: &str = r#"
-        {
-        "rules": [
-        {
-        "primary-output": "foo-part1.o",
-        "provides": [
-        {
-        "logical-name": "foo:part1",
-        "is-interface": true
-        }
-        ],
-        "requires": [
-        ]
-        }
-        ],
-        "version": 0,
-        "revision": 0
-        }
-    "#;
-
-    const FOO_PART2: &str = r#"
-        {
-        "rules": [
-        {
-        "primary-output": "foo-part2.o",
-        "provides": [
-        {
-        "logical-name": "foo:part2",
-        "is-interface": true
-        }
-        ],
-        "requires": [
-        ]
-        }
-        ],
-        "version": 0,
-        "revision": 0
-        }
-    "#;
-
-    const FOO: &str = r#"
-        {
-        "rules": [
-        {
-        "primary-output": "foo.o",
-        "provides": [
-        {
-        "logical-name": "foo",
-        "is-interface": true
-        }
-        ],
-        "requires": [
-        {
-        "logical-name": "bar"
-        }
-        ,
-        {
-        "logical-name": "foo:part2"
-        }
-        ,
-        {
-        "logical-name": "foo:part1"
-        }
-        ]
-        }
-        ],
-        "version": 0,
-        "revision": 0
-        }
-    "#;
-
-    const MAIN: &str = r#"
-        {
-        "rules": [
-        {
-        "primary-output": "main.o",
-        "requires": [
-        {
-        "logical-name": "foo"
-        },
-        {
-        "logical-name": "bar"
-        }
-        ]
-        }
-        ],
-        "version": 0,
-        "revision": 0
-        }
-    "#;
-
-    const FOO_CYCLE: &str = r#"
-        {
-        "rules": [
-        {
-        "primary-output": "foo.o",
-        "provides": [
-        {
-        "logical-name": "foo",
-        "is-interface": true
-        }
-        ],
-        "requires": [
-        {
-        "logical-name": "bar"
-        }
-        ]
-        }
-        ],
-        "version": 0,
-        "revision": 0
-        }
-    "#;
-
-    const BAR_CYCLE: &str = r#"
-        {
-        "rules": [
-        {
-        "primary-output": "bar.o",
-        "provides": [
-        {
-        "logical-name": "bar",
-        "is-interface": true
-        }
-        ],
-        "requires": [
-        {
-        "logical-name": "foo"
-        }
-        ]
-        }
-        ],
-        "version": 0,
-        "revision": 0
-        }
-    "#;
-
     #[test]
     fn channel() {
         #[allow(clippy::useless_conversion)]
         let entries: [(&r5::Utf8Path, &str); 5] = [
-            ("bar.ddi".into(), BAR),
-            ("foo-part1.ddi".into(), FOO_PART1),
-            ("foo-part2.ddi".into(), FOO_PART2),
-            ("foo.ddi".into(), FOO),
-            ("main.ddi".into(), MAIN),
+            crate::testing::corpus::item::bar(),
+            crate::testing::corpus::item::foo_part1(),
+            crate::testing::corpus::item::foo_part2(),
+            crate::testing::corpus::item::foo(),
+            crate::testing::corpus::item::main(),
         ];
         let nodes = {
             let (nodes_tx, nodes_rx) = std::sync::mpsc::channel();
@@ -473,11 +316,11 @@ mod test {
     fn vec() {
         #[allow(clippy::useless_conversion)]
         let entries: [(&r5::Utf8Path, &str); 5] = [
-            ("bar.ddi".into(), BAR),
-            ("foo-part1.ddi".into(), FOO_PART1),
-            ("foo-part2.ddi".into(), FOO_PART2),
-            ("foo.ddi".into(), FOO),
-            ("main.ddi".into(), MAIN),
+            crate::testing::corpus::item::bar(),
+            crate::testing::corpus::item::foo_part1(),
+            crate::testing::corpus::item::foo_part2(),
+            crate::testing::corpus::item::foo(),
+            crate::testing::corpus::item::main(),
         ];
         let mut nodes = vec![];
         for (path, data) in entries {
@@ -506,11 +349,11 @@ mod test {
     fn vec_out_of_order() {
         #[allow(clippy::useless_conversion)]
         let entries: [(&r5::Utf8Path, &str); 5] = [
-            ("main.ddi".into(), MAIN),
-            ("foo.ddi".into(), FOO),
-            ("bar.ddi".into(), BAR),
-            ("foo-part1.ddi".into(), FOO_PART1),
-            ("foo-part2.ddi".into(), FOO_PART2),
+            crate::testing::corpus::item::bar(),
+            crate::testing::corpus::item::foo_part1(),
+            crate::testing::corpus::item::foo_part2(),
+            crate::testing::corpus::item::foo(),
+            crate::testing::corpus::item::main(),
         ];
         let mut nodes = vec![];
         for (path, data) in entries {
@@ -539,7 +382,10 @@ mod test {
     #[should_panic]
     fn vec_cycle() {
         #[allow(clippy::useless_conversion)]
-        let entries: [(&r5::Utf8Path, &str); 2] = [("foo.ddi".into(), FOO_CYCLE), ("bar.ddi".into(), BAR_CYCLE)];
+        let entries: [(&r5::Utf8Path, &str); 2] = [
+            crate::testing::corpus::item::foo_cycle(),
+            crate::testing::corpus::item::bar_cycle(),
+        ];
         let mut nodes = vec![];
         for (path, data) in entries {
             let state = r5::parsers::State::default();
@@ -570,7 +416,10 @@ mod test {
     #[should_panic]
     fn vec_incomplete() {
         #[allow(clippy::useless_conversion)]
-        let entries: [(&r5::Utf8Path, &str); 2] = [("foo.ddi".into(), FOO_CYCLE), ("bar.ddi".into(), BAR_CYCLE)];
+        let entries: [(&r5::Utf8Path, &str); 2] = [
+            crate::testing::corpus::item::foo_cycle(),
+            crate::testing::corpus::item::bar_cycle(),
+        ];
         let mut nodes = vec![];
         for (path, data) in entries {
             let state = r5::parsers::State::default();
@@ -601,11 +450,11 @@ mod test {
     fn trace() {
         #[allow(clippy::useless_conversion)]
         let entries: [(&r5::Utf8Path, &str); 5] = [
-            ("bar.ddi".into(), BAR),
-            ("foo-part1.ddi".into(), FOO_PART1),
-            ("foo-part2.ddi".into(), FOO_PART2),
-            ("foo.ddi".into(), FOO),
-            ("main.ddi".into(), MAIN),
+            crate::testing::corpus::item::bar(),
+            crate::testing::corpus::item::foo_part1(),
+            crate::testing::corpus::item::foo_part2(),
+            crate::testing::corpus::item::foo(),
+            crate::testing::corpus::item::main(),
         ];
         let nodes = {
             let mut nodes = vec![];
@@ -623,11 +472,11 @@ mod test {
         };
         let other = Order::<Infallible, _>::new(nodes);
         let entries: [(&r5::Utf8Path, &str); 5] = [
-            ("main.ddi".into(), MAIN),
-            ("foo.ddi".into(), FOO),
-            ("bar.ddi".into(), BAR),
-            ("foo-part1.ddi".into(), FOO_PART1),
-            ("foo-part2.ddi".into(), FOO_PART2),
+            crate::testing::corpus::item::main(),
+            crate::testing::corpus::item::foo(),
+            crate::testing::corpus::item::bar(),
+            crate::testing::corpus::item::foo_part1(),
+            crate::testing::corpus::item::foo_part2(),
         ];
         let nodes = {
             let mut nodes = vec![];
@@ -670,11 +519,11 @@ mod test {
         std::env::set_var("OUT_DIR", out_dir);
         #[allow(clippy::useless_conversion)]
         let entries: Vec<(&r5::Utf8Path, &str)> = vec![
-            ("bar.ddi".into(), BAR),
-            ("foo-part1.ddi".into(), FOO_PART1),
-            ("foo-part2.ddi".into(), FOO_PART2),
-            ("foo.ddi".into(), FOO),
-            ("main.ddi".into(), MAIN),
+            crate::testing::corpus::item::bar(),
+            crate::testing::corpus::item::foo_part1(),
+            crate::testing::corpus::item::foo_part2(),
+            crate::testing::corpus::item::foo(),
+            crate::testing::corpus::item::main(),
         ];
         let cpp_deps = CppDepsBuilder::new().unwrap();
         let cpp_deps = cpp_deps.dep_bytes(entries);
@@ -706,7 +555,7 @@ mod test {
         std::env::set_var("HOST", "x86_64-unknown-linux-gnu");
         std::env::set_var("OUT_DIR", out_dir);
         #[allow(clippy::useless_conversion)]
-        let entries: Vec<(&r5::Utf8Path, &str)> = vec![("main.ddi".into(), MAIN)];
+        let entries: Vec<(&r5::Utf8Path, &str)> = vec![crate::testing::corpus::item::main()];
         let cpp_deps = CppDepsBuilder::new().unwrap();
         let cpp_deps = cpp_deps.dep_bytes(entries);
         let cpp_deps = cpp_deps.build();
@@ -714,8 +563,10 @@ mod test {
             let mut sink = cpp_deps.sink();
             move || {
                 futures_executor::block_on(async move {
-                    let entries: Vec<(&r5::Utf8Path, &str)> =
-                        vec![("foo-part2.ddi".into(), FOO_PART2), ("foo.ddi".into(), FOO)];
+                    let entries: Vec<(&r5::Utf8Path, &str)> = vec![
+                        crate::testing::corpus::item::foo_part2(),
+                        crate::testing::corpus::item::foo(),
+                    ];
                     for entry in entries {
                         let item = crate::CppDepsItem::DepData(entry);
                         sink.send(item).await.unwrap();
@@ -728,8 +579,10 @@ mod test {
             let mut sink = cpp_deps.sink();
             move || {
                 futures_executor::block_on(async move {
-                    let entries: Vec<(&r5::Utf8Path, &str)> =
-                        vec![("bar.ddi".into(), BAR), ("foo-part1.ddi".into(), FOO_PART1)];
+                    let entries: Vec<(&r5::Utf8Path, &str)> = vec![
+                        crate::testing::corpus::item::bar(),
+                        crate::testing::corpus::item::foo_part1(),
+                    ];
                     for entry in entries {
                         let item = crate::CppDepsItem::DepData(entry);
                         sink.send(item).await.unwrap();
