@@ -52,7 +52,11 @@ where
             ));
         }
         threads.push(std::thread::spawn(Self::fanout_items(self.iter, &self.item_tx)));
-        CppDepsIter { info_rx, threads }
+        CppDepsIter {
+            size_hint: self.size_hint,
+            info_rx,
+            threads,
+        }
     }
 }
 
@@ -69,6 +73,7 @@ impl core::fmt::Display for CppDepsIterError {
 }
 
 pub struct CppDepsIter {
+    size_hint: usize,
     info_rx: flume::Receiver<Result<DepInfoYoke, WorkerError>>,
     threads: Vec<std::thread::JoinHandle<Result<(), ThreadError>>>,
 }
@@ -94,6 +99,13 @@ impl Iterator for CppDepsIter {
                 None
             },
         }
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let min = self.size_hint;
+        let max = self.info_rx.is_disconnected().then_some(min); // If there are no sinks, we know the exact size
+        (min, max)
     }
 }
 impl CppDepsIter {

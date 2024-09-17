@@ -4,6 +4,7 @@
 // 3. simplify exposed types (hide yoke, arcs, etc).
 // 4. consolidate errors
 // 5. test feature combinations: (w/o async, w/o cc)
+// 6. re-distribute tests across modules (don't put everything under `crate::order`)
 
 mod builder;
 mod compiler;
