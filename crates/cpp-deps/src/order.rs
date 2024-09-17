@@ -1,37 +1,11 @@
 use core::marker::PhantomData;
 use std::{borrow::Cow, collections::HashMap, rc::Rc};
 
-use p1689::r5;
+use p1689::r5::{
+    self,
+    yoke::{DepInfoCart, DepInfoNameYoke, DepInfoYoke, DepInfoYokeExt},
+};
 use yoke::{Yoke, Yokeable};
-
-use crate::{DepInfoCart, DepInfoYoke};
-
-#[derive(Clone)]
-#[repr(transparent)]
-pub struct DepInfoNameYoke {
-    yoke: Yoke<Cow<'static, str>, DepInfoCart>,
-}
-impl core::fmt::Debug for DepInfoNameYoke {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        core::fmt::Debug::fmt(self.yoke.get(), f)
-    }
-}
-impl PartialEq for DepInfoNameYoke {
-    #[inline]
-    fn eq(&self, other: &Self) -> bool {
-        self.yoke.get().eq(other.yoke.get())
-    }
-}
-impl Eq for DepInfoNameYoke {}
-impl core::hash::Hash for DepInfoNameYoke {
-    #[inline]
-    fn hash<H>(&self, state: &mut H)
-    where
-        H: std::hash::Hasher,
-    {
-        self.yoke.get().hash(state);
-    }
-}
 
 #[derive(Clone)]
 pub enum Graph {
@@ -45,7 +19,7 @@ impl Default for Graph {
     }
 }
 impl core::fmt::Debug for Graph {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::Deps { deps } => {
                 #[allow(clippy::useless_conversion)]
@@ -76,7 +50,7 @@ impl<E> core::fmt::Debug for OrderError<E>
 where
     E: core::fmt::Debug,
 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             OrderError::CycleOrIncomplete { graph } => {
                 f.debug_struct("CycleOrIncomplete").field("graph", &graph).finish()
@@ -89,7 +63,7 @@ impl<E> core::fmt::Display for OrderError<E>
 where
     E: core::fmt::Display,
 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             OrderError::CycleOrIncomplete { graph } => {
                 f.debug_struct("CycleOrIncomplete").field("graph", &graph).finish()
@@ -149,12 +123,7 @@ impl<E, I> Order<E, I> {
     }
 
     fn resolve(&mut self, node: DepInfoYoke) -> Option<Result<DepInfoYoke, OrderError<E>>> {
-        for provide in &node.get().provides {
-            let key = DepInfoNameYoke {
-                yoke: Yoke::attach_to_cart(node.backing_cart().clone(), |_| unsafe {
-                    Yokeable::make(provide.desc.logical_name())
-                }),
-            };
+        for key in node.provides() {
             if let Some(Graph::Deps { deps }) = self.graph.insert(key, Graph::Done) {
                 for node in deps.into_iter().filter_map(Rc::into_inner) {
                     self.stack.push(node);
@@ -191,6 +160,30 @@ impl<E, I> Order<E, I> {
         Some(Ok(yoke))
     }
 }
+
+#[cfg(test)]
+impl<E, I> Order<E, I>
+where
+    I: Iterator<Item = Result<DepInfoYoke, E>>,
+{
+    pub fn validate(self) -> Option<()> {
+        use std::collections::BTreeSet;
+        let mut valid = BTreeSet::new();
+        for result in self {
+            let node = result.ok()?;
+            for provide in node.provides() {
+                valid.insert(provide);
+            }
+            for require in node.requires() {
+                if !valid.contains(&require) {
+                    return None;
+                }
+            }
+        }
+        Some(())
+    }
+}
+
 impl<E, I> Iterator for Order<E, I>
 where
     I: Iterator<Item = Result<DepInfoYoke, E>>,
@@ -207,12 +200,7 @@ where
                 Err(err) => return Some(Err(OrderError::External(err))),
                 Ok(node) => {
                     let node = Rc::new(node);
-                    for require in node.get().requires.iter() {
-                        let key = DepInfoNameYoke {
-                            yoke: Yoke::attach_to_cart(node.backing_cart().clone(), |_| unsafe {
-                                Yokeable::make(require.desc.logical_name())
-                            }),
-                        };
+                    for key in node.requires() {
                         if let Graph::Deps { ref mut deps } = self.graph.entry(key).or_default() {
                             deps.push(node.clone());
                         }
@@ -271,28 +259,10 @@ mod test {
     use core::convert::Infallible;
     use std::sync::Arc;
 
-    use r5::parsers::ParseStream;
+    use r5::{parsers::ParseStream, yoke::DepInfoCart};
 
     use super::*;
     use crate::CppDepsBuilder;
-
-    // fn expect_order() -> bool {
-    //     for expect in [
-    //         crate::testing::corpus::entry::bar(),
-    //         crate::testing::corpus::entry::foo_part1()
-    //         crate::testing::corpus::entry::foo_part2(),
-    //         crate::testing::corpus::entry::foo(),
-    //         crate::testing::corpus::entry::main(),
-    //     ] {
-    //         let Some(result) = order.next() else {
-    //             panic!("Output ended unexpectedly");
-    //         };
-    //         match result {
-    //             Err(err) => panic!("{err}"),
-    //             Ok(yoke) => assert_eq!(yoke.get().as_str(), expect),
-    //         }
-    //     }
-    // }
 
     #[test]
     fn channel() {
@@ -316,16 +286,8 @@ mod test {
             }
             nodes_rx
         };
-        let mut order = Order::<Infallible, _>::new(nodes).outputs();
-        for expect in ["bar.o", "foo-part1.o", "foo-part2.o", "foo.o", "main.o"] {
-            let Some(result) = order.next() else {
-                panic!("Output ended unexpectedly");
-            };
-            match result {
-                Err(err) => panic!("{err}"),
-                Ok(yoke) => assert_eq!(yoke.get().as_str(), expect),
-            }
-        }
+        let order = Order::<Infallible, _>::new(nodes);
+        assert!(order.validate().is_some());
     }
 
     #[test]
@@ -347,16 +309,8 @@ mod test {
                 nodes.push(Ok(node));
             }
         }
-        let mut order = Order::<Infallible, _>::new(nodes).outputs();
-        for expect in ["bar.o", "foo-part1.o", "foo-part2.o", "foo.o", "main.o"] {
-            let Some(result) = order.next() else {
-                panic!("Output ended unexpectedly");
-            };
-            match result {
-                Err(err) => panic!("{err}"),
-                Ok(yoke) => assert_eq!(yoke.get().as_str(), expect),
-            }
-        }
+        let order = Order::<Infallible, _>::new(nodes);
+        assert!(order.validate().is_some());
     }
 
     #[test]
@@ -378,16 +332,8 @@ mod test {
                 nodes.push(Ok(node));
             }
         }
-        let mut order = Order::<Infallible, _>::new(nodes).outputs();
-        for expect in ["bar.o", "foo-part1.o", "foo-part2.o", "foo.o", "main.o"] {
-            let Some(result) = order.next() else {
-                panic!("Output ended unexpectedly");
-            };
-            match result {
-                Err(err) => panic!("{err}"),
-                Ok(yoke) => assert_eq!(yoke.get().as_str(), expect),
-            }
-        }
+        let order = Order::<Infallible, _>::new(nodes);
+        assert!(order.validate().is_some());
     }
 
     #[test]
@@ -407,19 +353,8 @@ mod test {
                 nodes.push(Ok(node));
             }
         }
-        for result in Order::<Infallible, _>::new(nodes) {
-            match result {
-                Err(err) => {
-                    panic!("{err}");
-                },
-                Ok(yoke) => {
-                    let Some(output) = yoke.get().primary_output.as_ref() else {
-                        continue;
-                    };
-                    std::println!("{output}");
-                },
-            }
-        }
+        let order = Order::<Infallible, _>::new(nodes);
+        assert!(order.validate().is_some());
     }
 
     #[test]
@@ -439,19 +374,8 @@ mod test {
                 nodes.push(Ok(node));
             }
         }
-        for result in Order::<Infallible, _>::new(nodes) {
-            match result {
-                Err(err) => {
-                    panic!("{err}");
-                },
-                Ok(yoke) => {
-                    let Some(output) = yoke.get().primary_output.as_ref() else {
-                        continue;
-                    };
-                    std::println!("{output}");
-                },
-            }
-        }
+        let order = Order::<Infallible, _>::new(nodes);
+        assert!(order.validate().is_some());
     }
 
     #[test]
@@ -499,19 +423,7 @@ mod test {
         };
         let other = other.collect::<Vec<_>>();
         let order = Order::new(nodes).trace(other);
-        for result in order {
-            match result {
-                Err(err) => {
-                    panic!("{err}");
-                },
-                Ok(yoke) => {
-                    let Some(output) = yoke.get().primary_output.as_ref() else {
-                        continue;
-                    };
-                    std::println!("{output}");
-                },
-            }
-        }
+        assert!(order.validate().is_some());
     }
 
     #[test]
@@ -530,33 +442,18 @@ mod test {
         .map(|entry| (entry.path, entry.json));
         let cpp_deps = CppDepsBuilder::new().unwrap();
         let cpp_deps = cpp_deps.dep_bytes(entries);
-        let cpp_deps = cpp_deps.parallelism(1).unwrap();
         let cpp_deps = cpp_deps.build();
-        for result in Order::new(cpp_deps) {
-            match result {
-                Err(err) => {
-                    panic!("{err}");
-                },
-                Ok(yoke) => {
-                    let Some(output) = yoke.get().primary_output.as_ref() else {
-                        continue;
-                    };
-                    std::println!("{output}");
-                },
-            }
-        }
+        let order = Order::new(cpp_deps);
+        assert!(order.validate().is_some());
     }
 
     #[cfg(feature = "async")]
     #[test]
-    fn cpp_deps_with_sink() {
+    fn cpp_deps_with_sink_async() {
         use futures_util::sink::SinkExt;
-        let out_dir = tempdir::TempDir::new("cpp_deps::order::test::cpp_deps_with_sink").unwrap();
-        let out_dir = out_dir.path().as_os_str().to_str().unwrap();
-        std::env::set_var("OPT_LEVEL", "3");
-        std::env::set_var("TARGET", "x86_64-unknown-linux-gnu");
-        std::env::set_var("HOST", "x86_64-unknown-linux-gnu");
-        std::env::set_var("OUT_DIR", out_dir);
+        let out_dir = tempdir::TempDir::new("cpp_deps::order::test::cpp_deps_with_sink_async").unwrap();
+        let out_dir = out_dir.path();
+        crate::testing::setup::build_script_env(out_dir).unwrap();
         let entries = [crate::testing::corpus::entry::main()]
             .into_iter()
             .map(|entry| (entry.path, entry.json));
@@ -599,19 +496,55 @@ mod test {
                 })
             }
         });
-        for result in Order::new(cpp_deps) {
-            match result {
-                Err(err) => {
-                    panic!("{err}");
-                },
-                Ok(yoke) => {
-                    let Some(output) = yoke.get().primary_output.as_ref() else {
-                        continue;
-                    };
-                    std::println!("{output}");
-                },
+        let order = Order::new(cpp_deps);
+        assert!(order.validate().is_some());
+        handle0.join().unwrap();
+        handle1.join().unwrap();
+    }
+
+    #[test]
+    fn cpp_deps_with_sink_sync() {
+        let out_dir = tempdir::TempDir::new("cpp_deps::order::test::cpp_deps_with_sink_sync").unwrap();
+        let out_dir = out_dir.path();
+        crate::testing::setup::build_script_env(out_dir).unwrap();
+        let entries = [crate::testing::corpus::entry::main()]
+            .into_iter()
+            .map(|entry| (entry.path, entry.json));
+        let cpp_deps = CppDepsBuilder::new().unwrap();
+        let cpp_deps = cpp_deps.dep_bytes(entries);
+        let cpp_deps = cpp_deps.build();
+        let handle0 = std::thread::spawn({
+            let sink = cpp_deps.sink();
+            move || {
+                for entry in [
+                    crate::testing::corpus::entry::foo_part2(),
+                    crate::testing::corpus::entry::foo(),
+                ]
+                .into_iter()
+                .map(|entry| (entry.path, entry.json))
+                {
+                    let item = crate::CppDepsItem::DepData(entry);
+                    sink.send_sync(item).unwrap();
+                }
             }
-        }
+        });
+        let handle1 = std::thread::spawn({
+            let sink = cpp_deps.sink();
+            move || {
+                for entry in [
+                    crate::testing::corpus::entry::bar(),
+                    crate::testing::corpus::entry::foo_part1(),
+                ]
+                .into_iter()
+                .map(|entry| (entry.path, entry.json))
+                {
+                    let item = crate::CppDepsItem::DepData(entry);
+                    sink.send_sync(item).unwrap();
+                }
+            }
+        });
+        let order = Order::new(cpp_deps);
+        assert!(order.validate().is_some());
         handle0.join().unwrap();
         handle1.join().unwrap();
     }

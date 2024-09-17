@@ -68,4 +68,11 @@ pub mod r5 {
     }
 
     pub use crate::vendor::camino::{Utf8Path, Utf8PathBuf};
+
+    #[cfg(feature = "yoke")]
+    pub mod yoke {
+        pub use crate::spec::r5::yoke::{DepInfoCart, DepInfoYokeExt};
+        #[allow(clippy::module_name_repetitions)]
+        pub use crate::spec::r5::yoke::{DepInfoNameYoke, DepInfoYoke};
+    }
 }

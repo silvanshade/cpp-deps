@@ -16,15 +16,10 @@ mod worker;
 #[cfg(test)]
 mod testing;
 
+use core::marker::PhantomData;
 use std::sync::Arc;
 
 use p1689::r5;
-use yoke::Yoke;
-
-type DepInfoCart = Arc<dyn AsRef<[u8]> + Send + Sync + 'static>;
-type DepInfoYoke = Yoke<r5::DepInfo<'static>, DepInfoCart>;
-
-use core::marker::PhantomData;
 
 use crate::compiler::Compiler;
 pub use crate::{
@@ -57,7 +52,7 @@ impl From<std::env::VarError> for CppDepsError {
     }
 }
 impl core::fmt::Debug for CppDepsError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::Compiler(error) => core::fmt::Debug::fmt(&error, f),
             Self::IoError(error) => core::fmt::Debug::fmt(&error, f),
@@ -67,7 +62,7 @@ impl core::fmt::Debug for CppDepsError {
     }
 }
 impl core::fmt::Display for CppDepsError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::Compiler(error) => core::fmt::Display::fmt(&error, f),
             Self::IoError(error) => core::fmt::Display::fmt(&error, f),
@@ -83,7 +78,7 @@ pub enum CppDepsItem<P = r5::Utf8PathBuf, B = Vec<u8>> {
     CppPath(P),
     DepPath(P),
     DepData((P, B)),
-    DepInfo(DepInfoYoke),
+    DepInfo(r5::yoke::DepInfoYoke),
 }
 
 pub struct CppDeps<P = r5::Utf8PathBuf, B = Vec<u8>, I = core::iter::Empty<CppDepsItem<P, B>>> {

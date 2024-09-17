@@ -48,7 +48,7 @@ impl Compiler {
 }
 
 impl core::fmt::Debug for CompilerError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "CompilerError::")?;
         match self {
             CompilerError::UnknownFamily => write!(f, "UnknownFamily")?,
@@ -62,7 +62,7 @@ impl core::fmt::Debug for CompilerError {
     }
 }
 impl core::fmt::Display for CompilerError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Could not detect compiler family")
     }
 }

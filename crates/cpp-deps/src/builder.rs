@@ -1,9 +1,9 @@
 use core::{marker::PhantomData, num::NonZeroUsize};
 use std::sync::Arc;
 
-use p1689::r5;
+use p1689::r5::{self, yoke::DepInfoYoke};
 
-use crate::{Compiler, CppDeps, CppDepsError, CppDepsItem, DepInfoYoke};
+use crate::{Compiler, CppDeps, CppDepsError, CppDepsItem};
 
 pub struct CppDepsBuilder<P = r5::Utf8PathBuf, B = Vec<u8>, I = core::iter::Empty<CppDepsItem<P, B>>> {
     iter: I,

@@ -5,14 +5,13 @@ use core::{
 
 use futures_core::Stream;
 use futures_sink::Sink;
-use p1689::r5;
+use p1689::r5::{self, yoke::DepInfoYoke};
 
 use crate::{
     order::{Order, OrderError},
     worker::{CppDepsWorker, WorkerError},
     CppDeps,
     CppDepsItem,
-    DepInfoYoke,
     ThreadError,
 };
 
@@ -67,7 +66,7 @@ pub enum CppDepsIterError {
     WorkerError(WorkerError),
 }
 impl core::fmt::Display for CppDepsIterError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         core::fmt::Debug::fmt(self, f)
     }
 }
@@ -124,46 +123,63 @@ pub struct CppDepsIterSink<P, B>(pub(crate) flume::r#async::SendSink<'static, Cp
 where
     P: 'static,
     B: 'static;
+impl<P, B> CppDepsIterSink<P, B> {
+    pub fn send_sync(&self, item: CppDepsItem<P, B>) -> Result<(), CppDepsIterSinkError<P, B>> {
+        self.0
+            .sender()
+            .send(item)
+            .map_err(|err| CppDepsIterSinkError(Box::new(err)))
+    }
+}
+
 impl<P, B> Sink<CppDepsItem<P, B>> for CppDepsIterSink<P, B> {
     type Error = CppDepsIterSinkError<P, B>;
 
     #[inline]
     fn poll_ready(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         let this = &mut self.0;
-        Pin::new(this).poll_ready(cx).map_err(CppDepsIterSinkError)
+        Pin::new(this)
+            .poll_ready(cx)
+            .map_err(|err| CppDepsIterSinkError(Box::new(err)))
     }
 
     #[inline]
     fn start_send(mut self: Pin<&mut Self>, item: CppDepsItem<P, B>) -> Result<(), Self::Error> {
         let this = &mut self.0;
-        Pin::new(this).start_send(item).map_err(CppDepsIterSinkError)
+        Pin::new(this)
+            .start_send(item)
+            .map_err(|err| CppDepsIterSinkError(Box::new(err)))
     }
 
     #[inline]
     fn poll_flush(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         let this = &mut self.0;
-        Pin::new(this).poll_flush(cx).map_err(CppDepsIterSinkError)
+        Pin::new(this)
+            .poll_flush(cx)
+            .map_err(|err| CppDepsIterSinkError(Box::new(err)))
     }
 
     #[inline]
     fn poll_close(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         let this = &mut self.0;
-        Pin::new(this).poll_close(cx).map_err(CppDepsIterSinkError)
+        Pin::new(this)
+            .poll_close(cx)
+            .map_err(|err| CppDepsIterSinkError(Box::new(err)))
     }
 }
 
-pub struct CppDepsIterSinkError<P, B>(flume::SendError<CppDepsItem<P, B>>);
+pub struct CppDepsIterSinkError<P, B>(Box<flume::SendError<CppDepsItem<P, B>>>);
 
 impl<P, B> core::fmt::Debug for CppDepsIterSinkError<P, B> {
     #[inline]
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         core::fmt::Debug::fmt(&self.0, f)
     }
 }
 
 impl<P, B> core::fmt::Display for CppDepsIterSinkError<P, B> {
     #[inline]
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         core::fmt::Display::fmt(&self.0, f)
     }
 }

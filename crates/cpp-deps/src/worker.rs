@@ -2,10 +2,13 @@ use core::ops::Deref;
 use std::{fs::File, sync::Arc};
 
 use memmap2::Mmap;
-use p1689::r5;
+use p1689::r5::{
+    self,
+    yoke::{DepInfoCart, DepInfoYoke},
+};
 use yoke::{Yoke, Yokeable};
 
-use crate::{compiler::Compiler, CppDepsItem, DepInfoCart, DepInfoYoke, ThreadError};
+use crate::{compiler::Compiler, CppDepsItem, ThreadError};
 
 type ParseErrorYoke = Yoke<p1689::r5::parsers::Error<'static, p1689::r5::parsers::ErrorKind>, DepInfoCart>;
 
@@ -24,7 +27,7 @@ pub enum WorkerError {
     ParseError(ParseErrorYoke),
 }
 impl core::fmt::Debug for WorkerError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::CompileError { path, error } => f
                 .debug_struct("CompileError")
@@ -39,7 +42,7 @@ impl core::fmt::Debug for WorkerError {
     }
 }
 impl core::fmt::Display for WorkerError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         core::fmt::Debug::fmt(self, f)
     }
 }
