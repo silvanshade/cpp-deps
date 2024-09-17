@@ -276,24 +276,40 @@ mod test {
     use super::*;
     use crate::CppDepsBuilder;
 
+    // fn expect_order() -> bool {
+    //     for expect in [
+    //         crate::testing::corpus::entry::bar(),
+    //         crate::testing::corpus::entry::foo_part1()
+    //         crate::testing::corpus::entry::foo_part2(),
+    //         crate::testing::corpus::entry::foo(),
+    //         crate::testing::corpus::entry::main(),
+    //     ] {
+    //         let Some(result) = order.next() else {
+    //             panic!("Output ended unexpectedly");
+    //         };
+    //         match result {
+    //             Err(err) => panic!("{err}"),
+    //             Ok(yoke) => assert_eq!(yoke.get().as_str(), expect),
+    //         }
+    //     }
+    // }
+
     #[test]
     fn channel() {
-        #[allow(clippy::useless_conversion)]
-        let entries: [(&r5::Utf8Path, &str); 5] = [
-            crate::testing::corpus::item::bar(),
-            crate::testing::corpus::item::foo_part1(),
-            crate::testing::corpus::item::foo_part2(),
-            crate::testing::corpus::item::foo(),
-            crate::testing::corpus::item::main(),
-        ];
         let nodes = {
             let (nodes_tx, nodes_rx) = std::sync::mpsc::channel();
-            for (path, data) in entries {
+            for entry in [
+                crate::testing::corpus::entry::bar(),
+                crate::testing::corpus::entry::foo_part1(),
+                crate::testing::corpus::entry::foo_part2(),
+                crate::testing::corpus::entry::foo(),
+                crate::testing::corpus::entry::main(),
+            ] {
                 let state = r5::parsers::State::default();
-                let mut stream = ParseStream::new(path, data.as_ref(), state);
+                let mut stream = ParseStream::new(entry.path, entry.json.as_ref(), state);
                 let file = r5::parsers::dep_file(&mut stream).unwrap();
                 for info in file.rules {
-                    let cart = Arc::new(data) as DepInfoCart;
+                    let cart = Arc::new(entry.json) as DepInfoCart;
                     let node = Yoke::attach_to_cart(cart, |_| info);
                     nodes_tx.send(Ok(node)).unwrap();
                 }
@@ -314,21 +330,19 @@ mod test {
 
     #[test]
     fn vec() {
-        #[allow(clippy::useless_conversion)]
-        let entries: [(&r5::Utf8Path, &str); 5] = [
-            crate::testing::corpus::item::bar(),
-            crate::testing::corpus::item::foo_part1(),
-            crate::testing::corpus::item::foo_part2(),
-            crate::testing::corpus::item::foo(),
-            crate::testing::corpus::item::main(),
-        ];
         let mut nodes = vec![];
-        for (path, data) in entries {
+        for entry in [
+            crate::testing::corpus::entry::bar(),
+            crate::testing::corpus::entry::foo_part1(),
+            crate::testing::corpus::entry::foo_part2(),
+            crate::testing::corpus::entry::foo(),
+            crate::testing::corpus::entry::main(),
+        ] {
             let state = r5::parsers::State::default();
-            let mut stream = ParseStream::new(path, data.as_ref(), state);
+            let mut stream = ParseStream::new(entry.path, entry.json.as_ref(), state);
             let file = r5::parsers::dep_file(&mut stream).unwrap();
             for info in file.rules {
-                let cart = Arc::new(data) as DepInfoCart;
+                let cart = Arc::new(entry.json) as DepInfoCart;
                 let node = Yoke::attach_to_cart(cart, |_| info);
                 nodes.push(Ok(node));
             }
@@ -347,21 +361,19 @@ mod test {
 
     #[test]
     fn vec_out_of_order() {
-        #[allow(clippy::useless_conversion)]
-        let entries: [(&r5::Utf8Path, &str); 5] = [
-            crate::testing::corpus::item::bar(),
-            crate::testing::corpus::item::foo_part1(),
-            crate::testing::corpus::item::foo_part2(),
-            crate::testing::corpus::item::foo(),
-            crate::testing::corpus::item::main(),
-        ];
         let mut nodes = vec![];
-        for (path, data) in entries {
+        for entry in [
+            crate::testing::corpus::entry::bar(),
+            crate::testing::corpus::entry::foo_part1(),
+            crate::testing::corpus::entry::foo_part2(),
+            crate::testing::corpus::entry::foo(),
+            crate::testing::corpus::entry::main(),
+        ] {
             let state = r5::parsers::State::default();
-            let mut stream = ParseStream::new(path, data.as_ref(), state);
+            let mut stream = ParseStream::new(entry.path, entry.json.as_ref(), state);
             let file = r5::parsers::dep_file(&mut stream).unwrap();
             for info in file.rules {
-                let cart = Arc::new(data) as DepInfoCart;
+                let cart = Arc::new(entry.json) as DepInfoCart;
                 let node = Yoke::attach_to_cart(cart, |_| info);
                 nodes.push(Ok(node));
             }
@@ -381,18 +393,16 @@ mod test {
     #[test]
     #[should_panic]
     fn vec_cycle() {
-        #[allow(clippy::useless_conversion)]
-        let entries: [(&r5::Utf8Path, &str); 2] = [
-            crate::testing::corpus::item::foo_cycle(),
-            crate::testing::corpus::item::bar_cycle(),
-        ];
         let mut nodes = vec![];
-        for (path, data) in entries {
+        for entry in [
+            crate::testing::corpus::entry::foo_cycle(),
+            crate::testing::corpus::entry::bar_cycle(),
+        ] {
             let state = r5::parsers::State::default();
-            let mut stream = ParseStream::new(path, data.as_ref(), state);
+            let mut stream = ParseStream::new(entry.path, entry.json.as_ref(), state);
             let file = r5::parsers::dep_file(&mut stream).unwrap();
             for info in file.rules {
-                let cart = Arc::new(data) as DepInfoCart;
+                let cart = Arc::new(entry.json) as DepInfoCart;
                 let node = Yoke::attach_to_cart(cart, |_| info);
                 nodes.push(Ok(node));
             }
@@ -415,18 +425,16 @@ mod test {
     #[test]
     #[should_panic]
     fn vec_incomplete() {
-        #[allow(clippy::useless_conversion)]
-        let entries: [(&r5::Utf8Path, &str); 2] = [
-            crate::testing::corpus::item::foo_cycle(),
-            crate::testing::corpus::item::bar_cycle(),
-        ];
         let mut nodes = vec![];
-        for (path, data) in entries {
+        for entry in [
+            crate::testing::corpus::entry::foo_cycle(),
+            crate::testing::corpus::entry::bar_cycle(),
+        ] {
             let state = r5::parsers::State::default();
-            let mut stream = ParseStream::new(path, data.as_ref(), state);
+            let mut stream = ParseStream::new(entry.path, entry.json.as_ref(), state);
             let file = r5::parsers::dep_file(&mut stream).unwrap();
             for info in file.rules {
-                let cart = Arc::new(data) as DepInfoCart;
+                let cart = Arc::new(entry.json) as DepInfoCart;
                 let node = Yoke::attach_to_cart(cart, |_| info);
                 nodes.push(Ok(node));
             }
@@ -448,22 +456,20 @@ mod test {
 
     #[test]
     fn trace() {
-        #[allow(clippy::useless_conversion)]
-        let entries: [(&r5::Utf8Path, &str); 5] = [
-            crate::testing::corpus::item::bar(),
-            crate::testing::corpus::item::foo_part1(),
-            crate::testing::corpus::item::foo_part2(),
-            crate::testing::corpus::item::foo(),
-            crate::testing::corpus::item::main(),
-        ];
         let nodes = {
             let mut nodes = vec![];
-            for (path, data) in entries {
+            for entry in [
+                crate::testing::corpus::entry::bar(),
+                crate::testing::corpus::entry::foo_part1(),
+                crate::testing::corpus::entry::foo_part2(),
+                crate::testing::corpus::entry::foo(),
+                crate::testing::corpus::entry::main(),
+            ] {
                 let state = r5::parsers::State::default();
-                let mut stream = ParseStream::new(path, data.as_ref(), state);
+                let mut stream = ParseStream::new(entry.path, entry.json.as_ref(), state);
                 let file = r5::parsers::dep_file(&mut stream).unwrap();
                 for info in file.rules {
-                    let cart = Arc::new(data) as DepInfoCart;
+                    let cart = Arc::new(entry.json) as DepInfoCart;
                     let node = Yoke::attach_to_cart(cart, |_| info);
                     nodes.push(Ok(node));
                 }
@@ -471,21 +477,20 @@ mod test {
             nodes
         };
         let other = Order::<Infallible, _>::new(nodes);
-        let entries: [(&r5::Utf8Path, &str); 5] = [
-            crate::testing::corpus::item::main(),
-            crate::testing::corpus::item::foo(),
-            crate::testing::corpus::item::bar(),
-            crate::testing::corpus::item::foo_part1(),
-            crate::testing::corpus::item::foo_part2(),
-        ];
         let nodes = {
             let mut nodes = vec![];
-            for (path, data) in entries {
+            for entry in [
+                crate::testing::corpus::entry::main(),
+                crate::testing::corpus::entry::foo(),
+                crate::testing::corpus::entry::bar(),
+                crate::testing::corpus::entry::foo_part1(),
+                crate::testing::corpus::entry::foo_part2(),
+            ] {
                 let state = r5::parsers::State::default();
-                let mut stream = ParseStream::new(path, data.as_ref(), state);
+                let mut stream = ParseStream::new(entry.path, entry.json.as_ref(), state);
                 let file = r5::parsers::dep_file(&mut stream).unwrap();
                 for info in file.rules {
-                    let cart = Arc::new(data) as DepInfoCart;
+                    let cart = Arc::new(entry.json) as DepInfoCart;
                     let node = Yoke::attach_to_cart(cart, |_| info);
                     nodes.push(Ok(node));
                 }
@@ -518,13 +523,15 @@ mod test {
         std::env::set_var("HOST", "x86_64-unknown-linux-gnu");
         std::env::set_var("OUT_DIR", out_dir);
         #[allow(clippy::useless_conversion)]
-        let entries: Vec<(&r5::Utf8Path, &str)> = vec![
-            crate::testing::corpus::item::bar(),
-            crate::testing::corpus::item::foo_part1(),
-            crate::testing::corpus::item::foo_part2(),
-            crate::testing::corpus::item::foo(),
-            crate::testing::corpus::item::main(),
-        ];
+        let entries = [
+            crate::testing::corpus::entry::bar(),
+            crate::testing::corpus::entry::foo_part1(),
+            crate::testing::corpus::entry::foo_part2(),
+            crate::testing::corpus::entry::foo(),
+            crate::testing::corpus::entry::main(),
+        ]
+        .into_iter()
+        .map(|entry| (entry.path, entry.json));
         let cpp_deps = CppDepsBuilder::new().unwrap();
         let cpp_deps = cpp_deps.dep_bytes(entries);
         let cpp_deps = cpp_deps.parallelism(1).unwrap();
@@ -555,7 +562,9 @@ mod test {
         std::env::set_var("HOST", "x86_64-unknown-linux-gnu");
         std::env::set_var("OUT_DIR", out_dir);
         #[allow(clippy::useless_conversion)]
-        let entries: Vec<(&r5::Utf8Path, &str)> = vec![crate::testing::corpus::item::main()];
+        let entries = vec![crate::testing::corpus::entry::main()]
+            .into_iter()
+            .map(|entry| (entry.path, entry.json));
         let cpp_deps = CppDepsBuilder::new().unwrap();
         let cpp_deps = cpp_deps.dep_bytes(entries);
         let cpp_deps = cpp_deps.build();
@@ -563,10 +572,12 @@ mod test {
             let mut sink = cpp_deps.sink();
             move || {
                 futures_executor::block_on(async move {
-                    let entries: Vec<(&r5::Utf8Path, &str)> = vec![
-                        crate::testing::corpus::item::foo_part2(),
-                        crate::testing::corpus::item::foo(),
-                    ];
+                    let entries = [
+                        crate::testing::corpus::entry::foo_part2(),
+                        crate::testing::corpus::entry::foo(),
+                    ]
+                    .into_iter()
+                    .map(|entry| (entry.path, entry.json));
                     for entry in entries {
                         let item = crate::CppDepsItem::DepData(entry);
                         sink.send(item).await.unwrap();
@@ -579,10 +590,12 @@ mod test {
             let mut sink = cpp_deps.sink();
             move || {
                 futures_executor::block_on(async move {
-                    let entries: Vec<(&r5::Utf8Path, &str)> = vec![
-                        crate::testing::corpus::item::bar(),
-                        crate::testing::corpus::item::foo_part1(),
-                    ];
+                    let entries = [
+                        crate::testing::corpus::entry::bar(),
+                        crate::testing::corpus::entry::foo_part1(),
+                    ]
+                    .into_iter()
+                    .map(|entry| (entry.path, entry.json));
                     for entry in entries {
                         let item = crate::CppDepsItem::DepData(entry);
                         sink.send(item).await.unwrap();
