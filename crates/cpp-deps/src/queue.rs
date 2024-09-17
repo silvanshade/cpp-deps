@@ -38,23 +38,20 @@ where
     type Item = <CppDepsIter as Iterator>::Item;
 
     fn into_iter(self) -> Self::IntoIter {
-        let capacity = self.capacity;
         let (info_tx, info_rx) = flume::unbounded();
-        let threads = (0 .. capacity)
-            .map(|_| {
-                let worker = CppDepsWorker::new(
+        let mut threads = Vec::with_capacity(self.capacity + 1);
+        for _ in 0 .. self.capacity {
+            threads.push(std::thread::spawn(
+                CppDepsWorker::new(
                     &self.item_rx,
                     &info_tx,
                     #[cfg(feature = "cc")]
                     self.compiler.clone(),
-                );
-                std::thread::spawn(worker.run())
-            })
-            .chain(core::iter::once(std::thread::spawn(Self::feed_loop(
-                &self.item_tx,
-                self.iter,
-            ))))
-            .collect();
+                )
+                .run(),
+            ));
+        }
+        threads.push(std::thread::spawn(Self::fanout_items(self.iter, &self.item_tx)));
         CppDepsIter { info_rx, threads }
     }
 }

@@ -99,9 +99,9 @@ where
     B: AsRef<[u8]> + Send + Sync + 'static,
     I: Iterator<Item = CppDepsItem<P, B>> + Send + 'static,
 {
-    fn feed_loop(
-        item_tx: &flume::Sender<CppDepsItem<P, B>>,
+    fn fanout_items(
         iter: I,
+        item_tx: &flume::Sender<CppDepsItem<P, B>>,
     ) -> impl FnOnce() -> Result<(), ThreadError> + Send + 'static {
         let item_tx = item_tx.clone();
         move || {
