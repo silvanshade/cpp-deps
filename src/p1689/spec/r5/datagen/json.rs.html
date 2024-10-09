@@ -16,6 +16,7 @@
 <a href="#16" id="16">16</a>
 <a href="#17" id="17">17</a>
 <a href="#18" id="18">18</a>
+<a href="#19" id="19">19</a>
 </pre></div><pre class="rust"><code><span class="attr">#![cfg(not(tarpaulin_include))]
 
 </span><span class="kw">use </span>alloc::{string::String, vec::Vec};
@@ -25,13 +26,14 @@
 <span class="kw">use </span><span class="kw">super</span>::BoxResult;
 <span class="kw">use </span><span class="kw">crate</span>::spec::r5;
 
-<span class="kw">pub fn </span>pretty_print_unindented(dep_file: r5::DepFile&lt;<span class="lifetime">'_</span>&gt;) -&gt; BoxResult&lt;String&gt; {
+<span class="attr">#[allow(clippy::missing_errors_doc)]
+</span><span class="kw">pub fn </span>pretty_print_unindented(dep_file: <span class="kw-2">&amp;</span>r5::DepFile&lt;<span class="lifetime">'_</span>&gt;) -&gt; BoxResult&lt;String&gt; {
     <span class="kw">let </span>value = <span class="kw-2">&amp;</span>dep_file;
     <span class="kw">let </span><span class="kw-2">mut </span>bytes = Vec::with_capacity(<span class="number">1024</span>);
     <span class="kw">let </span>formatter = serde_json::ser::PrettyFormatter::with_indent(<span class="string">b""</span>);
     <span class="kw">let </span><span class="kw-2">mut </span>serializer = serde_json::ser::Serializer::with_formatter(<span class="kw-2">&amp;mut </span>bytes, formatter);
     value.serialize(<span class="kw-2">&amp;mut </span>serializer)<span class="question-mark">?</span>;
-    <span class="kw">let </span>string = <span class="kw">unsafe </span>{ String::from_utf8_unchecked(bytes) }.replace(<span class="string">r#"\\"#</span>, <span class="string">r#"\"#</span>);
+    <span class="kw">let </span>string = <span class="kw">unsafe </span>{ String::from_utf8_unchecked(bytes) }.replace(<span class="string">r"\\"</span>, <span class="string">r"\"</span>);
     <span class="prelude-val">Ok</span>(string)
 }
 </code></pre></div></section></main></body></html>

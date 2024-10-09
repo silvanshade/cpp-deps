@@ -185,6 +185,8 @@
 <a href="#185" id="185">185</a>
 <a href="#186" id="186">186</a>
 <a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
 </pre></div><pre class="rust"><code><span class="attr">#[cfg(feature = <span class="string">"parsing"</span>)]
 </span><span class="kw">pub mod </span>parsers;
 <span class="attr">#[cfg(test)]
@@ -195,15 +197,16 @@
 
 <span class="attr">#[cfg(test)]
 #[allow(clippy::ptr_arg)]
-</span><span class="kw">pub fn </span>cow_is_owned&lt;B&gt;(cow: <span class="kw-2">&amp;</span>Cow&lt;B&gt;) -&gt; bool
+</span><span class="kw">pub const fn </span>cow_is_owned&lt;B&gt;(cow: <span class="kw-2">&amp;</span>Cow&lt;B&gt;) -&gt; bool
 <span class="kw">where
     </span>B: ToOwned + <span class="question-mark">?</span>Sized,
 {
-    <span class="macro">matches!</span>(cow, Cow::Owned(<span class="kw">_</span>))
+    <span class="macro">matches!</span>(cow, <span class="kw-2">&amp;</span>Cow::Owned(<span class="kw">_</span>))
 }
 
 <span class="attr">#[rustfmt::skip]
 #[cfg(test)]
+#[allow(clippy::arithmetic_side_effects)]
 </span><span class="kw">pub fn </span>count_escapes(str: <span class="kw">impl </span>AsRef&lt;str&gt;) -&gt; u64 {
     <span class="kw">let </span>str = str.as_ref();
     <span class="kw">let </span>bytes = str.as_bytes();
@@ -222,6 +225,7 @@
 }
 
 <span class="attr">#[cfg(test)]
+#[allow(clippy::arithmetic_side_effects)]
 </span><span class="kw">pub fn </span>count_escaped_strings(str: <span class="kw">impl </span>AsRef&lt;str&gt;) -&gt; (u64, u64) {
     <span class="kw">let </span>str = str.as_ref();
     <span class="kw">let </span>bytes = str.as_bytes();
@@ -317,18 +321,18 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>count_escaped_strings_zero_quoted() {
-        <span class="kw">let </span>str = <span class="string">r#"
+        <span class="kw">let </span>str = <span class="string">r"
             foo
-        "#</span>;
+        "</span>;
         <span class="macro">assert_eq!</span>(<span class="number">0</span>, count_escapes(str));
         <span class="macro">assert_eq!</span>((<span class="number">0</span>, <span class="number">0</span>), count_escaped_strings(str));
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>count_escaped_strings_zero_quoted_one_escape() {
-        <span class="kw">let </span>str = <span class="string">r#"
+        <span class="kw">let </span>str = <span class="string">r"
             foo\nbar
-        "#</span>;
+        "</span>;
         <span class="macro">assert_eq!</span>(<span class="number">1</span>, count_escapes(str));
         <span class="macro">assert_eq!</span>((<span class="number">0</span>, <span class="number">0</span>), count_escaped_strings(str));
     }

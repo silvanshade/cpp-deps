@@ -1584,6 +1584,11 @@
 <a href="#1584" id="1584">1584</a>
 <a href="#1585" id="1585">1585</a>
 <a href="#1586" id="1586">1586</a>
+<a href="#1587" id="1587">1587</a>
+<a href="#1588" id="1588">1588</a>
+<a href="#1589" id="1589">1589</a>
+<a href="#1590" id="1590">1590</a>
+<a href="#1591" id="1591">1591</a>
 </pre></div><pre class="rust"><code><span class="comment">// Almost all parsers are inherently fallible so don't require error docs.
 </span><span class="attr">#![allow(clippy::missing_errors_doc)]
 
@@ -1594,6 +1599,7 @@
 
 <span class="attr">#[cfg_attr(test, derive(Eq, PartialEq))]
 #[derive(Clone, Copy, Debug)]
+#[non_exhaustive]
 </span><span class="kw">pub enum </span>ErrorKind {
     DepFile,
     DepInfo,
@@ -1603,33 +1609,33 @@
 }
 <span class="kw">impl </span>core::fmt::Display <span class="kw">for </span>ErrorKind {
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>core::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; core::fmt::Result {
-        <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self </span>{
-            ErrorKind::DepFile =&gt; {
+        <span class="kw">match </span><span class="kw-2">*</span><span class="self">self </span>{
+            <span class="self">Self</span>::DepFile =&gt; {
                 <span class="macro">writeln!</span>(f, <span class="string">"Failed parsing DepFile fields:"</span>)<span class="question-mark">?</span>;
                 <span class="macro">writeln!</span>(f, <span class="string">"expected one of: {{ \"revision\", \"rules\", \"version\" }}"</span>)<span class="question-mark">?</span>;
             },
-            ErrorKind::DepInfo =&gt; {
+            <span class="self">Self</span>::DepInfo =&gt; {
                 <span class="macro">writeln!</span>(f, <span class="string">"Failed parsing DepInfo fields:"</span>)<span class="question-mark">?</span>;
                 <span class="macro">writeln!</span>(
                     f,
                     <span class="string">"expected one of: {{ \"outputs\", \"primary-output\", \"provides\", \"requires\", \"work-directory\" }}"
                 </span>)<span class="question-mark">?</span>;
             },
-            ErrorKind::LookupMethod =&gt; {
+            <span class="self">Self</span>::LookupMethod =&gt; {
                 <span class="macro">writeln!</span>(f, <span class="string">"Failed parsing `LookupMethod`:"</span>)<span class="question-mark">?</span>;
                 <span class="macro">writeln!</span>(
                     f,
                     <span class="string">"expected one of: {{ \"by-name\", \"include-angle\", \"include-quote\" }}"
                 </span>)<span class="question-mark">?</span>;
             },
-            ErrorKind::ProvidedModuleDesc =&gt; {
+            <span class="self">Self</span>::ProvidedModuleDesc =&gt; {
                 <span class="macro">writeln!</span>(f, <span class="string">"Failed parsing object fields:"</span>)<span class="question-mark">?</span>;
                 <span class="macro">writeln!</span>(
                     f,
                     <span class="string">"expected one of: {{ \"compiled-module-path\", \"is-interface\", \"logical-name\", \"source-path\", \"unique-on-source-path\" }}"
                 </span>)<span class="question-mark">?</span>;
             },
-            ErrorKind::RequiredModuleDesc =&gt; {
+            <span class="self">Self</span>::RequiredModuleDesc =&gt; {
                 <span class="macro">writeln!</span>(f, <span class="string">"Failed parsing object fields:"</span>)<span class="question-mark">?</span>;
                 <span class="macro">writeln!</span>(
                     f,
@@ -1642,7 +1648,7 @@
 }
 
 <span class="kw">impl </span>ErrorKind {
-    <span class="kw">fn </span>error&lt;<span class="lifetime">'i</span>&gt;(<span class="self">self</span>, stream: <span class="kw-2">&amp;mut </span>ParseStream&lt;<span class="lifetime">'i</span>&gt;) -&gt; <span class="kw">crate</span>::util::parsers::Error&lt;<span class="lifetime">'i</span>, <span class="self">Self</span>&gt; {
+    <span class="kw">fn </span>error&lt;<span class="lifetime">'i</span>&gt;(<span class="self">self</span>, stream: <span class="kw-2">&amp;</span>ParseStream&lt;<span class="lifetime">'i</span>&gt;) -&gt; <span class="kw">crate</span>::util::parsers::Error&lt;<span class="lifetime">'i</span>, <span class="self">Self</span>&gt; {
         <span class="kw">let </span>error = <span class="kw">crate</span>::util::parsers::ErrorKind::Other { error: <span class="self">self </span>};
         stream.error(error)
     }
@@ -2128,9 +2134,11 @@
                 ErrorKind::ProvidedModuleDesc,
                 ErrorKind::RequiredModuleDesc,
             ] {
-                <span class="kw">match </span>e.error(stream).error {
-                    <span class="kw">crate</span>::util::parsers::ErrorKind::Other { error } =&gt; <span class="macro">assert_eq!</span>(e, <span class="kw-2">&amp;</span>error),
-                    <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(),
+                <span class="attr">#[allow(clippy::wildcard_enum_match_arm)]
+                </span><span class="kw">if let </span><span class="kw">crate</span>::util::parsers::ErrorKind::Other { error } = e.error(stream).error {
+                    <span class="macro">assert_eq!</span>(e, <span class="kw-2">&amp;</span>error);
+                } <span class="kw">else </span>{
+                    <span class="macro">panic!</span>()
                 }
             }
         }
@@ -2150,8 +2158,10 @@
                 <span class="kw">let </span>rng = <span class="kw-2">&amp;mut </span>rand_chacha::ChaCha8Rng::seed_from_u64(<span class="kw">crate</span>::r5::datagen::CHACHA8RNG_SEED);
                 <span class="kw">let </span>config =
                     r5::datagen::graph::GraphGeneratorConfig::default().node_count(rng.gen_range(<span class="number">0u8 </span>..= <span class="number">16u8</span>));
-                <span class="kw">let </span><span class="kw-2">mut </span>dep_file_texts = r5::datagen::graph::GraphGenerator::gen_dep_files(rng, config)
-                    .flat_map(|result| result.and_then(r5::datagen::json::pretty_print_unindented));
+                <span class="kw">let </span><span class="kw-2">mut </span>dep_file_texts =
+                    r5::datagen::graph::GraphGenerator::gen_dep_files(rng, config).flat_map(|result| {
+                        result.and_then(|dep_file| r5::datagen::json::pretty_print_unindented(<span class="kw-2">&amp;</span>dep_file))
+                    });
                 <span class="kw">let </span><span class="kw-2">mut </span>num_files_with_escaped_strings = <span class="number">0</span>;
                 <span class="comment">// NOTE: Keep iterating until at least 16 files with escapes have been checked
                 </span><span class="kw">while </span>num_files_with_escaped_strings &lt; <span class="number">16 </span>{

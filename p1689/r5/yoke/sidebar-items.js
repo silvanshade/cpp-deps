@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["DepInfoNameYoke"],"trait":["DepFileYokeExt","DepInfoYokeExt"],"type":["DepFileCart","DepFileYoke","DepInfoYoke"]};

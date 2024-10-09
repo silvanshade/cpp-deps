@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["dep_file"],"struct":["ParseStream","State"]};
+window.SIDEBAR_ITEMS = {"enum":["ErrorKind"],"fn":["dep_file"],"struct":["Error","ParseStream","State"]};

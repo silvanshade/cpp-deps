@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {};
+window.SIDEBAR_ITEMS = {"enum":["CppDepsItem"],"struct":["CppDeps","CppDepsAnalyzer","CppDepsSrc","Error"]};

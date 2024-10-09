@@ -554,22 +554,6 @@
 <a href="#554" id="554">554</a>
 <a href="#555" id="555">555</a>
 <a href="#556" id="556">556</a>
-<a href="#557" id="557">557</a>
-<a href="#558" id="558">558</a>
-<a href="#559" id="559">559</a>
-<a href="#560" id="560">560</a>
-<a href="#561" id="561">561</a>
-<a href="#562" id="562">562</a>
-<a href="#563" id="563">563</a>
-<a href="#564" id="564">564</a>
-<a href="#565" id="565">565</a>
-<a href="#566" id="566">566</a>
-<a href="#567" id="567">567</a>
-<a href="#568" id="568">568</a>
-<a href="#569" id="569">569</a>
-<a href="#570" id="570">570</a>
-<a href="#571" id="571">571</a>
-<a href="#572" id="572">572</a>
 </pre></div><pre class="rust"><code><span class="attr">#[cfg(feature = <span class="string">"builders"</span>)]
 </span><span class="kw">pub mod </span>builders;
 <span class="attr">#[cfg(feature = <span class="string">"datagen"</span>)]
@@ -580,14 +564,11 @@
 </span><span class="kw">pub mod </span>proptest;
 <span class="attr">#[cfg(feature = <span class="string">"serde"</span>)]
 </span><span class="kw">pub mod </span>serde;
+<span class="attr">#[cfg(feature = <span class="string">"yoke"</span>)]
+</span><span class="kw">pub mod </span>yoke;
 
 <span class="kw">use </span>alloc::{borrow::Cow, vec::Vec};
 <span class="kw">use </span>core::borrow::Borrow;
-
-<span class="attr">#[cfg(all(feature = <span class="string">"serde"</span>, any(feature = <span class="string">"deserialize"</span>, feature = <span class="string">"serialize"</span>)))]
-</span><span class="kw">use </span>serde_with::serde_as;
-<span class="attr">#[cfg(all(feature = <span class="string">"serde"</span>, feature = <span class="string">"serialize"</span>))]
-</span><span class="kw">use </span>serde_with::skip_serializing_none;
 
 <span class="kw">use </span><span class="kw">crate</span>::vendor::camino::Utf8Path;
 
@@ -599,11 +580,8 @@
     }
 }
 
-<span class="attr">#[cfg_attr(feature = <span class="string">"serde"</span>, cfg_eval::cfg_eval)]
-#[cfg_attr(all(feature = <span class="string">"serde"</span>, feature = <span class="string">"serialize"</span>), skip_serializing_none)]
-#[cfg_attr(
+<span class="attr">#[cfg_attr(
     all(feature = <span class="string">"serde"</span>, any(feature = <span class="string">"deserialize"</span>, feature = <span class="string">"serialize"</span>)),
-    serde_as,
     cfg_attr(feature = <span class="string">"deserialize"</span>, derive(::serde::Deserialize)),
     cfg_attr(feature = <span class="string">"serialize"</span>, derive(::serde::Serialize)),
     serde(rename_all = <span class="string">"kebab-case"</span>)
@@ -614,44 +592,35 @@
     derive(Debug)
 )]
 #[non_exhaustive]
-</span><span class="kw">pub struct </span>DepFile&lt;<span class="lifetime">'a</span>&gt; {
+</span><span class="kw">pub struct </span>DepFile&lt;<span class="lifetime">'i</span>&gt; {
     <span class="kw">pub </span>version: u32,
     <span class="attr">#[cfg_attr(
         all(feature = <span class="string">"serde"</span>, any(feature = <span class="string">"deserialize"</span>, feature = <span class="string">"serialize"</span>)),
-        serde(default)
+        serde(default),
+        serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)
     )]
     </span><span class="kw">pub </span>revision: <span class="prelude-ty">Option</span>&lt;u32&gt;,
     <span class="attr">#[cfg_attr(
         all(feature = <span class="string">"serde"</span>, any(feature = <span class="string">"deserialize"</span>, feature = <span class="string">"serialize"</span>)),
         serde(borrow)
     )]
-    </span><span class="kw">pub </span>rules: Vec&lt;DepInfo&lt;<span class="lifetime">'a</span>&gt;&gt;,
+    </span><span class="kw">pub </span>rules: Vec&lt;DepInfo&lt;<span class="lifetime">'i</span>&gt;&gt;,
 }
 <span class="attr">#[cfg(test)]
 </span><span class="kw">impl </span>DepFile&lt;<span class="lifetime">'_</span>&gt; {
-    <span class="kw">pub fn </span>count_copies(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u64 {
-        <span class="self">self</span>.rules
-            .as_slice()
-            .iter()
-            .map(|dep_info| dep_info.count_copies())
-            .sum()
+    <span class="attr">#[must_use]
+    </span><span class="kw">pub fn </span>count_copies(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u64 {
+        <span class="self">self</span>.rules.as_slice().iter().map(DepInfo::count_copies).sum()
     }
 
     <span class="kw">pub fn </span>count_escapes_total(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u64 {
-        <span class="self">self</span>.rules
-            .as_slice()
-            .iter()
-            .map(|dep_info| dep_info.count_escapes())
-            .sum()
+        <span class="self">self</span>.rules.as_slice().iter().map(DepInfo::count_escapes).sum()
     }
 }
 
 <span class="doccomment">/// Dependency information for a compilation rule.
-</span><span class="attr">#[cfg_attr(feature = <span class="string">"serde"</span>, cfg_eval::cfg_eval)]
-#[cfg_attr(all(feature = <span class="string">"serde"</span>, feature = <span class="string">"serialize"</span>), skip_serializing_none)]
-#[cfg_attr(
+</span><span class="attr">#[cfg_attr(
     all(feature = <span class="string">"serde"</span>, any(feature = <span class="string">"deserialize"</span>, feature = <span class="string">"serialize"</span>)),
-    serde_as,
     cfg_attr(feature = <span class="string">"deserialize"</span>, derive(::serde::Deserialize)),
     cfg_attr(feature = <span class="string">"serialize"</span>, derive(::serde::Serialize)),
     serde(rename_all = <span class="string">"kebab-case"</span>)
@@ -662,59 +631,55 @@
     derive(Debug)
 )]
 #[non_exhaustive]
-</span><span class="kw">pub struct </span>DepInfo&lt;<span class="lifetime">'a</span>&gt; {
+</span><span class="kw">pub struct </span>DepInfo&lt;<span class="lifetime">'i</span>&gt; {
     <span class="attr">#[cfg_attr(
         all(feature = <span class="string">"serde"</span>, any(feature = <span class="string">"deserialize"</span>, feature = <span class="string">"serialize"</span>)),
         serde(default, borrow),
-        serde_as(<span class="kw">as </span>= <span class="string">"Option&lt;self::serde::CowUtf8Path&gt;"</span>)
+        serde(deserialize_with = <span class="string">"self::serde::deserialize::option_cow_utf8path"</span>),
+        serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)
     )]
-    </span><span class="kw">pub </span>work_directory: <span class="prelude-ty">Option</span>&lt;Cow&lt;<span class="lifetime">'a</span>, Utf8Path&gt;&gt;,
+    </span><span class="kw">pub </span>work_directory: <span class="prelude-ty">Option</span>&lt;Cow&lt;<span class="lifetime">'i</span>, Utf8Path&gt;&gt;,
     <span class="doccomment">/// The primary output for the compilation.
     </span><span class="attr">#[cfg_attr(
         all(feature = <span class="string">"serde"</span>, any(feature = <span class="string">"deserialize"</span>, feature = <span class="string">"serialize"</span>)),
         serde(default, borrow),
-        serde_as(<span class="kw">as </span>= <span class="string">"Option&lt;self::serde::CowUtf8Path&gt;"</span>)
+        serde(deserialize_with = <span class="string">"self::serde::deserialize::option_cow_utf8path"</span>),
+        serde(skip_serializing_if = <span class="string">"Option::is_some"</span>)
     )]
-    </span><span class="kw">pub </span>primary_output: <span class="prelude-ty">Option</span>&lt;Cow&lt;<span class="lifetime">'a</span>, Utf8Path&gt;&gt;,
+    </span><span class="kw">pub </span>primary_output: <span class="prelude-ty">Option</span>&lt;Cow&lt;<span class="lifetime">'i</span>, Utf8Path&gt;&gt;,
     <span class="doccomment">/// Other files output by a compiling this source using the same flags.
     </span><span class="attr">#[cfg_attr(
         all(feature = <span class="string">"serde"</span>, any(feature = <span class="string">"deserialize"</span>, feature = <span class="string">"serialize"</span>)),
         serde(default, borrow),
-        serde(skip_serializing_if = <span class="string">"Vec::is_empty"</span>),
-        serde_as(<span class="kw">as </span>= <span class="string">"Vec&lt;self::serde::CowUtf8Path&gt;"</span>)
+        serde(deserialize_with = <span class="string">"self::serde::deserialize::vec_cow_utf8path"</span>),
+        serde(skip_serializing_if = <span class="string">"Vec::is_empty"</span>)
     )]
-    </span><span class="kw">pub </span>outputs: Vec&lt;Cow&lt;<span class="lifetime">'a</span>, Utf8Path&gt;&gt;,
+    </span><span class="kw">pub </span>outputs: Vec&lt;Cow&lt;<span class="lifetime">'i</span>, Utf8Path&gt;&gt;,
     <span class="attr">#[cfg_attr(
         all(feature = <span class="string">"serde"</span>, any(feature = <span class="string">"deserialize"</span>, feature = <span class="string">"serialize"</span>)),
         serde(default, borrow),
         serde(skip_serializing_if = <span class="string">"Vec::is_empty"</span>)
     )]
-    </span><span class="kw">pub </span>provides: Vec&lt;ProvidedModuleDesc&lt;<span class="lifetime">'a</span>&gt;&gt;,
+    </span><span class="kw">pub </span>provides: Vec&lt;ProvidedModuleDesc&lt;<span class="lifetime">'i</span>&gt;&gt;,
     <span class="attr">#[cfg_attr(
         all(feature = <span class="string">"serde"</span>, any(feature = <span class="string">"deserialize"</span>, feature = <span class="string">"serialize"</span>)),
         serde(default, borrow),
         serde(skip_serializing_if = <span class="string">"Vec::is_empty"</span>)
     )]
-    </span><span class="kw">pub </span>requires: Vec&lt;RequiredModuleDesc&lt;<span class="lifetime">'a</span>&gt;&gt;,
+    </span><span class="kw">pub </span>requires: Vec&lt;RequiredModuleDesc&lt;<span class="lifetime">'i</span>&gt;&gt;,
 }
 <span class="attr">#[cfg(test)]
 </span><span class="kw">impl </span>DepInfo&lt;<span class="lifetime">'_</span>&gt; {
-    <span class="kw">pub fn </span>count_copies(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u64 {
-        u64::from(
-            <span class="self">self</span>.work_directory
-                .as_ref()
-                .map(<span class="kw">crate</span>::util::cow_is_owned)
-                .unwrap_or_default(),
-        ) + u64::from(
-            <span class="self">self</span>.primary_output
-                .as_ref()
-                .map(<span class="kw">crate</span>::util::cow_is_owned)
-                .unwrap_or_default(),
-        ) + <span class="self">self
-            </span>.outputs
-            .iter()
-            .map(|output| u64::from(<span class="kw">crate</span>::util::cow_is_owned(output)))
-            .sum::&lt;u64&gt;()
+    <span class="attr">#[must_use]
+    #[allow(clippy::arithmetic_side_effects)]
+    </span><span class="kw">pub fn </span>count_copies(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u64 {
+        u64::from(<span class="self">self</span>.work_directory.as_ref().is_some_and(<span class="kw">crate</span>::util::cow_is_owned))
+            + u64::from(<span class="self">self</span>.primary_output.as_ref().is_some_and(<span class="kw">crate</span>::util::cow_is_owned))
+            + <span class="self">self
+                </span>.outputs
+                .iter()
+                .map(|output| u64::from(<span class="kw">crate</span>::util::cow_is_owned(output)))
+                .sum::&lt;u64&gt;()
             + <span class="self">self
                 </span>.provides
                 .iter()
@@ -727,7 +692,9 @@
                 .sum::&lt;u64&gt;()
     }
 
-    <span class="kw">pub fn </span>count_escapes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u64 {
+    <span class="attr">#[must_use]
+    #[allow(clippy::arithmetic_side_effects)]
+    </span><span class="kw">pub fn </span>count_escapes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u64 {
         <span class="self">self</span>.work_directory
             .as_deref()
             .map(<span class="kw">crate</span>::util::count_escapes)
@@ -755,11 +722,8 @@
     }
 }
 
-<span class="attr">#[cfg_attr(feature = <span class="string">"serde"</span>, cfg_eval::cfg_eval)]
-#[cfg_attr(all(feature = <span class="string">"serde"</span>, feature = <span class="string">"serialize"</span>), skip_serializing_none)]
-#[cfg_attr(
+<span class="attr">#[cfg_attr(
     all(feature = <span class="string">"serde"</span>, any(feature = <span class="string">"deserialize"</span>, feature = <span class="string">"serialize"</span>)),
-    serde_as,
     cfg_attr(feature = <span class="string">"deserialize"</span>, derive(::serde::Deserialize)),
     cfg_attr(feature = <span class="string">"serialize"</span>, derive(::serde::Serialize)),
     serde(rename_all = <span class="string">"kebab-case"</span>, untagged)
@@ -770,7 +734,7 @@
     derive(Debug)
 )]
 #[non_exhaustive]
-</span><span class="kw">pub enum </span>ModuleDesc&lt;<span class="lifetime">'a</span>&gt; {
+</span><span class="kw">pub enum </span>ModuleDesc&lt;<span class="lifetime">'i</span>&gt; {
     <span class="attr">#[cfg_attr(
         all(feature = <span class="string">"serde"</span>, any(feature = <span class="string">"deserialize"</span>, feature = <span class="string">"serialize"</span>)),
         serde(rename_all = <span class="string">"kebab-case"</span>)
@@ -778,23 +742,30 @@
     </span>ByLogicalName {
         <span class="attr">#[cfg_attr(
             all(feature = <span class="string">"serde"</span>, any(feature = <span class="string">"deserialize"</span>, feature = <span class="string">"serialize"</span>)),
-            serde_as(<span class="kw">as </span>= <span class="string">"serde_with::BorrowCow"</span>)
+            serde(borrow),
+            serde(deserialize_with = <span class="string">"self::serde::deserialize::logical_name"</span>)
         )]
-        </span>logical_name: Cow&lt;<span class="lifetime">'a</span>, str&gt;,
+        </span>logical_name: Cow&lt;<span class="lifetime">'i</span>, str&gt;,
         <span class="attr">#[cfg_attr(
             all(feature = <span class="string">"serde"</span>, any(feature = <span class="string">"deserialize"</span>, feature = <span class="string">"serialize"</span>)),
-            serde(default),
-            serde_as(<span class="kw">as </span>= <span class="string">"Option&lt;self::serde::CowUtf8Path&gt;"</span>)
+            serde(default, borrow),
+            serde(deserialize_with = <span class="string">"self::serde::deserialize::option_cow_utf8path"</span>),
+            serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)
         )]
-        </span>source_path: <span class="prelude-ty">Option</span>&lt;Cow&lt;<span class="lifetime">'a</span>, Utf8Path&gt;&gt;,
+        </span>source_path: <span class="prelude-ty">Option</span>&lt;Cow&lt;<span class="lifetime">'i</span>, Utf8Path&gt;&gt;,
         <span class="attr">#[cfg_attr(
             all(feature = <span class="string">"serde"</span>, any(feature = <span class="string">"deserialize"</span>, feature = <span class="string">"serialize"</span>)),
-            serde(default),
-            serde_as(<span class="kw">as </span>= <span class="string">"Option&lt;self::serde::CowUtf8Path&gt;"</span>)
+            serde(default, borrow),
+            serde(deserialize_with = <span class="string">"self::serde::deserialize::option_cow_utf8path"</span>),
+            serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)
         )]
-        </span>compiled_module_path: <span class="prelude-ty">Option</span>&lt;Cow&lt;<span class="lifetime">'a</span>, Utf8Path&gt;&gt;,
+        </span>compiled_module_path: <span class="prelude-ty">Option</span>&lt;Cow&lt;<span class="lifetime">'i</span>, Utf8Path&gt;&gt;,
         <span class="doccomment">/// Whether the module name is unique on `logical-name` or `source-path`.
         </span><span class="attr">#[cfg(any(test, feature = <span class="string">"monostate"</span>))]
+        #[cfg_attr(
+            all(feature = <span class="string">"serde"</span>, feature = <span class="string">"serialize"</span>),
+            serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)
+        )]
         </span>unique_on_source_path: <span class="prelude-ty">Option</span>&lt;monostate::MustBeBool&lt;<span class="bool-val">false</span>&gt;&gt;,
     },
     <span class="attr">#[cfg_attr(
@@ -804,29 +775,33 @@
     </span>BySourcePath {
         <span class="attr">#[cfg_attr(
             all(feature = <span class="string">"serde"</span>, any(feature = <span class="string">"deserialize"</span>, feature = <span class="string">"serialize"</span>)),
-            serde_as(<span class="kw">as </span>= <span class="string">"serde_with::BorrowCow"</span>)
+            serde(borrow),
+            serde(deserialize_with = <span class="string">"self::serde::deserialize::logical_name"</span>)
         )]
-        </span>logical_name: Cow&lt;<span class="lifetime">'a</span>, str&gt;,
+        </span>logical_name: Cow&lt;<span class="lifetime">'i</span>, str&gt;,
         <span class="attr">#[cfg_attr(
             all(feature = <span class="string">"serde"</span>, any(feature = <span class="string">"deserialize"</span>, feature = <span class="string">"serialize"</span>)),
-            serde_as(<span class="kw">as </span>= <span class="string">"self::serde::CowUtf8Path"</span>)
+            serde(borrow),
+            serde(deserialize_with = <span class="string">"self::serde::deserialize::cow_utf8path"</span>)
         )]
-        </span>source_path: Cow&lt;<span class="lifetime">'a</span>, Utf8Path&gt;,
+        </span>source_path: Cow&lt;<span class="lifetime">'i</span>, Utf8Path&gt;,
         <span class="attr">#[cfg_attr(
             all(feature = <span class="string">"serde"</span>, any(feature = <span class="string">"deserialize"</span>, feature = <span class="string">"serialize"</span>)),
-            serde(default),
-            serde_as(<span class="kw">as </span>= <span class="string">"Option&lt;self::serde::CowUtf8Path&gt;"</span>)
+            serde(default, borrow),
+            serde(deserialize_with = <span class="string">"self::serde::deserialize::option_cow_utf8path"</span>),
+            serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)
         )]
-        </span>compiled_module_path: <span class="prelude-ty">Option</span>&lt;Cow&lt;<span class="lifetime">'a</span>, Utf8Path&gt;&gt;,
+        </span>compiled_module_path: <span class="prelude-ty">Option</span>&lt;Cow&lt;<span class="lifetime">'i</span>, Utf8Path&gt;&gt;,
         <span class="doccomment">/// Whether the module name is unique on `logical-name` or `source-path`.
         </span><span class="attr">#[cfg(any(test, feature = <span class="string">"monostate"</span>))]
         </span>unique_on_source_path: monostate::MustBeBool&lt;<span class="bool-val">true</span>&gt;,
     },
 }
-
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; ModuleDesc&lt;<span class="lifetime">'a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'i</span>&gt; ModuleDesc&lt;<span class="lifetime">'i</span>&gt; {
     <span class="attr">#[cfg(test)]
     #[cfg(not(tarpaulin_include))]
+    #[must_use]
+    #[allow(clippy::arithmetic_side_effects)]
     </span><span class="kw">pub fn </span>count_copies(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u64 {
         <span class="kw">match </span><span class="kw-2">*</span><span class="self">self </span>{
             <span class="self">Self</span>::ByLogicalName {
@@ -836,13 +811,8 @@
                 ..
             } =&gt; {
                 u64::from(<span class="kw">crate</span>::util::cow_is_owned(logical_name))
-                    + u64::from(source_path.as_ref().map(<span class="kw">crate</span>::util::cow_is_owned).unwrap_or_default())
-                    + u64::from(
-                        compiled_module_path
-                            .as_ref()
-                            .map(<span class="kw">crate</span>::util::cow_is_owned)
-                            .unwrap_or_default(),
-                    )
+                    + u64::from(source_path.as_ref().is_some_and(<span class="kw">crate</span>::util::cow_is_owned))
+                    + u64::from(compiled_module_path.as_ref().is_some_and(<span class="kw">crate</span>::util::cow_is_owned))
             },
             <span class="self">Self</span>::BySourcePath {
                 <span class="kw-2">ref </span>logical_name,
@@ -852,18 +822,15 @@
             } =&gt; {
                 u64::from(<span class="kw">crate</span>::util::cow_is_owned(logical_name))
                     + u64::from(<span class="kw">crate</span>::util::cow_is_owned(source_path))
-                    + u64::from(
-                        compiled_module_path
-                            .as_ref()
-                            .map(<span class="kw">crate</span>::util::cow_is_owned)
-                            .unwrap_or_default(),
-                    )
+                    + u64::from(compiled_module_path.as_ref().is_some_and(<span class="kw">crate</span>::util::cow_is_owned))
             },
         }
     }
 
     <span class="attr">#[cfg(test)]
     #[cfg(not(tarpaulin_include))]
+    #[must_use]
+    #[allow(clippy::arithmetic_side_effects)]
     </span><span class="kw">pub fn </span>count_escapes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u64 {
         <span class="kw">match </span><span class="kw-2">*</span><span class="self">self </span>{
             <span class="self">Self</span>::ByLogicalName {
@@ -899,6 +866,15 @@
     }
 
     <span class="attr">#[must_use]
+    </span><span class="kw">pub fn </span>logical_name(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Cow&lt;<span class="lifetime">'i</span>, str&gt; {
+        <span class="kw">match </span><span class="kw-2">*</span><span class="self">self </span>{
+            ModuleDesc::BySourcePath { <span class="kw-2">ref </span>logical_name, .. } | ModuleDesc::ByLogicalName { <span class="kw-2">ref </span>logical_name, .. } =&gt; {
+                logical_name.clone()
+            },
+        }
+    }
+
+    <span class="attr">#[must_use]
     </span><span class="kw">pub fn </span>view(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ModuleDescView {
         <span class="kw">match </span><span class="kw-2">*</span><span class="self">self </span>{
             <span class="attr">#[rustfmt::skip]
@@ -923,19 +899,18 @@
 }
 
 <span class="doccomment">/// Borrowed view of the common fields between the unique-by `ModuleDesc` variants.
-</span><span class="attr">#[cfg_attr(feature = <span class="string">"serde"</span>, cfg_eval::cfg_eval)]
-#[cfg_attr(feature = <span class="string">"extra_traits"</span>, derive(Clone, Copy, Eq, Hash, Ord, PartialEq, PartialOrd))]
+</span><span class="attr">#[cfg_attr(feature = <span class="string">"extra_traits"</span>, derive(Clone, Copy, Eq, Hash, Ord, PartialEq, PartialOrd))]
 #[cfg_attr(
     any(feature = <span class="string">"debug"</span>, feature = <span class="string">"arbitrary"</span>, feature = <span class="string">"extra_traits"</span>),
     derive(Debug)
 )]
 #[non_exhaustive]
-</span><span class="kw">pub struct </span>ModuleDescView&lt;<span class="lifetime">'a</span>&gt; {
-    <span class="kw">pub </span>key: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>str,
+</span><span class="kw">pub struct </span>ModuleDescView&lt;<span class="lifetime">'i</span>&gt; {
+    <span class="kw">pub </span>key: <span class="kw-2">&amp;</span><span class="lifetime">'i </span>str,
     <span class="kw">pub </span>unique_by: UniqueBy,
-    <span class="kw">pub </span>logical_name: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>str,
-    <span class="kw">pub </span>source_path: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>Utf8Path&gt;,
-    <span class="kw">pub </span>compiled_module_path: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>Utf8Path&gt;,
+    <span class="kw">pub </span>logical_name: <span class="kw-2">&amp;</span><span class="lifetime">'i </span>str,
+    <span class="kw">pub </span>source_path: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'i </span>Utf8Path&gt;,
+    <span class="kw">pub </span>compiled_module_path: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'i </span>Utf8Path&gt;,
 }
 
 <span class="attr">#[cfg_attr(feature = <span class="string">"extra_traits"</span>, derive(Clone, Copy, Eq, Hash, Ord, PartialEq, PartialOrd))]
@@ -949,11 +924,8 @@
     SourcePath,
 }
 
-<span class="attr">#[cfg_attr(feature = <span class="string">"serde"</span>, cfg_eval::cfg_eval)]
-#[cfg_attr(all(feature = <span class="string">"serde"</span>, feature = <span class="string">"serialize"</span>), skip_serializing_none)]
-#[cfg_attr(
+<span class="attr">#[cfg_attr(
     all(feature = <span class="string">"serde"</span>, any(feature = <span class="string">"deserialize"</span>, feature = <span class="string">"serialize"</span>)),
-    serde_as,
     cfg_attr(feature = <span class="string">"deserialize"</span>, derive(::serde::Deserialize)),
     cfg_attr(feature = <span class="string">"serialize"</span>, derive(::serde::Serialize)),
     serde(rename_all = <span class="string">"kebab-case"</span>)
@@ -964,12 +936,12 @@
     derive(Debug)
 )]
 #[non_exhaustive]
-</span><span class="kw">pub struct </span>ProvidedModuleDesc&lt;<span class="lifetime">'a</span>&gt; {
+</span><span class="kw">pub struct </span>ProvidedModuleDesc&lt;<span class="lifetime">'i</span>&gt; {
     <span class="attr">#[cfg_attr(
         all(feature = <span class="string">"serde"</span>, any(feature = <span class="string">"deserialize"</span>, feature = <span class="string">"serialize"</span>)),
         serde(borrow, flatten)
     )]
-    </span><span class="kw">pub </span>desc: ModuleDesc&lt;<span class="lifetime">'a</span>&gt;,
+    </span><span class="kw">pub </span>desc: ModuleDesc&lt;<span class="lifetime">'i</span>&gt;,
     <span class="attr">#[cfg_attr(
         all(feature = <span class="string">"serde"</span>, any(feature = <span class="string">"deserialize"</span>, feature = <span class="string">"serialize"</span>)),
         serde(default = <span class="string">"defaults::bool::&lt;true&gt;"</span>)
@@ -977,11 +949,8 @@
     </span><span class="kw">pub </span>is_interface: bool,
 }
 
-<span class="attr">#[cfg_attr(feature = <span class="string">"serde"</span>, cfg_eval::cfg_eval)]
-#[cfg_attr(all(feature = <span class="string">"serde"</span>, feature = <span class="string">"serialize"</span>), skip_serializing_none)]
-#[cfg_attr(
+<span class="attr">#[cfg_attr(
     all(feature = <span class="string">"serde"</span>, any(feature = <span class="string">"deserialize"</span>, feature = <span class="string">"serialize"</span>)),
-    serde_as,
     cfg_attr(feature = <span class="string">"deserialize"</span>, derive(::serde::Deserialize)),
     cfg_attr(feature = <span class="string">"serialize"</span>, derive(::serde::Serialize)),
     serde(rename_all = <span class="string">"kebab-case"</span>)
@@ -992,12 +961,12 @@
     derive(Debug)
 )]
 #[non_exhaustive]
-</span><span class="kw">pub struct </span>RequiredModuleDesc&lt;<span class="lifetime">'a</span>&gt; {
+</span><span class="kw">pub struct </span>RequiredModuleDesc&lt;<span class="lifetime">'i</span>&gt; {
     <span class="attr">#[cfg_attr(
         all(feature = <span class="string">"serde"</span>, any(feature = <span class="string">"deserialize"</span>, feature = <span class="string">"serialize"</span>)),
         serde(borrow, flatten)
     )]
-    </span><span class="kw">pub </span>desc: ModuleDesc&lt;<span class="lifetime">'a</span>&gt;,
+    </span><span class="kw">pub </span>desc: ModuleDesc&lt;<span class="lifetime">'i</span>&gt;,
     <span class="attr">#[cfg_attr(
         all(feature = <span class="string">"serde"</span>, any(feature = <span class="string">"deserialize"</span>, feature = <span class="string">"serialize"</span>)),
         serde(default)
@@ -1005,10 +974,8 @@
     </span><span class="kw">pub </span>lookup_method: RequiredModuleDescLookupMethod,
 }
 
-<span class="attr">#[cfg_attr(feature = <span class="string">"serde"</span>, cfg_eval::cfg_eval)]
-#[cfg_attr(
+<span class="attr">#[cfg_attr(
     all(feature = <span class="string">"serde"</span>, any(feature = <span class="string">"deserialize"</span>, feature = <span class="string">"serialize"</span>)),
-    serde_as,
     cfg_attr(feature = <span class="string">"deserialize"</span>, derive(::serde::Deserialize)),
     cfg_attr(feature = <span class="string">"serialize"</span>, derive(::serde::Serialize)),
     serde(rename_all = <span class="string">"kebab-case"</span>)
@@ -1045,8 +1012,8 @@
     }
 }
 <span class="attr">#[cfg(feature = <span class="string">"arbitrary"</span>)]
-</span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; ::arbitrary::Arbitrary&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span>RequiredModuleDescLookupMethod {
-    <span class="kw">fn </span>arbitrary(u: <span class="kw-2">&amp;mut </span>arbitrary::Unstructured&lt;<span class="lifetime">'a</span>&gt;) -&gt; arbitrary::Result&lt;<span class="self">Self</span>&gt; {
+</span><span class="kw">impl</span>&lt;<span class="lifetime">'i</span>&gt; ::arbitrary::Arbitrary&lt;<span class="lifetime">'i</span>&gt; <span class="kw">for </span>RequiredModuleDescLookupMethod {
+    <span class="kw">fn </span>arbitrary(u: <span class="kw-2">&amp;mut </span>arbitrary::Unstructured&lt;<span class="lifetime">'i</span>&gt;) -&gt; arbitrary::Result&lt;<span class="self">Self</span>&gt; {
         <span class="attr">#[allow(clippy::same_functions_in_if_condition)]
         </span><span class="prelude-val">Ok</span>(<span class="kw">if </span>u.arbitrary::&lt;bool&gt;()<span class="question-mark">? </span>{
             <span class="self">Self</span>::ByName
@@ -1105,7 +1072,7 @@
                 <span class="attr">#[allow(clippy::useless_asref)]
                 </span>ModuleDesc::BySourcePath { .. } =&gt; {
                     <span class="macro">assert!</span>(<span class="macro">matches!</span>(view.unique_by, UniqueBy::SourcePath));
-                    <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(view.key), source_path.as_deref().map(|s| s.as_ref()));
+                    <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(view.key), source_path.as_deref().map(AsRef::as_ref));
                 }
             }
         }
@@ -1126,8 +1093,9 @@
 
         <span class="kw">let </span>rng = <span class="kw-2">&amp;mut </span>rand_chacha::ChaCha8Rng::seed_from_u64(<span class="kw">crate</span>::r5::datagen::CHACHA8RNG_SEED);
         <span class="kw">let </span>config = <span class="kw">crate</span>::r5::datagen::graph::GraphGeneratorConfig::default().node_count(rng.gen_range(<span class="number">0u8 </span>..= <span class="number">16u8</span>));
-        <span class="kw">let </span>dep_files = <span class="kw">crate</span>::r5::datagen::graph::GraphGenerator::gen_dep_files(rng, config)
-            .flat_map(|result| result.and_then(<span class="kw">crate</span>::r5::datagen::json::pretty_print_unindented));
+        <span class="kw">let </span>dep_files = <span class="kw">crate</span>::r5::datagen::graph::GraphGenerator::gen_dep_files(rng, config).flat_map(|result| {
+            result.and_then(|dep_file| <span class="kw">crate</span>::r5::datagen::json::pretty_print_unindented(<span class="kw-2">&amp;</span>dep_file))
+        });
         <span class="kw">for </span>text <span class="kw">in </span>dep_files.take(<span class="number">128</span>) {
             <span class="kw">let </span>from_serde = serde_json::from_str::&lt;<span class="kw">crate</span>::r5::DepFile&gt;(<span class="kw-2">&amp;</span>text).unwrap();
             <span class="kw">let </span>from_parsers = {

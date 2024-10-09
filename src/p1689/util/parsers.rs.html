@@ -1186,29 +1186,94 @@
 <a href="#1186" id="1186">1186</a>
 <a href="#1187" id="1187">1187</a>
 <a href="#1188" id="1188">1188</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>alloc::{borrow::Cow, string::String};
+<a href="#1189" id="1189">1189</a>
+<a href="#1190" id="1190">1190</a>
+<a href="#1191" id="1191">1191</a>
+<a href="#1192" id="1192">1192</a>
+<a href="#1193" id="1193">1193</a>
+<a href="#1194" id="1194">1194</a>
+<a href="#1195" id="1195">1195</a>
+<a href="#1196" id="1196">1196</a>
+<a href="#1197" id="1197">1197</a>
+<a href="#1198" id="1198">1198</a>
+<a href="#1199" id="1199">1199</a>
+<a href="#1200" id="1200">1200</a>
+<a href="#1201" id="1201">1201</a>
+<a href="#1202" id="1202">1202</a>
+<a href="#1203" id="1203">1203</a>
+<a href="#1204" id="1204">1204</a>
+<a href="#1205" id="1205">1205</a>
+<a href="#1206" id="1206">1206</a>
+<a href="#1207" id="1207">1207</a>
+<a href="#1208" id="1208">1208</a>
+<a href="#1209" id="1209">1209</a>
+<a href="#1210" id="1210">1210</a>
+<a href="#1211" id="1211">1211</a>
+<a href="#1212" id="1212">1212</a>
+<a href="#1213" id="1213">1213</a>
+<a href="#1214" id="1214">1214</a>
+<a href="#1215" id="1215">1215</a>
+<a href="#1216" id="1216">1216</a>
+<a href="#1217" id="1217">1217</a>
+<a href="#1218" id="1218">1218</a>
+<a href="#1219" id="1219">1219</a>
+<a href="#1220" id="1220">1220</a>
+<a href="#1221" id="1221">1221</a>
+<a href="#1222" id="1222">1222</a>
+<a href="#1223" id="1223">1223</a>
+<a href="#1224" id="1224">1224</a>
+<a href="#1225" id="1225">1225</a>
+<a href="#1226" id="1226">1226</a>
+<a href="#1227" id="1227">1227</a>
+<a href="#1228" id="1228">1228</a>
+<a href="#1229" id="1229">1229</a>
+<a href="#1230" id="1230">1230</a>
+<a href="#1231" id="1231">1231</a>
+<a href="#1232" id="1232">1232</a>
+<a href="#1233" id="1233">1233</a>
+<a href="#1234" id="1234">1234</a>
+<a href="#1235" id="1235">1235</a>
+<a href="#1236" id="1236">1236</a>
+<a href="#1237" id="1237">1237</a>
+<a href="#1238" id="1238">1238</a>
+<a href="#1239" id="1239">1239</a>
+<a href="#1240" id="1240">1240</a>
+<a href="#1241" id="1241">1241</a>
+<a href="#1242" id="1242">1242</a>
+<a href="#1243" id="1243">1243</a>
+<a href="#1244" id="1244">1244</a>
+<a href="#1245" id="1245">1245</a>
+<a href="#1246" id="1246">1246</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>alloc::{borrow::Cow, string::String, sync::Arc};
+<span class="kw">use </span>core::marker::PhantomData;
+
+<span class="attr">#[cfg(feature = <span class="string">"yoke"</span>)]
+</span><span class="kw">use </span>yoke::Yokeable;
+
+<span class="kw">use </span><span class="kw">crate</span>::vendor::camino::Utf8PathBuf;
 
 <span class="kw">pub struct </span>ParseStream&lt;<span class="lifetime">'i</span>, E&gt; {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) path: <span class="kw-2">&amp;</span><span class="lifetime">'i </span>str,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) path: Arc&lt;Utf8PathBuf&gt;,
     <span class="kw">pub</span>(<span class="kw">crate</span>) input: <span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8],
     <span class="kw">pub</span>(<span class="kw">crate</span>) bytes: <span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8],
     <span class="kw">pub</span>(<span class="kw">crate</span>) state: State,
     error: core::marker::PhantomData&lt;E&gt;,
 }
 <span class="kw">impl</span>&lt;<span class="lifetime">'i</span>, E&gt; ParseStream&lt;<span class="lifetime">'i</span>, E&gt; {
-    <span class="kw">pub fn </span>new(path: <span class="kw-2">&amp;</span><span class="lifetime">'i </span>str, input: <span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8], state: State) -&gt; <span class="self">Self </span>{
+    <span class="kw">pub fn </span>new(path: <span class="kw">impl </span>Into&lt;Utf8PathBuf&gt;, input: <span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8], state: State) -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span>path = Arc::new(path.into());
         <span class="self">Self </span>{
             path,
             input,
             bytes: input,
             state,
-            error: Default::default(),
+            error: PhantomData,
         }
     }
 
     <span class="attr">#[rustfmt::skip]
     #[inline(always)]
-    </span><span class="kw">pub fn </span>next_byte(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;u8, Error&lt;<span class="lifetime">'i</span>, E&gt;&gt; { <span class="comment">// tarpaulin::hint
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>next_byte(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;u8, Error&lt;<span class="lifetime">'i</span>, E&gt;&gt; { <span class="comment">// tarpaulin::hint
         </span><span class="kw">let </span>head = <span class="self">self</span>.peek_byte()<span class="question-mark">?</span>;
         <span class="self">self</span>.bytes = <span class="kw-2">&amp;</span><span class="self">self</span>.bytes[<span class="number">1 </span>..];
         <span class="prelude-val">Ok</span>(head)
@@ -1216,7 +1281,7 @@
 
     <span class="attr">#[rustfmt::skip]
     #[inline(always)]
-    </span><span class="kw">pub fn </span>peek_byte(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;u8, Error&lt;<span class="lifetime">'i</span>, E&gt;&gt; { <span class="comment">// tarpaulin::hint
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>peek_byte(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;u8, Error&lt;<span class="lifetime">'i</span>, E&gt;&gt; { <span class="comment">// tarpaulin::hint
         </span><span class="kw">if </span><span class="self">self</span>.bytes.is_empty() {
             <span class="kw">let </span>error = ErrorKind::NextByte;
             <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="self">self</span>.error(error));
@@ -1227,7 +1292,7 @@
 
     <span class="attr">#[rustfmt::skip]
     #[inline(always)]
-    </span><span class="kw">pub fn </span>match_byte(<span class="kw-2">&amp;mut </span><span class="self">self</span>, expected: u8) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&lt;<span class="lifetime">'i</span>, E&gt;&gt; { <span class="comment">// tarpaulin::hint
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>match_byte(<span class="kw-2">&amp;mut </span><span class="self">self</span>, expected: u8) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&lt;<span class="lifetime">'i</span>, E&gt;&gt; { <span class="comment">// tarpaulin::hint
         </span><span class="kw">if </span><span class="self">self</span>.next_byte()<span class="question-mark">? </span>!= expected {
             <span class="kw">let </span>error = ErrorKind::ByteMismatch { expected };
             <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="self">self</span>.error(error));
@@ -1237,7 +1302,7 @@
 
     <span class="attr">#[rustfmt::skip]
     #[inline(always)]
-    </span><span class="kw">pub fn </span>next_slice(<span class="kw-2">&amp;mut </span><span class="self">self</span>, offset: usize) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8], Error&lt;<span class="lifetime">'i</span>, E&gt;&gt; { <span class="comment">// tarpaulin::hint
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>next_slice(<span class="kw-2">&amp;mut </span><span class="self">self</span>, offset: usize) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8], Error&lt;<span class="lifetime">'i</span>, E&gt;&gt; { <span class="comment">// tarpaulin::hint
         </span><span class="kw">let </span>(slice, next) = <span class="self">self</span>.bytes.split_at_checked(offset).ok_or_else(|| {
             <span class="kw">let </span>error = ErrorKind::NextSlice { offset };
             <span class="self">self</span>.error(error)
@@ -1248,7 +1313,7 @@
 
     <span class="attr">#[rustfmt::skip]
     #[inline(always)]
-    </span><span class="kw">pub fn </span>match_slice(<span class="kw-2">&amp;mut </span><span class="self">self</span>, expected: <span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&lt;<span class="lifetime">'i</span>, E&gt;&gt; { <span class="comment">// tarpaulin::hint
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>match_slice(<span class="kw-2">&amp;mut </span><span class="self">self</span>, expected: <span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&lt;<span class="lifetime">'i</span>, E&gt;&gt; { <span class="comment">// tarpaulin::hint
         </span><span class="kw">if </span><span class="self">self</span>.next_slice(expected.len())<span class="question-mark">? </span>!= expected {
             <span class="kw">let </span>error = ErrorKind::SliceMismatch { expected };
             <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="self">self</span>.error(error));
@@ -1257,7 +1322,7 @@
     }
 
     <span class="kw">pub fn </span>error(<span class="kw-2">&amp;</span><span class="self">self</span>, error: ErrorKind&lt;<span class="lifetime">'i</span>, E&gt;) -&gt; Error&lt;<span class="lifetime">'i</span>, E&gt; {
-        <span class="kw">let </span>path = <span class="self">self</span>.path;
+        <span class="kw">let </span>path = Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.path);
         <span class="kw">let </span>input = <span class="self">self</span>.input;
         <span class="kw">let </span>bytes = <span class="self">self</span>.bytes;
         Error {
@@ -1299,7 +1364,8 @@
     utf8_encode_buffer: [u8; <span class="number">4</span>],
 }
 <span class="kw">impl </span>State {
-    <span class="kw">fn </span>encode_utf8&lt;<span class="lifetime">'i</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, dst: <span class="kw-2">&amp;mut </span>Cow&lt;<span class="lifetime">'i</span>, [u8]&gt;, src: <span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8], esc: char) {
+    <span class="attr">#[allow(clippy::arithmetic_side_effects)]
+    </span><span class="kw">fn </span>encode_utf8&lt;<span class="lifetime">'i</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, dst: <span class="kw-2">&amp;mut </span>Cow&lt;<span class="lifetime">'i</span>, [u8]&gt;, src: <span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8], esc: char) {
         <span class="kw">let </span>cow = <span class="self">self</span>::string::to_mut_with_reserve(dst, src.len() + esc.len_utf8());
         <span class="kw">let </span>esc = esc.encode_utf8(<span class="self">self</span>.utf8_encode_buffer.as_mut()).as_bytes();
         cow.extend_from_slice(src);
@@ -1346,15 +1412,24 @@
     Other { error: E },
 }
 <span class="attr">#[derive(Debug)]
+#[allow(clippy::error_impl_error, clippy::struct_field_names)]
+#[non_exhaustive]
 </span><span class="kw">pub struct </span>Error&lt;<span class="lifetime">'i</span>, E&gt; {
-    <span class="kw">pub </span>path: <span class="kw-2">&amp;</span><span class="lifetime">'i </span>str,
+    <span class="kw">pub </span>path: Arc&lt;Utf8PathBuf&gt;,
     <span class="kw">pub </span>input: <span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8],
     <span class="kw">pub </span>bytes: <span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8],
     <span class="kw">pub </span>error: ErrorKind&lt;<span class="lifetime">'i</span>, E&gt;,
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'i</span>, E&gt; Error&lt;<span class="lifetime">'i</span>, E&gt; {
-    <span class="kw">pub fn </span>context(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>core::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; core::fmt::Result {
+    <span class="doccomment">/// # Errors
+    ///
+    /// Will error under the following circumstances:
+    ///
+    /// 1. The line length cannot be converted to a `u64`
+    /// 2. An IO error occurred when writing the format string
+    </span><span class="attr">#[allow(clippy::arithmetic_side_effects)]
+    </span><span class="kw">pub fn </span>context(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>core::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; core::fmt::Result {
         <span class="kw">let </span>input = String::from_utf8_lossy(<span class="self">self</span>.input);
         <span class="kw">let </span>bytes = String::from_utf8_lossy(<span class="self">self</span>.bytes);
         <span class="kw">let </span><span class="kw-2">mut </span>row = <span class="number">0u64</span>;
@@ -1365,7 +1440,7 @@
             col += <span class="number">1</span>;
         }
         <span class="kw">for </span>line <span class="kw">in </span>text.lines() {
-            col = u64::try_from(line.len()).unwrap();
+            col = u64::try_from(line.len()).map_err(|<span class="kw">_</span>| core::fmt::Error)<span class="question-mark">?</span>;
             row += <span class="number">1</span>;
         }
         <span class="macro">write!</span>(f, <span class="string">"{}:{}:{}: error: "</span>, <span class="self">self</span>.path, row, col)<span class="question-mark">?</span>;
@@ -1383,7 +1458,7 @@
     <span class="attr">#[rustfmt::skip]
     </span><span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>core::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; core::fmt::Result {
         <span class="self">self</span>.context(f)<span class="question-mark">?</span>;
-        <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.error {
+        <span class="kw">match </span><span class="self">self</span>.error {
             ErrorKind::CharFromUnicodeFailed { unicode } =&gt; {
                 <span class="macro">writeln!</span>(f, <span class="string">"Conversion of unicode u32 to char failed: u32 value: {unicode:#06x}"</span>)<span class="question-mark">?</span>;
             },
@@ -1420,7 +1495,7 @@
             ErrorKind::InvalidUnicodeLowerSurrogate { lo } =&gt; {
                 <span class="macro">writeln!</span>(f, <span class="string">"Invalid unicode lower surrogate: {lo:#04x}"</span>)<span class="question-mark">?</span>;
             }
-            <span class="kw-2">&amp;</span>ErrorKind::MissingField { field } =&gt; {
+            ErrorKind::MissingField { field } =&gt; {
                 <span class="macro">writeln!</span>(f, <span class="string">"Missing field: `{field}`"</span>)<span class="question-mark">?</span>;
             },
             ErrorKind::MissingUnicodeLowerSurrogate { hi } =&gt; { <span class="comment">// tarpaulin::hint
@@ -1429,7 +1504,8 @@
             ErrorKind::NextByte =&gt; { <span class="comment">// tarpaulin::hint
                 </span><span class="macro">writeln!</span>(f, <span class="string">"No remaining bytes"</span>)<span class="question-mark">?</span>;
             },
-            ErrorKind::ByteMismatch { expected } =&gt; {
+            <span class="attr">#[allow(clippy::arithmetic_side_effects)]
+            </span>ErrorKind::ByteMismatch { expected } =&gt; {
                 <span class="macro">writeln!</span>(
                     f, <span class="comment">// tarpaulin::hint
                     </span><span class="string">"Byte mismatch: expected `{}`, actual `{}`"</span>,
@@ -1444,7 +1520,8 @@
                     <span class="self">self</span>.bytes.len()
                 )<span class="question-mark">?</span>;
             },
-            <span class="kw-2">&amp;</span>ErrorKind::SliceMismatch { expected } =&gt; {
+            <span class="attr">#[allow(clippy::arithmetic_side_effects)]
+            </span>ErrorKind::SliceMismatch { expected } =&gt; {
                 <span class="kw">let </span>snd = <span class="self">self</span>.input.len() - <span class="self">self</span>.bytes.len();
                 <span class="kw">let </span>fst = snd - expected.len();
                 <span class="macro">writeln!</span>(
@@ -1458,15 +1535,44 @@
                 <span class="macro">writeln!</span>(f, <span class="string">"UTF-8 validation failed:"</span>)<span class="question-mark">?</span>;
                 <span class="macro">writeln!</span>(f, <span class="string">"{err}"</span>)<span class="question-mark">?</span>;
             },
-            ErrorKind::Utf8ValidationFailedVal { err } =&gt; {
+            ErrorKind::Utf8ValidationFailedVal { <span class="kw-2">ref </span>err } =&gt; {
                 <span class="macro">writeln!</span>(f, <span class="string">"UTF-8 validation failed:"</span>)<span class="question-mark">?</span>;
                 <span class="macro">writeln!</span>(f, <span class="string">"{err}"</span>)<span class="question-mark">?</span>;
             },
-            ErrorKind::Other { error } =&gt; {
+            ErrorKind::Other { <span class="kw-2">ref </span>error } =&gt; {
                 core::fmt::Display::fmt(error, f)<span class="question-mark">?</span>;
             },
         }
         <span class="prelude-val">Ok</span>(())
+    }
+}
+
+<span class="attr">#[cfg(feature = <span class="string">"yoke"</span>)]
+</span><span class="kw">unsafe impl</span>&lt;<span class="lifetime">'a</span>, E: <span class="lifetime">'static</span>&gt; Yokeable&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span>Error&lt;<span class="lifetime">'static</span>, E&gt; {
+    <span class="kw">type </span>Output = Error&lt;<span class="lifetime">'a</span>, E&gt;;
+
+    <span class="attr">#[inline]
+    </span><span class="kw">fn </span>transform(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>::Output {
+        <span class="self">self
+    </span>}
+
+    <span class="attr">#[inline]
+    </span><span class="kw">fn </span>transform_owned(<span class="self">self</span>) -&gt; <span class="self">Self</span>::Output {
+        <span class="self">self
+    </span>}
+
+    <span class="attr">#[inline]
+    </span><span class="kw">unsafe fn </span>make(from: <span class="self">Self</span>::Output) -&gt; <span class="self">Self </span>{
+        core::mem::transmute(from)
+    }
+
+    <span class="attr">#[inline]
+    </span><span class="kw">fn </span>transform_mut&lt;F&gt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span><span class="self">self</span>, f: F)
+    <span class="kw">where
+        </span>F: <span class="lifetime">'static </span>+ <span class="kw">for</span>&lt;<span class="lifetime">'b</span>&gt; FnOnce(<span class="kw-2">&amp;</span><span class="lifetime">'b </span><span class="kw-2">mut </span><span class="self">Self</span>::Output),
+    {
+        <span class="kw">let </span>this = <span class="kw">unsafe </span>{ core::mem::transmute::&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span><span class="self">Self</span>, <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span><span class="self">Self</span>::Output&gt;(<span class="self">self</span>) };
+        f(this);
     }
 }
 
@@ -1475,6 +1581,7 @@
 
     <span class="attr">#[rustfmt::skip]
     #[inline(always)]
+    #[allow(clippy::unnecessary_wraps)]
     </span><span class="comment">// TODO: http://0x80.pl/notesen/2019-01-05-avx512vbmi-remove-spaces.html
     </span><span class="kw">pub fn </span>multispace0&lt;<span class="lifetime">'i</span>, E&gt;(stream: <span class="kw-2">&amp;mut </span><span class="kw">crate</span>::util::parsers::ParseStream&lt;<span class="lifetime">'i</span>, E&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8], Error&lt;<span class="lifetime">'i</span>, E&gt;&gt; { <span class="comment">// tarpaulin::hint
         </span><span class="kw">let </span><span class="kw-2">mut </span>slice: <span class="kw-2">&amp;</span>[u8] = <span class="kw-2">&amp;</span>[];
@@ -1556,7 +1663,9 @@
             stream.match_byte(<span class="string">b'['</span>)<span class="question-mark">?</span>;
             <span class="kw">let </span><span class="kw-2">mut </span>vec = Vec::default();
             multispace0.parse(stream)<span class="question-mark">?</span>;
-            <span class="kw">if </span><span class="string">b']' </span>!= stream.peek_byte()<span class="question-mark">? </span>{
+            <span class="kw">if </span><span class="string">b']' </span>== stream.peek_byte()<span class="question-mark">? </span>{
+                stream.match_byte(<span class="string">b']'</span>)<span class="question-mark">?</span>;
+            } <span class="kw">else </span>{
                 <span class="kw">loop </span>{
                     <span class="comment">// tarpaulin::hint
                     </span>vec.push(val.parse(stream)<span class="question-mark">?</span>);
@@ -1569,8 +1678,6 @@
                         </span><span class="kw">_ </span>=&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(stream.error(ErrorKind::FailedParsingJsonArray)),
                     }
                 }
-            } <span class="kw">else </span>{
-                stream.match_byte(<span class="string">b']'</span>)<span class="question-mark">?</span>;
             }
             <span class="prelude-val">Ok</span>(vec)
         }
@@ -1578,15 +1685,16 @@
 }
 
 <span class="kw">pub mod </span>number {
-    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+    <span class="kw">use super</span>::{number, Error, ErrorKind, ParseStream};
 
-    <span class="kw">const </span>HEX_LUT: [u32; <span class="number">0x10000</span>] = {
+    <span class="attr">#[allow(clippy::as_conversions)]
+    </span><span class="kw">const </span>HEX_LUT: [u32; <span class="number">0x10000</span>] = {
         <span class="attr">#[allow(clippy::identity_op)]
         </span><span class="kw">const fn </span>dec_to_hex(num: u8) -&gt; [u8; <span class="number">2</span>] {
             <span class="kw">let </span>lut = <span class="string">b"0123456789abcdef"</span>;
             <span class="kw">let </span><span class="kw-2">mut </span>hex = [<span class="number">0u8</span>; <span class="number">2</span>];
-            hex[<span class="number">0</span>] = lut[(num <span class="kw">as </span>usize &amp; <span class="number">0xf0</span>) &gt;&gt; <span class="number">4</span>];
-            hex[<span class="number">1</span>] = lut[(num <span class="kw">as </span>usize &amp; <span class="number">0x0f</span>) &gt;&gt; <span class="number">0</span>];
+            hex[<span class="number">0</span>] = lut[(num <span class="kw">as </span>usize &amp; <span class="number">0xf0</span>) &gt;&gt; <span class="number">4_i32</span>];
+            hex[<span class="number">1</span>] = lut[(num <span class="kw">as </span>usize &amp; <span class="number">0x0f</span>) &gt;&gt; <span class="number">0_i32</span>];
             hex
         }
         <span class="kw">let </span><span class="kw-2">mut </span>lut = [u32::MAX; <span class="number">0x10000</span>];
@@ -1608,7 +1716,8 @@
         lut
     };
 
-    <span class="kw">pub fn </span>from_radix_10(text: <span class="kw-2">&amp;</span>[u8]) -&gt; (u32, usize) {
+    <span class="attr">#[allow(clippy::arithmetic_side_effects)]
+    </span><span class="kw">pub const fn </span>from_radix_10(text: <span class="kw-2">&amp;</span>[u8]) -&gt; (u32, usize) {
         <span class="kw">let </span><span class="kw-2">mut </span>idx = <span class="number">0</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>num = <span class="number">0</span>;
         <span class="kw">while </span>idx != text.len() {
@@ -1623,15 +1732,16 @@
         (num, idx)
     }
 
-    <span class="kw">pub fn </span>from_radix_16(bytes: [u8; <span class="number">4</span>]) -&gt; <span class="prelude-ty">Option</span>&lt;u32&gt; {
-        <span class="kw">let </span>fst = HEX_LUT[u16::from_ne_bytes([bytes[<span class="number">0</span>], bytes[<span class="number">1</span>]]) <span class="kw">as </span>usize];
-        <span class="kw">let </span>snd = HEX_LUT[u16::from_ne_bytes([bytes[<span class="number">2</span>], bytes[<span class="number">3</span>]]) <span class="kw">as </span>usize];
-        <span class="kw">let </span>val = fst &lt;&lt; <span class="number">8 </span>| snd;
+    <span class="attr">#[allow(clippy::large_stack_frames)]
+    </span><span class="kw">pub fn </span>from_radix_16(bytes: [u8; <span class="number">4</span>]) -&gt; <span class="prelude-ty">Option</span>&lt;u32&gt; {
+        <span class="kw">let </span>fst = HEX_LUT[usize::from(u16::from_ne_bytes([bytes[<span class="number">0</span>], bytes[<span class="number">1</span>]]))];
+        <span class="kw">let </span>snd = HEX_LUT[usize::from(u16::from_ne_bytes([bytes[<span class="number">2</span>], bytes[<span class="number">3</span>]]))];
+        <span class="kw">let </span>val = fst &lt;&lt; <span class="number">8_i32 </span>| snd;
         (val != u32::MAX).then_some(val)
     }
 
     <span class="attr">#[cfg(feature = <span class="string">"parsing"</span>)]
-    </span><span class="kw">pub fn </span>ascii_to_decimal_digit(character: u8) -&gt; <span class="prelude-ty">Option</span>&lt;u32&gt; {
+    </span><span class="kw">pub const fn </span>ascii_to_decimal_digit(character: u8) -&gt; <span class="prelude-ty">Option</span>&lt;u32&gt; {
         <span class="kw">match </span>character {
             <span class="string">b'0' </span>=&gt; <span class="prelude-val">Some</span>(<span class="number">0</span>),
             <span class="string">b'1' </span>=&gt; <span class="prelude-val">Some</span>(<span class="number">1</span>),
@@ -1665,8 +1775,9 @@
     <span class="kw">use super</span>::{number, Error, ErrorKind, ParseStream, Parser};
     <span class="kw">use </span><span class="kw">crate</span>::vendor::camino::{Utf8Path, Utf8PathBuf};
 
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>to_mut_with_reserve&lt;<span class="lifetime">'i</span>&gt;(cow: <span class="kw-2">&amp;</span><span class="lifetime">'i </span><span class="kw-2">mut </span>Cow&lt;[u8]&gt;, off: usize) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'i </span><span class="kw-2">mut </span>Vec&lt;u8&gt; {
-        <span class="kw">match </span>cow {
+    <span class="attr">#[allow(clippy::arithmetic_side_effects)]
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>to_mut_with_reserve&lt;<span class="lifetime">'i</span>&gt;(cow: <span class="kw-2">&amp;</span><span class="lifetime">'i </span><span class="kw-2">mut </span>Cow&lt;[u8]&gt;, off: usize) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'i </span><span class="kw-2">mut </span>Vec&lt;u8&gt; {
+        <span class="kw">match </span><span class="kw-2">*</span>cow {
             Cow::Borrowed(slice) =&gt; {
                 <span class="kw">let </span><span class="kw-2">mut </span>buf = Vec::with_capacity(slice.len() + off);
                 buf.extend_from_slice(slice);
@@ -1679,7 +1790,8 @@
         cow.to_mut()
     }
 
-    <span class="kw">fn </span>extend_bytes&lt;<span class="lifetime">'i</span>&gt;(text: <span class="kw-2">&amp;mut </span>Cow&lt;<span class="lifetime">'i</span>, [u8]&gt;, data: <span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8], char: u8) {
+    <span class="attr">#[allow(clippy::arithmetic_side_effects)]
+    </span><span class="kw">fn </span>extend_bytes&lt;<span class="lifetime">'i</span>&gt;(text: <span class="kw-2">&amp;mut </span>Cow&lt;<span class="lifetime">'i</span>, [u8]&gt;, data: <span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8], char: u8) {
         <span class="kw">let </span>lhs = to_mut_with_reserve(text, data.len() + <span class="number">1</span>);
         lhs.extend_from_slice(data);
         lhs.push(char);
@@ -1710,7 +1822,7 @@
     <span class="comment">// NOTE: Using `memchr` here is only marginally faster in the benchmarks, likely due to the fact
     // that we are parsing few strings overall and they are relatively short.
     //
-    // Most of the gains are probably due to the more efficient API, were we are able to re-use the
+    // Most of the gains are probably due to the more efficient API, where we are able to re-use the
     // finders once initialized.
     //
     // But unlike many of the other dependencies used previously, `memchr` has almost no impact on
@@ -1719,6 +1831,7 @@
     // And for some pathological cases (very large dependency file with very long paths), it could
     // still make a significant difference.
     </span><span class="attr">#[cfg(feature = <span class="string">"memchr"</span>)]
+    #[allow(clippy::arithmetic_side_effects)]
     #[rustfmt::skip]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>json_string&lt;<span class="lifetime">'i</span>, E&gt;(stream: <span class="kw-2">&amp;mut </span>ParseStream&lt;<span class="lifetime">'i</span>, E&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;Cow&lt;<span class="lifetime">'i</span>, str&gt;, Error&lt;<span class="lifetime">'i</span>, E&gt;&gt; {
         stream.match_byte(<span class="string">b'"'</span>)<span class="question-mark">?</span>;
@@ -1734,7 +1847,7 @@
                     </span><span class="kw">let </span>trim = <span class="kw-2">&amp;</span>data[.. data.len() - <span class="number">1</span>];
                     <span class="attr">#[allow(clippy::useless_conversion)] </span><span class="comment">// tarpaulin::hint
                     </span><span class="kw">if </span>text.is_empty() {
-                        text = Cow::Borrowed(trim.into()) <span class="comment">// tarpaulin::hint
+                        text = Cow::Borrowed(trim.into()); <span class="comment">// tarpaulin::hint
                     </span>} <span class="kw">else </span>{
                         text.to_mut().extend_from_slice(trim);
                     };
@@ -1758,7 +1871,8 @@
     <span class="attr">#[cfg(any(test, not(feature = <span class="string">"memchr"</span>)))]
     #[rustfmt::skip]
     #[inline(always)]
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>json_string_sans_memchr&lt;<span class="lifetime">'i</span>, E&gt;(stream: <span class="kw-2">&amp;mut </span>ParseStream&lt;<span class="lifetime">'i</span>, E&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;Cow&lt;<span class="lifetime">'i</span>, str&gt;, Error&lt;<span class="lifetime">'i</span>, E&gt;&gt; { <span class="kw">let _ </span>= ();
+    #[allow(clippy::arithmetic_side_effects)]
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>json_string_sans_memchr&lt;<span class="lifetime">'i</span>, E&gt;(stream: <span class="kw-2">&amp;mut </span>ParseStream&lt;<span class="lifetime">'i</span>, E&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;Cow&lt;<span class="lifetime">'i</span>, str&gt;, Error&lt;<span class="lifetime">'i</span>, E&gt;&gt; { <span class="kw">let </span>() = ();
         stream.match_byte(<span class="string">b'"'</span>)<span class="question-mark">?</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>text = Cow::Borrowed(<span class="string">b""</span>.as_slice());
         <span class="kw">let </span><span class="kw-2">mut </span>off = <span class="number">0</span>;
@@ -1767,7 +1881,7 @@
                 <span class="kw">let </span>error = ErrorKind::EndOfStringNotFound;
                 <span class="kw">return </span><span class="prelude-val">Err</span>(stream.error(error));
             };
-            <span class="kw">match </span>byte {
+            <span class="kw">match </span><span class="kw-2">*</span>byte {
                 <span class="string">b'"' </span>=&gt; { <span class="comment">// tarpaulin::hint
                     </span><span class="kw">let </span>data = stream.next_slice(off + <span class="number">1</span>)<span class="question-mark">?</span>;
                     <span class="kw">let </span>trim = <span class="kw-2">&amp;</span>data[.. data.len() - <span class="number">1</span>];
@@ -1775,7 +1889,7 @@
                     </span><span class="kw">if </span>text.is_empty() {
                         <span class="attr">#[cfg(not(tarpaulin_include))]
                         </span>{
-                            text = Cow::Borrowed(trim.into())
+                            text = Cow::Borrowed(trim.into());
                         }
                     } <span class="kw">else </span>{
                         text.to_mut().extend_from_slice(trim);
@@ -1805,7 +1919,8 @@
         <span class="prelude-val">Ok</span>(path)
     }
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>unescape&lt;<span class="lifetime">'i</span>, <span class="lifetime">'r</span>, E&gt;(dst: <span class="kw-2">&amp;</span><span class="lifetime">'r </span><span class="kw-2">mut </span>Cow&lt;<span class="lifetime">'i</span>, [u8]&gt;, src: <span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8]) -&gt; <span class="kw">impl </span>Parser&lt;<span class="lifetime">'i</span>, (), E&gt; + <span class="lifetime">'r </span>{
+    <span class="attr">#[allow(clippy::arithmetic_side_effects)]
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>unescape&lt;<span class="lifetime">'i</span>, <span class="lifetime">'r</span>, E&gt;(dst: <span class="kw-2">&amp;</span><span class="lifetime">'r </span><span class="kw-2">mut </span>Cow&lt;<span class="lifetime">'i</span>, [u8]&gt;, src: <span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8]) -&gt; <span class="kw">impl </span>Parser&lt;<span class="lifetime">'i</span>, (), E&gt; + <span class="lifetime">'r </span>{
         |stream: <span class="kw-2">&amp;mut </span>ParseStream&lt;<span class="lifetime">'i</span>, E&gt;| {
             <span class="kw">let </span>src = <span class="kw-2">&amp;</span>src[.. src.len() - <span class="number">1</span>];
             <span class="kw">match </span>stream.next_byte()<span class="question-mark">? </span>{
@@ -1853,6 +1968,7 @@
     }
 
     <span class="attr">#[rustfmt::skip]
+    #[allow(clippy::arithmetic_side_effects)]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>unescape_unicode&lt;<span class="lifetime">'i</span>, <span class="lifetime">'r</span>, E&gt;(
         dst: <span class="kw-2">&amp;</span><span class="lifetime">'r </span><span class="kw-2">mut </span>Cow&lt;<span class="lifetime">'i</span>, [u8]&gt;,
         src: <span class="kw-2">&amp;</span><span class="lifetime">'i </span>[u8],
@@ -1878,7 +1994,7 @@
                 }
                 code <span class="comment">// tarpaulin::hint
             </span>};
-            <span class="kw">let </span>code = ((hi - <span class="number">0xd800</span>) &lt;&lt; <span class="number">10</span>) + (lo - <span class="number">0xdc00</span>) + <span class="number">0x10000</span>;
+            <span class="kw">let </span>code = ((hi - <span class="number">0xd800</span>) &lt;&lt; <span class="number">10_i32</span>) + (lo - <span class="number">0xdc00</span>) + <span class="number">0x10000</span>;
             stream.state.encode_utf8(dst, src, code_to_char(code, stream)<span class="question-mark">?</span>);
             <span class="prelude-val">Ok</span>(())
         }
@@ -2168,8 +2284,8 @@
             #[test]
             </span><span class="kw">fn </span>unescape_utf16(
                 char <span class="kw">in </span>proptest::char::range(
-                    <span class="kw">unsafe </span>{ char::from_u32_unchecked(<span class="number">0x010000u32</span>) },
-                    <span class="kw">unsafe </span>{ char::from_u32_unchecked(<span class="number">0x10FFFFu32</span>) }
+                    <span class="kw">unsafe </span>{ char::from_u32_unchecked(<span class="number">0x0001_0000_u32</span>) },
+                    <span class="kw">unsafe </span>{ char::from_u32_unchecked(<span class="number">0x0010_FFFF_u32</span>) }
                 )
             ) {
                 <span class="kw">let </span>text = <span class="self">self</span>::string::u32_to_utf16(char);

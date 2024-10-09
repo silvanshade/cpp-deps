@@ -387,6 +387,25 @@
 <a href="#387" id="387">387</a>
 <a href="#388" id="388">388</a>
 <a href="#389" id="389">389</a>
+<a href="#390" id="390">390</a>
+<a href="#391" id="391">391</a>
+<a href="#392" id="392">392</a>
+<a href="#393" id="393">393</a>
+<a href="#394" id="394">394</a>
+<a href="#395" id="395">395</a>
+<a href="#396" id="396">396</a>
+<a href="#397" id="397">397</a>
+<a href="#398" id="398">398</a>
+<a href="#399" id="399">399</a>
+<a href="#400" id="400">400</a>
+<a href="#401" id="401">401</a>
+<a href="#402" id="402">402</a>
+<a href="#403" id="403">403</a>
+<a href="#404" id="404">404</a>
+<a href="#405" id="405">405</a>
+<a href="#406" id="406">406</a>
+<a href="#407" id="407">407</a>
+<a href="#408" id="408">408</a>
 </pre></div><pre class="rust"><code><span class="attr">#![cfg(not(tarpaulin_include))]
 </span><span class="comment">// TODO:
 // 1. Generate more realistic paths (generate dir hierarchy)
@@ -407,7 +426,8 @@
     vec::Vec,
 };
 
-<span class="kw">use </span>fake::{faker::name::raw::<span class="kw-2">*</span>, locales::<span class="kw-2">*</span>, Dummy};
+<span class="attr">#[allow(clippy::wildcard_imports)]
+</span><span class="kw">use </span>fake::{faker::name::raw::<span class="kw-2">*</span>, locales::<span class="kw-2">*</span>, Dummy};
 <span class="kw">use </span>petgraph::graphmap::GraphMap;
 <span class="kw">use </span>rand::prelude::<span class="kw-2">*</span>;
 
@@ -420,7 +440,7 @@
 {
     <span class="kw">if </span>rng.gen::&lt;bool&gt;() {
         <span class="kw">let </span><span class="kw-2">mut </span>dst = [<span class="number">0u16</span>; <span class="number">2</span>];
-        <span class="kw">let </span>code = rng.gen_range(<span class="number">0x10000u32 </span>.. <span class="number">0x10ffff</span>);
+        <span class="kw">let </span>code = rng.gen_range(<span class="number">0x10000u32 </span>.. <span class="number">0x0010_ffff</span>);
         <span class="kw">let </span>char = <span class="kw">unsafe </span>{ char::from_u32_unchecked(code) };
         char.encode_utf16(<span class="kw-2">&amp;mut </span>dst);
         <span class="macro">alloc::format!</span>(<span class="string">"{:#06x}{:#06x}"</span>, dst[<span class="number">0</span>], dst[<span class="number">1</span>]).replace(<span class="string">"0x"</span>, <span class="string">"\\u"</span>)
@@ -432,34 +452,38 @@
         };
         <span class="kw">if </span>rng.gen::&lt;bool&gt;() {
             <span class="macro">alloc::format!</span>(<span class="string">"{}"</span>, <span class="kw">unsafe </span>{ char::from_u32_unchecked(code) })
-                .replace(<span class="string">"{"</span>, <span class="string">""</span>)
-                .replace(<span class="string">"}"</span>, <span class="string">""</span>)
+                .replace(<span class="string">'{'</span>, <span class="string">""</span>)
+                .replace(<span class="string">'}'</span>, <span class="string">""</span>)
         } <span class="kw">else </span>{
             <span class="macro">alloc::format!</span>(<span class="string">"{code:#06x}"</span>).replace(<span class="string">"0x"</span>, <span class="string">"\\u"</span>)
         }
     }
 }
 
-<span class="kw">fn </span>fake_name&lt;R&gt;(rng: <span class="kw-2">&amp;mut </span>R) -&gt; String
+<span class="kw">fn </span>fake_name&lt;R&gt;(rng: <span class="kw-2">&amp;mut </span>R, more_escapes: bool) -&gt; String
 <span class="kw">where
     </span>R: RngCore,
 {
-    <span class="kw">let </span>name = <span class="kw">match </span>rng.gen_range(<span class="number">0 </span>.. <span class="number">7</span>) {
-        <span class="number">0 </span>=&gt; String::dummy_with_rng(<span class="kw-2">&amp;</span>Name(AR_SA), rng),
-        <span class="number">1 </span>=&gt; String::dummy_with_rng(<span class="kw-2">&amp;</span>Name(EN), rng),
-        <span class="number">2 </span>=&gt; String::dummy_with_rng(<span class="kw-2">&amp;</span>Name(FR_FR), rng),
-        <span class="number">3 </span>=&gt; String::dummy_with_rng(<span class="kw-2">&amp;</span>Name(JA_JP), rng),
-        <span class="number">4 </span>=&gt; String::dummy_with_rng(<span class="kw-2">&amp;</span>Name(PT_BR), rng),
-        <span class="number">5 </span>=&gt; String::dummy_with_rng(<span class="kw-2">&amp;</span>Name(ZH_CN), rng),
-        <span class="number">6 </span>=&gt; String::dummy_with_rng(<span class="kw-2">&amp;</span>Name(ZH_TW), rng),
+    <span class="kw">let </span>name = <span class="kw">match </span>rng.gen_range(<span class="number">0_i32 </span>.. <span class="number">7_i32</span>) {
+        <span class="number">0_i32 </span>=&gt; String::dummy_with_rng(<span class="kw-2">&amp;</span>Name(AR_SA), rng),
+        <span class="number">1_i32 </span>=&gt; String::dummy_with_rng(<span class="kw-2">&amp;</span>Name(EN), rng),
+        <span class="number">2_i32 </span>=&gt; String::dummy_with_rng(<span class="kw-2">&amp;</span>Name(FR_FR), rng),
+        <span class="number">3_i32 </span>=&gt; String::dummy_with_rng(<span class="kw-2">&amp;</span>Name(JA_JP), rng),
+        <span class="number">4_i32 </span>=&gt; String::dummy_with_rng(<span class="kw-2">&amp;</span>Name(PT_BR), rng),
+        <span class="number">5_i32 </span>=&gt; String::dummy_with_rng(<span class="kw-2">&amp;</span>Name(ZH_CN), rng),
+        <span class="number">6_i32 </span>=&gt; String::dummy_with_rng(<span class="kw-2">&amp;</span>Name(ZH_TW), rng),
         <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(),
     };
     <span class="kw">let </span><span class="kw-2">mut </span>res = String::new();
     <span class="kw">for </span>(i, frag) <span class="kw">in </span>name.split_whitespace().enumerate() {
         <span class="kw">if </span>i % <span class="number">2 </span>== <span class="number">1 </span>&amp;&amp; i &gt; <span class="number">0 </span>{
-            res.push_str(<span class="kw-2">&amp;</span>name_sep(rng));
+            <span class="kw">if </span>more_escapes {
+                res.push_str(<span class="kw-2">&amp;</span>name_sep(rng));
+            } <span class="kw">else </span>{
+                res.push(<span class="string">'-'</span>);
+            }
         }
-        res.push_str(<span class="kw-2">&amp;</span>frag.to_lowercase())
+        res.push_str(<span class="kw-2">&amp;</span>frag.to_lowercase());
     }
     res
 }
@@ -485,24 +509,34 @@
     }
 }
 
-<span class="attr">#[derive(Clone, Default)]
+<span class="attr">#[allow(clippy::module_name_repetitions)]
+#[derive(Clone, Default)]
 </span><span class="kw">pub struct </span>GraphGeneratorConfig {
     node_count: u8,
+    more_escapes: bool,
 }
 <span class="kw">impl </span>GraphGeneratorConfig {
-    <span class="kw">pub fn </span>build&lt;R&gt;(<span class="self">self</span>, rng: <span class="kw-2">&amp;mut </span>R) -&gt; BoxResult&lt;GraphGenerator&lt;R&gt;&gt;
+    <span class="kw">pub fn </span>build&lt;R&gt;(<span class="self">self</span>, rng: <span class="kw-2">&amp;mut </span>R) -&gt; GraphGenerator&lt;R&gt;
     <span class="kw">where
         </span>R: RngCore,
     {
         GraphGenerator::new(rng, <span class="self">self</span>)
     }
 
-    <span class="kw">pub fn </span>node_count(<span class="kw-2">mut </span><span class="self">self</span>, node_count: u8) -&gt; <span class="self">Self </span>{
+    <span class="attr">#[must_use]
+    </span><span class="kw">pub const fn </span>node_count(<span class="kw-2">mut </span><span class="self">self</span>, node_count: u8) -&gt; <span class="self">Self </span>{
         <span class="self">self</span>.node_count = node_count;
         <span class="self">self
     </span>}
+
+    <span class="attr">#[must_use]
+    </span><span class="kw">pub const fn </span>more_escapes(<span class="kw-2">mut </span><span class="self">self</span>, more_escapes: bool) -&gt; <span class="self">Self </span>{
+        <span class="self">self</span>.more_escapes = more_escapes;
+        <span class="self">self
+    </span>}
 }
-<span class="attr">#[derive(Default)]
+<span class="attr">#[allow(clippy::module_name_repetitions)]
+#[derive(Default)]
 </span><span class="kw">pub struct </span>GraphGeneratorState {
     info_mem: BTreeMap&lt;u8, r5::DepInfo&lt;<span class="lifetime">'static</span>&gt;&gt;,
     graph: GraphMap&lt;u8, String, petgraph::Directed&gt;,
@@ -510,7 +544,8 @@
     known_consumers: BTreeSet&lt;u8&gt;,
 }
 
-<span class="kw">pub struct </span>GraphGenerator&lt;<span class="lifetime">'r</span>, R&gt; {
+<span class="attr">#[allow(clippy::module_name_repetitions)]
+</span><span class="kw">pub struct </span>GraphGenerator&lt;<span class="lifetime">'r</span>, R&gt; {
     rng: <span class="kw-2">&amp;</span><span class="lifetime">'r </span><span class="kw-2">mut </span>R,
     config: GraphGeneratorConfig,
     state: GraphGeneratorState,
@@ -527,7 +562,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>bytes = <span class="macro">alloc::vec!</span>[<span class="number">0u8</span>; <span class="number">8192</span>];
         rng.fill_bytes(<span class="kw-2">&amp;mut </span>bytes);
         <span class="kw">let </span><span class="kw-2">mut </span>u = arbitrary::Unstructured::new(<span class="kw-2">&amp;</span>bytes);
-        <span class="kw">let </span>gen = <span class="self">Self</span>::new(rng, config)<span class="question-mark">?</span>;
+        <span class="kw">let </span>gen = <span class="self">Self</span>::new(rng, config);
         <span class="kw">let </span>(info_mem, _graph) = gen.run(<span class="kw-2">&amp;mut </span>u)<span class="question-mark">?</span>;
         <span class="kw">let </span>select = u.ratio(<span class="number">1u8</span>, <span class="number">4u8</span>)<span class="question-mark">?</span>;
         <span class="kw">let </span>rules = info_mem
@@ -541,11 +576,11 @@
         })
     }
 
-    <span class="kw">fn </span>new(rng: <span class="kw-2">&amp;</span><span class="lifetime">'r </span><span class="kw-2">mut </span>R, config: GraphGeneratorConfig) -&gt; BoxResult&lt;<span class="self">Self</span>&gt; {
+    <span class="kw">fn </span>new(rng: <span class="kw-2">&amp;</span><span class="lifetime">'r </span><span class="kw-2">mut </span>R, config: GraphGeneratorConfig) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span><span class="kw-2">mut </span>info_mem = BTreeMap::default();
         <span class="kw">for </span>id <span class="kw">in </span><span class="number">0 </span>..= config.node_count {
             <span class="kw">let </span>primary_output = {
-                <span class="kw">let </span>name = fake_name(rng);
+                <span class="kw">let </span>name = fake_name(rng, config.more_escapes);
                 <span class="kw">let </span>path = <span class="macro">std::format!</span>(<span class="string">"{name}.o"</span>);
                 <span class="kw">let </span>path = Utf8PathBuf::from(path);
                 <span class="prelude-val">Some</span>(Cow::Owned(path))
@@ -565,7 +600,7 @@
             known_producers: BTreeSet::default(),
             known_consumers: BTreeSet::default(),
         };
-        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{ rng, config, state })
+        <span class="self">Self </span>{ rng, config, state }
     }
 
     <span class="kw">fn </span>gen_dst(<span class="kw-2">&amp;</span><span class="self">self</span>, u: <span class="kw-2">&amp;mut </span>arbitrary::Unstructured) -&gt; BoxResult&lt;u8&gt; {
@@ -604,7 +639,7 @@
         src: u8,
     ) -&gt; BoxResult&lt;r5::ProvidedModuleDesc&lt;<span class="lifetime">'static</span>&gt;&gt; {
         <span class="comment">// let module_name = self.names_edges.next().ok_or("name generation failed")?;
-        </span><span class="kw">let </span>module_name = fake_name(<span class="self">self</span>.rng);
+        </span><span class="kw">let </span>module_name = fake_name(<span class="self">self</span>.rng, <span class="self">self</span>.config.more_escapes);
         <span class="kw">let </span>source_path = <span class="kw">if </span>u.arbitrary()<span class="question-mark">? </span>{
             <span class="prelude-val">None
         </span>} <span class="kw">else </span>{
@@ -735,15 +770,16 @@
 
             <span class="kw">let </span>config = GraphGeneratorConfig::default().node_count(rng.gen_range(<span class="number">0u8 </span>..= <span class="number">16u8</span>));
 
-            <span class="kw">let </span>generator = GraphGenerator::new(rng, config)<span class="question-mark">?</span>;
+            <span class="kw">let </span>generator = GraphGenerator::new(rng, config);
             <span class="kw">let </span>(info_mem, graph) = generator.run(<span class="kw-2">&amp;mut </span>u)<span class="question-mark">?</span>;
 
             <span class="kw">for </span>key <span class="kw">in </span>info_mem.keys().copied() {
-                <span class="kw">for </span>(src, dst, weight) <span class="kw">in </span>graph.edges(key) {
+                <span class="attr">#[allow(unused)]
+                </span><span class="kw">for </span>(src, dst, weight) <span class="kw">in </span>graph.edges(key) {
                     <span class="kw">let </span>name_src = info_mem.get(<span class="kw-2">&amp;</span>src).unwrap().primary_output.as_deref().unwrap();
                     <span class="kw">let </span>name_dst = info_mem.get(<span class="kw-2">&amp;</span>dst).unwrap().primary_output.as_deref().unwrap();
-                    <span class="macro">std::println!</span>(<span class="string">"{name_src}::{src} -[ {weight} ]-&gt; {name_dst}::{dst}"</span>);
-                }
+                    <span class="comment">// std::println!("{name_src}::{src} -[ {weight} ]-&gt; {name_dst}::{dst}");
+                </span>}
             }
 
             <span class="kw">let </span>select = rand::distributions::Bernoulli::from_ratio(<span class="number">1</span>, <span class="number">4</span>)<span class="question-mark">?</span>.sample(rng);
@@ -757,10 +793,11 @@
                 rules,
             };
 
-            <span class="kw">let </span>str = serde_json::to_string_pretty(<span class="kw-2">&amp;</span>dep_file).unwrap();
-            <span class="macro">std::println!</span>(<span class="string">"{str}"</span>);
+            <span class="attr">#[allow(unused)]
+            </span><span class="kw">let </span>str = serde_json::to_string_pretty(<span class="kw-2">&amp;</span>dep_file).unwrap();
+            <span class="comment">// std::println!("{str}");
 
-            <span class="prelude-val">Ok</span>(())
+            </span><span class="prelude-val">Ok</span>(())
         }
 
         <span class="attr">#[cfg(feature = <span class="string">"serialize"</span>)]
@@ -769,10 +806,11 @@
             <span class="kw">let </span>rng = <span class="kw-2">&amp;mut </span>rand_chacha::ChaCha8Rng::seed_from_u64(<span class="kw">crate</span>::r5::datagen::CHACHA8RNG_SEED);
             <span class="kw">let </span>config = GraphGeneratorConfig::default().node_count(rng.gen_range(<span class="number">0u8 </span>..= <span class="number">16u8</span>));
             <span class="kw">let </span>dep_files = GraphGenerator::gen_dep_files(rng, config)
-                .flat_map(|result| result.and_then(r5::datagen::json::pretty_print_unindented));
-            <span class="kw">for </span>file <span class="kw">in </span>dep_files.take(<span class="number">1</span>) {
-                <span class="macro">std::println!</span>(<span class="string">"{file}\n"</span>);
-            }
+                .flat_map(|result| result.and_then(|dep_file| r5::datagen::json::pretty_print_unindented(<span class="kw-2">&amp;</span>dep_file)));
+            <span class="attr">#[allow(unused)]
+            </span><span class="kw">for </span>file <span class="kw">in </span>dep_files.take(<span class="number">1</span>) {
+                <span class="comment">// std::println!("{file}\n");
+            </span>}
         }
     }
 }
